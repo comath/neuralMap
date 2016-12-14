@@ -3,7 +3,7 @@
 void fillTreeNodes(TreeNode *tree, int treeDepth)
 {
 	int rc = 0;
-	tree->data = 0;
+	tree->dataModifiedCount = 0;
 	tree->created = 0;
 	tree->value = 0;
 
@@ -44,34 +44,38 @@ TreeNode * allocateTree(int treeDepth)
 
 
 
-void addVector(Tree * tree, int vector){
+void addData(Tree *tree, int key, void * datum){
 	TreeNode * node = tree->root;
 	int treeDepth = tree->depth;
-	while(vector != node->value){
-		if (node->value < vector) {
+	char createPass = 1;
+	while(key != node->value){
+		if (node->value < key) {
 			pthread_spin_lock(&(node->bigspinlock));
 			if(node->bigNode == NULL){
 				node->bigNode = allocateTree(treeDepth);
 				(node->bigNode)->created = 1;
-				(node->bigNode)->value = vector;
+				(node->bigNode)->value = key;
+				(node->bigNode)->dataPointer = tree->dataCreator(datum);
 				tree->numNodes++;
 			} else if ((node->bigNode)->created == 0){
 				(node->bigNode)->created = 1;
-				(node->bigNode)->value = vector;
+				(node->bigNode)->value = key;
+				(node->bigNode)->dataPointer = tree->dataCreator(datum);
 				tree->numNodes++;
 			}
 			pthread_spin_unlock(&(node->bigspinlock));
 			node = node->bigNode;
-		} else if (node->value > vector) {
+		} else if (node->value > key) {
 			pthread_spin_lock(&(node->smallspinlock));
+			pthread_spin_lock(&(node->dataspinlock));
 			if(node->smallNode == NULL){
 				node->smallNode = allocateTree(treeDepth);
 				(node->smallNode)->created = 1;
-				(node->smallNode)->value = vector;
+				(node->smallNode)->value = key;
 				tree->numNodes++;
 			} else if ((node->smallNode)->created == 0){
 				(node->smallNode)->created = 1;
-				(node->smallNode)->value = vector;
+				(node->smallNode)->value = key;
 				tree->numNodes++;
 			}
 			pthread_spin_unlock(&(node->smallspinlock));
@@ -80,18 +84,23 @@ void addVector(Tree * tree, int vector){
 		
 	}
 	pthread_spin_lock(&(node->dataspinlock));
-		node->data++;
+		dataModifier((void *) node->dataPointer,datum);
+		dataModifiedCount++;
 	pthread_spin_unlock(&(node->dataspinlock));
 }
 
 
 
-Tree * createTree(int treeDepth)
+Tree * createTree(int depth, void * (*dataCreator)(void * input),
+				void (*dataModifier)(void * input, void * data),void (*dataDestroy)(void * data));
 {
 	Tree * tree = malloc(sizeof(Tree));
 	tree->depth = treeDepth;
 	tree->root = allocateTree(treeDepth);
 	tree->numNodes = 0;
+	tree->dataCreator = dataCreator;
+	tree->dataModifier = dataModifier;
+	tree->dataDestroy = dataDestroy;
 	return tree;	
 }
 
@@ -111,6 +120,9 @@ void freeNode(TreeNode *node, int nodeDepth)
 		}
 	}
 	for(i=0;i<n;i++){
+		if(node[i].dataPointer){
+			dataDestroy(node[i].dataPointer);
+		}
 		pthread_spin_destroy(&(node[i].bigspinlock));
 		pthread_spin_destroy(&(node[i].smallspinlock));
 		pthread_spin_destroy(&(node[i].dataspinlock));
@@ -124,6 +136,8 @@ void freeTree(Tree *tree)
 	freeNode(tree->root,tree->depth);
 	free(tree);
 }
+
+/*
 
 void printNode(TreeNode *tree, int treeDepth)
 {
@@ -159,10 +173,12 @@ void printTree(Tree *tree)
 {
 	printNode(tree->root, tree->depth);
 }
+*/
 
-struct vectorAddThreadArgs {
-	int numVectors;
-	int *vectors;
+struct keyAddThreadArgs {
+	int numKeys;
+	int *keys;
+	void * data;
 	int tid;
 	int numThreads;
 	Tree *tree;
@@ -170,28 +186,29 @@ struct vectorAddThreadArgs {
 
 void * addBatch_thread(void *thread_args)
 {
-	struct vectorAddThreadArgs *myargs;
-	myargs = (struct vectorAddThreadArgs *) thread_args;
+	struct keyAddThreadArgs *myargs;
+	myargs = (struct keyAddThreadArgs *) thread_args;
 	Tree *tree = myargs->tree;
 	int tid = myargs->tid;
-	int numVectors = myargs->numVectors;
-	int *vectors = myargs->vectors;
+	int numkeys = myargs->numKeys;
+	int *keys = myargs->keys;
+	void ** data = myargs-> data;
 	int numThreads = myargs->numThreads;
 
 	int i = 0;
-	for(i=tid;i<numVectors;i=i+numThreads){	
-		addVector(tree,vectors[i]);
+	for(i=tid;i<numkeys;i=i+numThreads){	
+		addData(tree,keys[i],data[i]);
 	}
 	pthread_exit(NULL);
 }
 
-void addBatch(Tree * tree, int * vectors, int numVectors)
+void addBatch(Tree * tree, int *keys, void **data, int numKeys)
 {
 	int maxThreads = sysconf(_SC_NPROCESSORS_ONLN);
 	int rc =0;
 	int i =0;
 
-	struct vectorAddThreadArgs *thread_args = malloc(maxThreads*sizeof(struct vectorAddThreadArgs));
+	struct keyAddThreadArgs *thread_args = malloc(maxThreads*sizeof(struct keyAddThreadArgs));
 
 	pthread_t threads[maxThreads];
 	pthread_attr_t attr;
@@ -201,8 +218,9 @@ void addBatch(Tree * tree, int * vectors, int numVectors)
 	
 	for(i=0;i<maxThreads;i++){
 		thread_args[i].tree = tree;
-		thread_args[i].numVectors = numVectors;
-		thread_args[i].vectors = vectors;
+		thread_args[i].numkeys = numKeys;
+		thread_args[i].keys = keys;
+		thread_args[i].data = data;
 		thread_args[i].numThreads = maxThreads;
 		thread_args[i].tid = i;
 		rc = pthread_create(&threads[i], NULL, addBatch_thread, (void *)&thread_args[i]);
