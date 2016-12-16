@@ -6,13 +6,18 @@
 #include <error.h>
 #include <unistd.h>
 
+typedef struct Key {
+	unsigned char *key;
+	int length;
+} Key;
+
 typedef struct TreeNode {
 	char created;
 	int value;
 
 	pthread_spinlock_t dataspinlock;
-	void * dataPointer;
 	int dataModifiedCount;
+	void * dataPointer;
 
 	pthread_spinlock_t smallspinlock;
 	struct TreeNode *smallNode;
@@ -37,7 +42,6 @@ typedef struct Tree {
 Tree * createTree(int depth, void * (*dataCreator)(void * input),
 				void (*dataModifier)(void * input, void * data),void (*dataDestroy)(void * data));
 void addData(Tree *tree, int key, void * datum);
-void addBatch(Tree * tree, int *keys, void *data, int numVectors);
 //void printTree(Tree *tree);
 void freeTree(Tree *tree);
 

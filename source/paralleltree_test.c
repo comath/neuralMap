@@ -2,19 +2,20 @@
 #include <stdlib.h>
 #include "paralleltree.h"
 
+#include "paralleltree_test.h"
 
 
-struct dataStruct {
+typedef struct dataStruct {
 	double totalValue;
 	int totalCount;
 	double errorValue;
 	int errorCount;
-};
+} dataStruct;
 
-struct dataInput {
-	double value;
+typedef struct dataInput {
+	int value;
 	char error;
-};
+} dataInput;
 
 void dataModifier(void * input, void * data)
 {
@@ -22,6 +23,8 @@ void dataModifier(void * input, void * data)
 	myInput = (struct dataInput *) input;
 	struct dataStruct *myData;
 	myData = (struct dataStruct *) data;
+
+	
 
 	if(myData->totalCount){
 		myData->totalValue = ((myData->totalCount)*myData->totalValue + myInput->value) / (myData->totalCount + 1);
@@ -61,38 +64,97 @@ void dataDestroy(void * data)
 	free(myData);
 }
 
-int *createRandomArray(int numElements, int min, int max)
+dataInput  *createRandomArray(int numElements,  int max)
 {
 	srand(time(NULL));
-	int * randArr = malloc(numElements*sizeof(int));
+	dataInput * randArr = malloc(numElements*sizeof(dataInput));
 	int i = 0;
-	int range = max - min;
-	if(range <= 0){
-		range = RAND_MAX;
-	}
+
 	for(i=0;i<numElements;i++){
-		randArr[i] = (rand() % (max)) + min;
+		randArr[i].value = (rand() % max);
+		randArr[i].error = (rand() % 2);
 	}
 	return randArr;
 }
 
+struct dataAddThreadArgs {
+	int numKeys;
+	dataInput * data;
+	int tid;
+	int numThreads;
+	Tree *tree;
+};
+
+void * addBatch_thread(void *thread_args)
+{
+	struct dataAddThreadArgs *myargs;
+	myargs = (struct dataAddThreadArgs *) thread_args;
+	Tree *tree = myargs->tree;
+	int tid = myargs->tid;
+	int numkeys = myargs->numKeys;
+	dataInput * data = myargs-> data;
+	int numThreads = myargs->numThreads;
+
+	int i = 0;
+	for(i=tid;i<numkeys;i=i+numThreads){
+		addData(tree,((int)data[i].value) % 200, (void *)&(data[i]));
+	}
+	pthread_exit(NULL);
+}
+
+void addBatch(Tree * tree, struct dataInput *data, int numKeys)
+{
+	int maxThreads = sysconf(_SC_NPROCESSORS_ONLN);
+	int rc =0;
+	int i =0;
+
+	struct dataAddThreadArgs *thread_args = malloc(maxThreads*sizeof(struct dataAddThreadArgs));
+
+	pthread_t threads[maxThreads];
+	pthread_attr_t attr;
+	void *status;
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+	
+	for(i=0;i<maxThreads;i++){
+		thread_args[i].tree = tree;
+		thread_args[i].numKeys = numKeys;
+		thread_args[i].data = data;
+		thread_args[i].numThreads = maxThreads;
+		thread_args[i].tid = i;
+		rc = pthread_create(&threads[i], NULL, addBatch_thread, (void *)&thread_args[i]);
+		if (rc){
+			printf("Error, unable to create thread\n");
+			exit(-1);
+		}
+	}
+
+	for( i=0; i < maxThreads; i++ ){
+		rc = pthread_join(threads[i], &status);
+		if (rc){
+			printf("Error, unable to join: %d \n", rc);
+			exit(-1);
+     	}
+	}
+
+	free(thread_args);
+}	
+
 int main(int argc, char* argv[])
 {
 	const int population = 300000;
-	const int max = 10000;
-	const int min = -10000;
+	const int max = 1000;
 	const unsigned int treeDepth = 3;
-	printf("Creating an pseudo-random array with %d elements, max val: %d, min val: %d\n",population,max,min);
-	int * randArr;
-	randArr = createRandomArray(population,min,max);
+	printf("Creating an pseudo-random array with %d elements, max val: %d\n",population,max);
+	dataInput * randArr;
+	randArr = createRandomArray(population,max);
 	printf("Success!\n");
 	printf("Creating the tree and allocating the first node.\n");
-	Tree *tree = createTree(treeDepth);
+	Tree *tree = createTree(treeDepth, dataCreator,dataModifier,dataDestroy);
 	printf("Success!\n");
 	
-	int numToAdd = population;
-	printf("Adding %d nodes with addVector\n", numToAdd);
-	addBatch(tree, randArr, numToAdd);
+	printf("Adding %d nodes with addVector\n", population);
+	addBatch(tree, randArr, population);
 	printf("Success!\n");
 	
 	free(randArr);
