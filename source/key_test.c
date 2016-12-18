@@ -2,40 +2,23 @@
 #include <stdlib.h>
 #include "paralleltree.h"
 
-#define DATASIZE 32
-#define DATATYPE unsigned int
-
-void convertToKey(int * raw, Key * key,int length)
-{
-	
-	key->length = (length/DATASIZE);
-	if(length % DATASIZE){
-		key->length++;
-	}
-	key->key = calloc(key->length, sizeof(DATATYPE));
-	int i =0,j=0;
-	for(i=length-1;i>-1;i--){
-		if(raw[i]){
-			key->key[i/DATASIZE] += (1 << (i % DATASIZE));
-		}
-	}
-}
-
-void convertFromKey(Key * key, int * output, int length)
+char compareArr(int * x, int * y, int length)
 {
 	int i = 0;
-	for(i=length-1;i>-1;i--){
-		if(key->key[i/DATASIZE] & (1 << (i % DATASIZE))){
-			output[i] = 1;
-		} else {
-			output[i] = 0;
+	for(i = 0; i < length; i++){
+		if(x[i]<y[i]){
+			return 1;
+		} 
+		if (x[i]>y[i]){
+			return -1;
 		}
 	}
+	return 0;
 }
 
 int * createRandomBinaryArray(int numElements)
 {
-	srand(time(NULL));
+	
 	int * randArr = malloc(numElements*sizeof(int));
 	int i = 0;
 
@@ -49,13 +32,25 @@ void printIntArr(int * arr, int numElements){
 	int i = 0;
 	printf("[");
 	for(i=0;i<numElements-1;i++){
-		printf("%d,",arr[i]);
+		printf("%u,",arr[i]);
 	}
 	printf("%d", arr[numElements-1]);
 	printf("]\n");
 }
 
-void printCharArr(unsigned char * arr, int numElements){
+
+
+void printKeyArr(Key *x){
+	int i = 0;
+	printf("[");
+	for(i=0;i<x->length;i++){
+		printf("%u,",x->key[i]);
+	}
+	printf("%u", x->key[x->length]);
+	printf("]\n");
+}
+
+void printCharArr(char * arr, int numElements){
 	int i = 0;
 	printf("[");
 	for(i=0;i<numElements-1;i++){
@@ -65,17 +60,61 @@ void printCharArr(unsigned char * arr, int numElements){
 	printf("]\n");
 }
 
-int main(int argc, char* argv[])
+void testCompareKey()
 {
-	int arrLength = 30;
+	
+	int arrLength = 600;
 	int *arr = createRandomBinaryArray(arrLength);
-	printIntArr(arr,arrLength);
+	int *arr2 = createRandomBinaryArray(arrLength);
+
+	Key *testKey = malloc(sizeof(Key));
+	Key *testKey2 = malloc(sizeof(Key));
+	convertToKey(arr,testKey,arrLength);
+	convertToKey(arr2,testKey2,arrLength);
+	if(compareKey( testKey, testKey2) != compareArr(arr,arr2,arrLength)){
+		printf("Faliure\n");
+	}
+	free(arr);
+	free(arr2);
+	free(testKey->key);
+	free(testKey2->key);
+	free(testKey);
+	free(testKey2);
+}
+
+void testRebuildKey()
+{
+	
+	int arrLength = 600;
+	int *arr = createRandomBinaryArray(arrLength);
+	int *RecreateArr = malloc(arrLength*sizeof(int));
 
 	Key *testKey = malloc(sizeof(Key));
 	convertToKey(arr,testKey,arrLength);
-	printCharArr(testKey->key, testKey-> length);
-	convertFromKey(testKey,arr,arrLength);
-	printIntArr(arr,arrLength);
+	convertFromKey(testKey,RecreateArr,arrLength);
+	if(compareArr(arr,RecreateArr,arrLength) != 0){
+		printf("Faliure\n");
+	}
 
+
+	free(arr);
+	free(RecreateArr);
+	free(testKey->key);
+	free(testKey);
+}
+
+int main(int argc, char* argv[])
+{
+	srand(time(NULL));
+	int i = 0;
+	printf("If no faliures are printed then we are fine.\n");
+	printf("testCompareKey:\n");
+	for(i=0;i<100;i++){
+		testCompareKey();
+	}
+	printf("testRebuildKey:\n");
+	for(i=0;i<100;i++){
+		testRebuildKey();
+	} 
 	return 0;
 }

@@ -6,8 +6,11 @@
 #include <error.h>
 #include <unistd.h>
 
+#define DATASIZE 32
+#define DATATYPE unsigned int
+
 typedef struct Key {
-	unsigned char *key;
+	DATATYPE *key;
 	int length;
 } Key;
 
@@ -44,5 +47,9 @@ Tree * createTree(int depth, void * (*dataCreator)(void * input),
 void addData(Tree *tree, int key, void * datum);
 //void printTree(Tree *tree);
 void freeTree(Tree *tree);
+
+void convertToKey(int * raw, Key * key,int length);
+void convertFromKey(Key * key, int * output, int length);
+char compareKey(Key *x, Key *y);
 
 #endif

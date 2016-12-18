@@ -1,10 +1,53 @@
 #include "paralleltree.h"
 
-char compareKey(Key x, Key y)
+
+
+
+
+char compareKey(Key *x, Key *y)
 {
 	int i = 0;
-
+	for(i = 0; i < x->length; i++){
+		if(x->key[i] > y->key[i]){
+			return -1;
+		} 
+		if (x->key[i] < y->key[i]){
+			return 1;
+		}
+	}
 	return 0;
+}
+
+void convertToKey(int * raw, Key * key,int length)
+{
+	
+	key->length = (length/DATASIZE);
+	if(length % DATASIZE){
+		key->length++;
+	}
+	key->key = calloc(key->length , sizeof(DATATYPE));
+	int i = 0,j=0;
+	for(i=0;i<length;i++){
+		j = i % DATASIZE;
+		if(raw[i]){
+			key->key[i/DATASIZE] += (1 << (DATASIZE -j -1))	;
+		}
+		
+	}
+}
+
+void convertFromKey(Key * key, int * output, int length)
+{
+	int i = 0,j=0;
+	for(i=0;i<length;i++){
+		j = i % DATASIZE;
+		if(key->key[i/DATASIZE] & (1 << (DATASIZE-1  -j))){
+			output[i] = 1;
+		} else {
+			output[i] = 0;
+		}
+	}
+
 }
 
 void fillTreeNodes(TreeNode *node, int nodeDepth)
