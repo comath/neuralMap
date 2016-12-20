@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 
+
 void c_printMatrix(double * arr, int m, int n){
 	int i = 0,j =0;
 	int index = 0;
@@ -18,11 +19,5 @@ void c_printMatrix(double * arr, int m, int n){
 	return ;
 }
 
-double c_dot(double *v, double *u, int n){
-	int i = 0;
-	double ret =0;
-	for(i=0;i<n;i++){
-		ret += v[i] * u[i];
-	}
-	return ret;
-}
+
+
