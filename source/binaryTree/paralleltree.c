@@ -1,7 +1,60 @@
 #include "paralleltree.h"
 
+void fillTreeNodes(TreeNode *node, int nodeDepth)
+{
+	int rc = 0;
+	node->dataModifiedCount = 0;
+	node->created = 0;
+	node->value = 0;
+	node->dataPointer = NULL;
 
+	rc = pthread_spin_init(&(node->smallspinlock), 0);
+	if (rc != 0) {
+        printf("spinlock Initialization failed at %p", (void *) node);
+    }
+	rc = pthread_spin_init(&(node->bigspinlock), 0);
+	if (rc != 0) {
+        printf("spinlock Initialization failed at %p", (void *) node);
+    }
+	rc = pthread_spin_init(&(node->dataspinlock), 0);
+	if (rc != 0) {
+        printf("spinlock Initialization failed at %p", (void *) node);
+    }
 
+	if(nodeDepth > -1) {
+		node->smallNode = node - (1 << nodeDepth);
+		node->bigNode = node + (1 << nodeDepth);
+		fillTreeNodes(node->smallNode,nodeDepth-1);
+		fillTreeNodes(node->bigNode,nodeDepth-1);
+	} else {
+		node->smallNode = NULL;
+		node->bigNode = NULL;
+	}
+
+}
+
+TreeNode * allocateNodes(int treeDepth)
+{
+	const int maxTreeSize = (1 << (treeDepth+1)) - 1;
+	struct TreeNode * tree = malloc(maxTreeSize * sizeof(TreeNode));
+	
+	tree = tree + (1 << treeDepth) - 1;
+	fillTreeNodes(tree ,treeDepth-1);
+	return tree;
+}
+
+Tree * createTree(int treeDepth, void * (*dataCreator)(void * input),
+				void (*dataModifier)(void * input, void * data),void (*dataDestroy)(void * data))
+{
+	Tree * tree = malloc(sizeof(Tree));
+	tree->depth = treeDepth;
+	tree->root = allocateNodes(treeDepth);
+	tree->numNodes = 0;
+	tree->dataCreator = dataCreator;
+	tree->dataModifier = dataModifier;
+	tree->dataDestroy = dataDestroy;
+	return tree;	
+}
 
 
 char compareKey(Key *x, Key *y)
@@ -50,48 +103,10 @@ void convertFromKey(Key * key, int * output, int length)
 
 }
 
-void fillTreeNodes(TreeNode *node, int nodeDepth)
-{
-	int rc = 0;
-	node->dataModifiedCount = 0;
-	node->created = 0;
-	node->value = 0;
-	node->dataPointer = NULL;
 
-	rc = pthread_spin_init(&(node->smallspinlock), 0);
-	if (rc != 0) {
-        printf("spinlock Initialization failed at %p", (void *) node);
-    }
-	rc = pthread_spin_init(&(node->bigspinlock), 0);
-	if (rc != 0) {
-        printf("spinlock Initialization failed at %p", (void *) node);
-    }
-	rc = pthread_spin_init(&(node->dataspinlock), 0);
-	if (rc != 0) {
-        printf("spinlock Initialization failed at %p", (void *) node);
-    }
 
-	if(nodeDepth > -1) {
-		node->smallNode = node - (1 << nodeDepth);
-		node->bigNode = node + (1 << nodeDepth);
-		fillTreeNodes(node->smallNode,nodeDepth-1);
-		fillTreeNodes(node->bigNode,nodeDepth-1);
-	} else {
-		node->smallNode = NULL;
-		node->bigNode = NULL;
-	}
 
-}
 
-TreeNode * allocateTree(int treeDepth)
-{
-	const int maxTreeSize = (1 << (treeDepth+1)) - 1;
-	struct TreeNode * tree = malloc(maxTreeSize * sizeof(TreeNode));
-	
-	tree = tree + (1 << treeDepth) - 1;
-	fillTreeNodes(tree ,treeDepth-1);
-	return tree;
-}
 
 
 
@@ -108,7 +123,7 @@ void addData(Tree *tree, int key, void * datum){
 		if (node->value < key) {
 			pthread_spin_lock(&(node->bigspinlock));
 			if(node->bigNode == NULL){
-				node->bigNode = allocateTree(treeDepth);
+				node->bigNode = allocateNodes(treeDepth);
 				(node->bigNode)->created = 1;
 				(node->bigNode)->value = key;
 				(node->bigNode)->dataPointer = tree->dataCreator(datum);
@@ -125,7 +140,7 @@ void addData(Tree *tree, int key, void * datum){
 		} else if (node->value > key) {
 			pthread_spin_lock(&(node->smallspinlock));
 			if(node->smallNode == NULL){
-				node->smallNode = allocateTree(treeDepth);
+				node->smallNode = allocateNodes(treeDepth);
 				(node->smallNode)->created = 1;
 				(node->smallNode)->value = key;
 				(node->smallNode)->dataPointer = tree->dataCreator(datum);
@@ -151,18 +166,7 @@ void addData(Tree *tree, int key, void * datum){
 
 
 
-Tree * createTree(int treeDepth, void * (*dataCreator)(void * input),
-				void (*dataModifier)(void * input, void * data),void (*dataDestroy)(void * data))
-{
-	Tree * tree = malloc(sizeof(Tree));
-	tree->depth = treeDepth;
-	tree->root = allocateTree(treeDepth);
-	tree->numNodes = 0;
-	tree->dataCreator = dataCreator;
-	tree->dataModifier = dataModifier;
-	tree->dataDestroy = dataDestroy;
-	return tree;	
-}
+
 
 void freeNode(Tree *tree, TreeNode *node, int nodeDepth)
 {

@@ -7,7 +7,7 @@
 #include <unistd.h>
 
 #define DATASIZE 32
-#define DATATYPE unsigned int
+#define DATATYPE uint
 
 typedef struct Key {
 	DATATYPE *key;

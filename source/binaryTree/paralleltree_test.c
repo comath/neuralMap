@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include "paralleltree.h"
 
-#include "paralleltree_test.h"
 
 
 typedef struct dataStruct {
