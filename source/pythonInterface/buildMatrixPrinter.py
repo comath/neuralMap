@@ -10,5 +10,5 @@ setup(
     cmdclass = {'build_ext': build_ext},
     ext_modules = [Extension("matrixIntake",
                              sources=["matrixIntake.pyx", "matrixPrinter.c"],
-                             include_dirs=[numpy.get_include()],"/opt/intel/compilers_and_libraries/linux/mkl//lib/intel64/")],
+                             include_dirs=[numpy.get_include(),"../../bin"])],
 )

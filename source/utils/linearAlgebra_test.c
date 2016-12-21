@@ -1,6 +1,6 @@
 #include "linearAlgebra.h"
 
-int main(int argv, char* argv[])
+int main(int argc, char* argv[])
 {
 	float v[5];
 	float u[5];

@@ -1098,8 +1098,9 @@ static CYTHON_INLINE char *__pyx_f_5numpy__util_dtypestring(PyArray_Descr *, cha
 
 /* Module declarations from 'matrixIntake' */
 __PYX_EXTERN_C DL_IMPORT(void) c_printMatrix(double *, int, int); /*proto*/
-__PYX_EXTERN_C DL_IMPORT(double) c_dot(double *, double *, int); /*proto*/
+__PYX_EXTERN_C DL_IMPORT(float) c_dot(float *, float *, int); /*proto*/
 static __Pyx_TypeInfo __Pyx_TypeInfo_double = { "double", NULL, sizeof(double), { 0 }, 0, 'R', 0, 0 };
+static __Pyx_TypeInfo __Pyx_TypeInfo_float = { "float", NULL, sizeof(float), { 0 }, 0, 'R', 0, 0 };
 #define __Pyx_MODULE_NAME "matrixIntake"
 int __pyx_module_is_main_matrixIntake = 0;
 
@@ -1268,7 +1269,7 @@ static PyObject *__pyx_pf_12matrixIntake_printMatrix(CYTHON_UNUSED PyObject *__p
  * 	c_printMatrix(&A[0,0],m,n)
  * 	return None             # <<<<<<<<<<<<<<
  * 
- * def customDot(np.ndarray[double,ndim=1,mode="c"] v not None,np.ndarray[double,ndim=1,mode="c"] u not None):
+ * def customDot(np.ndarray[float,ndim=1,mode="c"] v not None,np.ndarray[float,ndim=1,mode="c"] u not None):
  */
   __Pyx_XDECREF(__pyx_r);
   __Pyx_INCREF(Py_None);
@@ -1303,7 +1304,7 @@ static PyObject *__pyx_pf_12matrixIntake_printMatrix(CYTHON_UNUSED PyObject *__p
 /* "matrixIntake.pyx":17
  * 	return None
  * 
- * def customDot(np.ndarray[double,ndim=1,mode="c"] v not None,np.ndarray[double,ndim=1,mode="c"] u not None):             # <<<<<<<<<<<<<<
+ * def customDot(np.ndarray[float,ndim=1,mode="c"] v not None,np.ndarray[float,ndim=1,mode="c"] u not None):             # <<<<<<<<<<<<<<
  * 	cdef int n
  * 	n = v.shape[0]
  */
@@ -1402,17 +1403,17 @@ static PyObject *__pyx_pf_12matrixIntake_2customDot(CYTHON_UNUSED PyObject *__py
   __pyx_pybuffernd_u.rcbuffer = &__pyx_pybuffer_u;
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_v.rcbuffer->pybuffer, (PyObject*)__pyx_v_v, &__Pyx_TypeInfo_double, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 17; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_v.rcbuffer->pybuffer, (PyObject*)__pyx_v_v, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 17; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   }
   __pyx_pybuffernd_v.diminfo[0].strides = __pyx_pybuffernd_v.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_v.diminfo[0].shape = __pyx_pybuffernd_v.rcbuffer->pybuffer.shape[0];
   {
     __Pyx_BufFmt_StackElem __pyx_stack[1];
-    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_u.rcbuffer->pybuffer, (PyObject*)__pyx_v_u, &__Pyx_TypeInfo_double, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 17; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+    if (unlikely(__Pyx_GetBufferAndValidate(&__pyx_pybuffernd_u.rcbuffer->pybuffer, (PyObject*)__pyx_v_u, &__Pyx_TypeInfo_float, PyBUF_FORMAT| PyBUF_C_CONTIGUOUS, 1, 0, __pyx_stack) == -1)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 17; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   }
   __pyx_pybuffernd_u.diminfo[0].strides = __pyx_pybuffernd_u.rcbuffer->pybuffer.strides[0]; __pyx_pybuffernd_u.diminfo[0].shape = __pyx_pybuffernd_u.rcbuffer->pybuffer.shape[0];
 
   /* "matrixIntake.pyx":19
- * def customDot(np.ndarray[double,ndim=1,mode="c"] v not None,np.ndarray[double,ndim=1,mode="c"] u not None):
+ * def customDot(np.ndarray[float,ndim=1,mode="c"] v not None,np.ndarray[float,ndim=1,mode="c"] u not None):
  * 	cdef int n
  * 	n = v.shape[0]             # <<<<<<<<<<<<<<
  * 	assert(n == u.shape[0])
@@ -1461,7 +1462,7 @@ static PyObject *__pyx_pf_12matrixIntake_2customDot(CYTHON_UNUSED PyObject *__py
     __Pyx_RaiseBufferIndexError(__pyx_t_2);
     {__pyx_filename = __pyx_f[0]; __pyx_lineno = 21; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   }
-  __pyx_t_4 = PyFloat_FromDouble(c_dot((&(*__Pyx_BufPtrCContig1d(double *, __pyx_pybuffernd_v.rcbuffer->pybuffer.buf, __pyx_t_1, __pyx_pybuffernd_v.diminfo[0].strides))), (&(*__Pyx_BufPtrCContig1d(double *, __pyx_pybuffernd_u.rcbuffer->pybuffer.buf, __pyx_t_3, __pyx_pybuffernd_u.diminfo[0].strides))), __pyx_v_n)); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 21; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
+  __pyx_t_4 = PyFloat_FromDouble(c_dot((&(*__Pyx_BufPtrCContig1d(float *, __pyx_pybuffernd_v.rcbuffer->pybuffer.buf, __pyx_t_1, __pyx_pybuffernd_v.diminfo[0].strides))), (&(*__Pyx_BufPtrCContig1d(float *, __pyx_pybuffernd_u.rcbuffer->pybuffer.buf, __pyx_t_3, __pyx_pybuffernd_u.diminfo[0].strides))), __pyx_v_n)); if (unlikely(!__pyx_t_4)) {__pyx_filename = __pyx_f[0]; __pyx_lineno = 21; __pyx_clineno = __LINE__; goto __pyx_L1_error;}
   __Pyx_GOTREF(__pyx_t_4);
   __pyx_r = __pyx_t_4;
   __pyx_t_4 = 0;
@@ -1470,7 +1471,7 @@ static PyObject *__pyx_pf_12matrixIntake_2customDot(CYTHON_UNUSED PyObject *__py
   /* "matrixIntake.pyx":17
  * 	return None
  * 
- * def customDot(np.ndarray[double,ndim=1,mode="c"] v not None,np.ndarray[double,ndim=1,mode="c"] u not None):             # <<<<<<<<<<<<<<
+ * def customDot(np.ndarray[float,ndim=1,mode="c"] v not None,np.ndarray[float,ndim=1,mode="c"] u not None):             # <<<<<<<<<<<<<<
  * 	cdef int n
  * 	n = v.shape[0]
  */
@@ -3780,7 +3781,7 @@ static int __Pyx_InitCachedConstants(void) {
   /* "matrixIntake.pyx":17
  * 	return None
  * 
- * def customDot(np.ndarray[double,ndim=1,mode="c"] v not None,np.ndarray[double,ndim=1,mode="c"] u not None):             # <<<<<<<<<<<<<<
+ * def customDot(np.ndarray[float,ndim=1,mode="c"] v not None,np.ndarray[float,ndim=1,mode="c"] u not None):             # <<<<<<<<<<<<<<
  * 	cdef int n
  * 	n = v.shape[0]
  */
@@ -3934,7 +3935,7 @@ PyMODINIT_FUNC PyInit_matrixIntake(void)
   /* "matrixIntake.pyx":17
  * 	return None
  * 
- * def customDot(np.ndarray[double,ndim=1,mode="c"] v not None,np.ndarray[double,ndim=1,mode="c"] u not None):             # <<<<<<<<<<<<<<
+ * def customDot(np.ndarray[float,ndim=1,mode="c"] v not None,np.ndarray[float,ndim=1,mode="c"] u not None):             # <<<<<<<<<<<<<<
  * 	cdef int n
  * 	n = v.shape[0]
  */
