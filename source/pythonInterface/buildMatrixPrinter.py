@@ -10,5 +10,8 @@ setup(
     cmdclass = {'build_ext': build_ext},
     ext_modules = [Extension("matrixIntake",
                              sources=["matrixIntake.pyx", "matrixPrinter.c"],
-                             include_dirs=[numpy.get_include(),"../../bin"])],
+                             libraries=["linAlg"],
+                             include_dirs=[numpy.get_include()],
+                             library_dirs=["../../bin"]
+                              )],
 )

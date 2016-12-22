@@ -103,13 +103,6 @@ void convertFromKey(Key * key, int * output, int length)
 
 }
 
-
-
-
-
-
-
-
 void addData(Tree *tree, int key, void * datum){
 	TreeNode * node = tree->root;
 	int treeDepth = tree->depth;

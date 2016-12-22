@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "paralleltree.h"
+#include "../utils/paralleltree.h"
 
 
 

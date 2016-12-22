@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../utils/linearAlgebra.h"
+#include "../utils/linAlg.h"
 
 
 
@@ -20,8 +20,4 @@ void c_printMatrix(double * arr, int m, int n){
 	return ;
 }
 
-float c_dot(float *v, float *u, int n)
-{
-	return dot(v,u,n);
-}
 
