@@ -43,7 +43,7 @@ TreeNode * allocateNodes(int treeDepth)
 	return tree;
 }
 
-Tree * createTree(int treeDepth, void * (*dataCreator)(void * input),
+Tree * createTree(int treeDepth, int keyLength, void * (*dataCreator)(void * input),
 				void (*dataModifier)(void * input, void * data),void (*dataDestroy)(void * data))
 {
 	Tree * tree = malloc(sizeof(Tree));
@@ -57,53 +57,7 @@ Tree * createTree(int treeDepth, void * (*dataCreator)(void * input),
 }
 
 
-char compareKey(Key *x, Key *y)
-{
-	int i = 0;
-	for(i = 0; i < x->length; i++){
-		if(x->key[i] > y->key[i]){
-			return -1;
-		} 
-		if (x->key[i] < y->key[i]){
-			return 1;
-		}
-	}
-	return 0;
-}
-
-void convertToKey(int * raw, Key * key,int length)
-{
-	
-	key->length = (length/DATASIZE);
-	if(length % DATASIZE){
-		key->length++;
-	}
-	key->key = calloc(key->length , sizeof(DATATYPE));
-	int i = 0,j=0;
-	for(i=0;i<length;i++){
-		j = i % DATASIZE;
-		if(raw[i]){
-			key->key[i/DATASIZE] += (1 << (DATASIZE -j -1))	;
-		}
-		
-	}
-}
-
-void convertFromKey(Key * key, int * output, int length)
-{
-	int i = 0,j=0;
-	for(i=0;i<length;i++){
-		j = i % DATASIZE;
-		if(key->key[i/DATASIZE] & (1 << (DATASIZE-1  -j))){
-			output[i] = 1;
-		} else {
-			output[i] = 0;
-		}
-	}
-
-}
-
-void addData(Tree *tree, int key, void * datum){
+void * addData(Tree *tree, Key * key, void * datum){
 	TreeNode * node = tree->root;
 	int treeDepth = tree->depth;
 	if (node->created == 0){
@@ -112,7 +66,8 @@ void addData(Tree *tree, int key, void * datum){
 		node->dataPointer = tree->dataCreator(datum);
 		tree->numNodes++;
 	}
-	while(key != node->value){
+	int keyCompare = 0;
+	while(keyCompare = compareKey(key,node->value)){
 		if (node->value < key) {
 			pthread_spin_lock(&(node->bigspinlock));
 			if(node->bigNode == NULL){
@@ -152,13 +107,40 @@ void addData(Tree *tree, int key, void * datum){
 	}
 
 	pthread_spin_lock(&(node->dataspinlock));
-		tree->dataModifier(datum,node->dataPointer);
-		node->dataModifiedCount++;
+		if(node->dataPointer){
+			tree->dataModifier(datum,node->dataPointer);
+			node->dataModifiedCount++;
+		}		
 	pthread_spin_unlock(&(node->dataspinlock));
+	return (void *) dataPointer;
 }
 
-
-
+void * getData(Tree *tree, Key * key){
+	TreeNode * node = tree->root;
+	int treeDepth = tree->depth;
+	if (node->created == 0){
+		return NULL;
+	}
+	while(key != node->value){
+		if (node->value < key) {
+			pthread_spin_lock(&(node->bigspinlock));
+			if(node->bigNode == NULL || node->bigNode->created == 0){
+				return NULL;
+			}
+			pthread_spin_unlock(&(node->bigspinlock));
+			node = node->bigNode;
+		} else if (node->value > key) {
+			pthread_spin_lock(&(node->smallspinlock));
+			if(node->smallNode == NULL || node->smallNode->created == 0){
+				return NULL;
+			}
+			pthread_spin_unlock(&(node->smallspinlock));
+			node = node->smallNode;
+		}
+		
+	}
+	return (void *) dataPointer;
+}
 
 
 void freeNode(Tree *tree, TreeNode *node, int nodeDepth)

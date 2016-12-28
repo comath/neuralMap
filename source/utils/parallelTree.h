@@ -6,17 +6,15 @@
 #include <error.h>
 #include <unistd.h>
 
-#define DATASIZE 32
-#define DATATYPE uint
+#include "key.h"
 
-typedef struct Key {
-	DATATYPE *key;
-	int length;
-} Key;
+
+
+
 
 typedef struct TreeNode {
 	char created;
-	int value;
+	uint *key;
 
 	pthread_spinlock_t dataspinlock;
 	int dataModifiedCount;
@@ -37,6 +35,7 @@ typedef struct Tree {
 	void (*dataDestroy)(void * data);
 
 	// Tree properties
+	unsigned int keyLength;
 	unsigned int numNodes;
 	unsigned int depth;
 	TreeNode * root;
@@ -44,8 +43,8 @@ typedef struct Tree {
 
 Tree * createTree(int depth, void * (*dataCreator)(void * input),
 				void (*dataModifier)(void * input, void * data),void (*dataDestroy)(void * data));
-void addData(Tree *tree, int key, void * datum);
-//void printTree(Tree *tree);
+void * addData(Tree *tree, Key *key, void * datum);
+void * getData(Tree *tree,Key *key);
 void freeTree(Tree *tree);
 
 void convertToKey(int * raw, Key * key,int length);
