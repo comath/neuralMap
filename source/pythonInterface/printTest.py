@@ -10,8 +10,8 @@ matrixIntake.printMatrix(a)
 
 print a
 
-b = np.arange(5, dtype=np.float64)
-c = np.arange(3,8, dtype=np.float64)
+b = np.arange(5, dtype=np.float32)
+c = np.arange(3,8, dtype=np.float32)
 print np.dot(b,c)
 
 print matrixIntake.customDot(b,c)
