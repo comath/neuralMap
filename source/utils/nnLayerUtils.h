@@ -13,8 +13,8 @@
 #endif
 
 typedef struct nnLayer {
-	MKL_INT n;
-	MKL_INT m;
+	MKL_INT outDim;
+	MKL_INT inDim;
 	float *A;
 	float *b;
 } nnLayer;
