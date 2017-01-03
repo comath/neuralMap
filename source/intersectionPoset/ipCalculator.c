@@ -1,18 +1,19 @@
 #include "ipCalculator.h"
+#include <float.h>
 
-struct ipCacheInput {
+typedef struct ipCacheInput {
 	//This should be a constant
 	const nnIPInfo * info;
 	//This shouldn't be
 	uint *key;
 } ipCacheInput;
 
-struct ipCacheData {
+typedef struct ipCacheData {
 	float *solution;
 	float *projection;
 } ipCacheData;
 
-struct nnIPInfo {
+typedef struct nnIPInfo {
 	nnLayer * layer0;
 	float *hpOffsetVecs;
 	float *hpNormals;
@@ -87,7 +88,7 @@ struct ipCacheData * solve(float *A, MKL_INT m, MKL_INT n, float *b)
 	return output;
 }
 
-void * dataCreator(void * input)
+void * ipCacheDataCreator(void * input)
 {
 	struct ipCacheInput *myInput;
 	myInput = (struct ipCacheInput *) input;
@@ -116,7 +117,7 @@ void * dataCreator(void * input)
 		return NULL;
 	}
 }
-void dataDestroy(void * data)
+void ipCacheDataDestroy(void * data)
 {
 	struct ipCacheData *myData;
 	myData = (struct ipCacheData *) data;
@@ -134,7 +135,7 @@ void dataDestroy(void * data)
 ipCache * allocateCache(nnLayer *hpLayer)
 {
 	ipCache *cache = malloc(sizeof(ipCache));
-	cache->bases = createTree(8, dataCreator, NULL, dataDestroy);
+	cache->bases = createTree(8, ipCacheDataCreator, NULL, ipCacheDataDestroy);
 }
 
 float computeDist(float * p, ipCacheInput * myInput, Tree * ipCache)
@@ -174,31 +175,45 @@ void computeDistToHPS(float *p, nnIPInfo *hpInfo, float *distances)
 	free(localCopy);
 }
 
-uint * getInterSig(vec v, )
+
+void getInterSig(float *p, nnIPInfo *info, uint *ipSignature, Tree * ipCache)
 {
 	#ifdef DEBUG
 		cout << "Getting the intersection signature for " << endl << v;
 	#endif
-	vec dist = this->computeDistToHPS(v);
-	uvec indsort = sort_index(dist,"accend");
-	unsigned j = 1;
-	unsigned n = dist.n_rows;
-	unsigned dimension = v.n_rows;
-	for(unsigned k = 1; k<dimension+1; ++k){
-		std::set<int> rowsToInclude;
-		for(unsigned l=0; l<k;++l){
-			rowsToInclude.insert(indsort(l));
-		}
-		double curDist = this->computeDist(v, rowsToInclude);
-		if(curDist>0 && dist(indsort(k)) > SCALEDTUBETHRESHOLD*curDist){
-			j=k;
-		}
+	uint outDim = hpInfo->outDim;
+	uint inDim = hpInfo->inDim;
+	ipCacheInput myInput = {info = info, key = ipSignature};
+
+	float *distances = calloc(outDim,sizeof(float));
+	computeDistToHPS(p, info, distances);
+	uint j = 1, k = 1;
+	
+	clearKey(ipSignature, uint dataLen);
+
+	// Get the distance to the closest hyperplane and blank it from the distance array
+	uint curSmallestIndex = cblas_isamin (outDim, distances, 1);
+	float curDist = distances[curSmallestIndex];
+	distances[curSmallestIndex] = FLT_MAX;
+	addIndexToKey(ipSignature, currentSmallestIndex);
+
+	// Get the distance to the second closest hyperplane and blank it
+	curSmallestIndex = cblas_isamin (outDim, distances, 1);
+	float nextDist = distances[curSmallestIndex];
+	distances[curSmallestIndex] = FLT_MAX;
+
+	while(curDist>0 && nextDist < SCALEDTUBETHRESHOLD*curDist && j < inDim)
+	{	
+
+		addIndexToKey(ipSignature, curSmallestIndex);
+		// Prepare for next loop
+		curSmallestIndex = cblas_isamin (outDim, distances, 1);
+		// Current distance should be the distance to the current IP set
+		curDist = computeDist(p, &myInput, ipCache);
+		// Next distance should either be to the next hyperplane or the next closest IP of the same rank.
+		nextDist = distances[curSmallestIndex];
+		distances[curSmallestIndex] = FLT_MAX;
+		j++;
 	}
-	if(j > v.n_rows)
-		j = v.n_rows;
-	for (unsigned i = 0; i < j; ++i)
-	{
-		sig[indsort(i)] = 1;
-	}
-	return sig;
+	free(distances);
 }
