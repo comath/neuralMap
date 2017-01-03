@@ -21,12 +21,16 @@
 
 typedef struct ipCache {
 	Tree *bases;
-	nnLayer *hps;
+	float *hpOffsetVecs;
+	float *hpNormals;
+	uint inDim;
+	uint outDim;
 } ipCache;
 
-ipCache * allocateCache(nnLayer *hpLayer);
+ipCache * allocateCache(nnLayer *layer0);
 int * getIntersectionSignature(ipCache *cache, float *v);
 void freeCache(ipCache *cache);
+
 
 
 #endif

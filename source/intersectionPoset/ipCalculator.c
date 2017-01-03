@@ -3,7 +3,8 @@
 
 typedef struct ipCacheInput {
 	//This should be a constant
-	const nnIPInfo * info;
+	const ipCache * info;
+	const nnLayer *layer0;
 	//This shouldn't be
 	uint *key;
 } ipCacheInput;
@@ -12,14 +13,6 @@ typedef struct ipCacheData {
 	float *solution;
 	float *projection;
 } ipCacheData;
-
-typedef struct nnIPInfo {
-	nnLayer * layer0;
-	float *hpOffsetVecs;
-	float *hpNormals;
-	uint inDim;
-	uint outDim
-} nnIPInfo;
 
 /*
  This can only handle neural networks whose input dimension is greater than the number of nodes in the first layer
@@ -132,10 +125,22 @@ void ipCacheDataDestroy(void * data)
 	}
 }
 
-ipCache * allocateCache(nnLayer *hpLayer)
+void createHPCache(ipCache *ipCache, nnLayer *layer0)
+{
+	
+}
+
+ipCache * allocateCache(nnLayer *layer0)
 {
 	ipCache *cache = malloc(sizeof(ipCache));
 	cache->bases = createTree(8, ipCacheDataCreator, NULL, ipCacheDataDestroy);
+
+	createHPCache(ipCache *ipCache, layer0);
+}
+
+void freeCache(ipCache * cache)
+{
+
 }
 
 float computeDist(float * p, ipCacheInput * myInput, Tree * ipCache)
@@ -143,14 +148,14 @@ float computeDist(float * p, ipCacheInput * myInput, Tree * ipCache)
 	CBLAS_LAYOUT    layout 	= CblasRowMajor;
 	CBLAS_TRANSPOSE noTrans = CblasNoTrans;
 	CBLAS_TRANSPOSE trans 	= CblasTrans;
-	struct ipCacheData *myData = (struct *ipCacheData) addData(ipCache, myInput->key, myInput);;
+	struct ipCacheData *myBasis = (struct *ipCacheData) addData(ipCache, myInput->key, myInput);;
 	
 	if(myData){
 		MKL_INT inDim = myInput->layer->inDim;
-		MKL_INT dimKernel = myData->dimKernel;
+		MKL_INT dimKernel = myBasis->dimKernel;
 		float * px = malloc(myInput->layer->inDim * sizeof(float));
 		cblas_scopy (inDim, p, 1, px, 1);
-		cblas_saxpy (inDim,1,myData->solution,1,px,1);
+		cblas_saxpy (inDim,1,myBasis->solution,1,px,1);
 		cblas_sgemv (layout, noTrans, inDim, inDim,-1,myData->projection, inDim, px, 1, 1, px, 1);
 		float norm = cblas_snrm2 (inDim, px, 1);
 		free(px);
@@ -160,33 +165,33 @@ float computeDist(float * p, ipCacheInput * myInput, Tree * ipCache)
 	}	
 }
 
-void computeDistToHPS(float *p, nnIPInfo *hpInfo, float *distances)
+void computeDistToHPS(float *p, ipCache *cache, float *distances)
 {
-	uint outDim = hpInfo->outDim;
-	uint inDim = hpInfo->inDim;
+	uint outDim = cache->outDim;
+	uint inDim = cache->inDim;
 	float * localCopy = calloc(outDim*inDim,sizeof(float));
-	cblas_scopy (inDim*outDim, hpInfo->hpOffsetVecs, 1, localCopy, 1);
+	cblas_scopy (inDim*outDim, cache->hpOffsetVecs, 1, localCopy, 1);
 
 
 	for(uint i =0;i<outDim;++i){
 		cblas_saxpy (inDim,1,p,1,localCopy + i*inDim,1);
-		distances[i] = cblas_sdot (inDim, localCopy + i*inDim, 1, hpInfo->hpNormals + i*inDim, 1);
+		distances[i] = cblas_sdot (inDim, localCopy + i*inDim, 1, cache->hpNormals + i*inDim, 1);
 	}
 	free(localCopy);
 }
 
 
-void getInterSig(float *p, nnIPInfo *info, uint *ipSignature, Tree * ipCache)
+void getInterSig(float *p, uint *ipSignature, ipCache * cache, nnLayer *layer0)
 {
 	#ifdef DEBUG
 		cout << "Getting the intersection signature for " << endl << v;
 	#endif
-	uint outDim = hpInfo->outDim;
-	uint inDim = hpInfo->inDim;
+	uint outDim = cache->outDim;
+	uint inDim = cache->inDim;
 	ipCacheInput myInput = {info = info, key = ipSignature};
 
 	float *distances = calloc(outDim,sizeof(float));
-	computeDistToHPS(p, info, distances);
+	computeDistToHPS(p, cache, distances);
 	uint j = 1, k = 1;
 	
 	clearKey(ipSignature, uint dataLen);
@@ -209,7 +214,7 @@ void getInterSig(float *p, nnIPInfo *info, uint *ipSignature, Tree * ipCache)
 		// Prepare for next loop
 		curSmallestIndex = cblas_isamin (outDim, distances, 1);
 		// Current distance should be the distance to the current IP set
-		curDist = computeDist(p, &myInput, ipCache);
+		curDist = computeDist(p, &myInput, cache);
 		// Next distance should either be to the next hyperplane or the next closest IP of the same rank.
 		nextDist = distances[curSmallestIndex];
 		distances[curSmallestIndex] = FLT_MAX;
