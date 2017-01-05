@@ -24,8 +24,6 @@ typedef struct ipCache {
 	Tree *bases;
 	float *hpOffsetVecs;
 	float *hpNormals;
-	uint inDim;
-	uint outDim;
 	float threshold;
 } ipCache;
 

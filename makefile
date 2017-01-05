@@ -20,7 +20,7 @@ LIB_FLAGS = -ldl -lpthread -lm
 all: parallelTree_test key_test
 
 #The utilities used for most of this
-parallelTree.o: $(UTILS)parallelTree.c 
+parallelTree.o: $(UTILS)parallelTree.c $(UTILS)key.c
 	$(CC) $(CCFLAGS) -c $< -o $(BIN)$@
 key.o: $(UTILS)key.c 
 	$(CC) $(CCFLAGS) -c $< -o $(BIN)$@
@@ -35,8 +35,8 @@ ipCalculator.o: $(UTILS)ipCalculator.c  $(UTILS)nnLayerUtils.c $(UTILS)parallelT
 ipCalculator_test.o: $(TEST)ipCalculator_test.c $(UTILS)ipCalculator.c $(UTILS)parallelTree.c
 	$(CC) $(CXXFLAGS) $(MKLINC) -c $< -o $(BIN)$@
 
-ipCalculator_test: ipCalculator_test.o ipCalculator.o parallelTree.o
-	$(CC) $(CCFLAGS) $(BIN)$< $(BIN)ipCalculator.o $(BIN)parallelTree.o $(BIN)key.o -o $@ $(MKLLIB) $(LIB_FLAGS) 
+ipCalculator_test: ipCalculator_test.o ipCalculator.o parallelTree.o key.o nnLayerUtils.o
+	$(CC) $(CCFLAGS) $(BIN)$< $(BIN)ipCalculator.o $(BIN)nnLayerUtils.o $(BIN)parallelTree.o $(BIN)key.o -o $@ $(MKLLIB) $(LIB_FLAGS) 
 
 parallelTree_test.o: $(TEST)parallelTree_test.c $(UTILS)parallelTree.c
 	$(CC) $(CXXFLAGS) -c $< -o $(BIN)$@

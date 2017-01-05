@@ -8,13 +8,10 @@
 #include <mkl_lapacke.h>
 #endif
 
-#ifndef MKL
-#define MKL_INT const int
-#endif
 
 typedef struct nnLayer {
-	MKL_INT outDim;
-	MKL_INT inDim;
+	uint outDim;
+	uint inDim;
 	float *A;
 	float *b;
 } nnLayer;

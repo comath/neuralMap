@@ -136,12 +136,13 @@ void ipCacheDataDestroy(void * data)
 	}
 }
 
-void createHPCache(ipCache *cache, nnLayer *layer0)
+void createHPCache(ipCache *cache)
 {
 	#ifdef DEBUG
 		printf("Setting up hyperplanes\n");
 	#endif
 	uint i = 0;
+	nnLayer *layer0 = cache->layer0;
 	uint inDim = layer0->inDim;
 	uint outDim = layer0->outDim;
 
@@ -162,11 +163,10 @@ ipCache * allocateCache(nnLayer *layer0, float threshhold)
 	uint keyLen = calcKeyLen(layer0->outDim);
 	cache->bases = createTree(8,keyLen , ipCacheDataCreator, NULL, ipCacheDataDestroy);
 
-	createHPCache(cache, layer0);
 	cache->layer0 = layer0;
-	cache->inDim = layer0->inDim;
-	cache->outDim = layer0->outDim;
+	createHPCache(cache);
 	cache->threshold = threshhold;
+	return cache;
 }
 
 void freeCache(ipCache * cache)
@@ -186,7 +186,7 @@ float computeDist(float * p, uint *ipSignature, ipCache *cache)
 	struct ipCacheData *myBasis = addData(cache->bases, ipSignature, &myInput);;
 	
 	if(myBasis){
-		MKL_INT inDim = cache->inDim;
+		MKL_INT inDim = cache->layer0->inDim;
 		float * px = malloc(inDim * sizeof(float));
 		cblas_scopy (inDim, p, 1, px, 1);
 		cblas_saxpy (inDim,1,myBasis->solution,1,px,1);
@@ -201,8 +201,8 @@ float computeDist(float * p, uint *ipSignature, ipCache *cache)
 
 void computeDistToHPS(float *p, ipCache *cache, float *distances)
 {
-	uint outDim = cache->outDim;
-	uint inDim = cache->inDim;
+	uint outDim = cache->layer0->outDim;
+	uint inDim = cache->layer0->inDim;
 	float * localCopy = calloc(outDim*inDim,sizeof(float));
 	cblas_scopy (inDim*outDim, cache->hpOffsetVecs, 1, localCopy, 1);
 
@@ -217,9 +217,8 @@ void computeDistToHPS(float *p, ipCache *cache, float *distances)
 
 void getInterSig(float *p, uint *ipSignature, ipCache * cache)
 {
-	printf("Is the mistake after this?\n");
-	uint outDim = cache->outDim;
-	uint inDim = cache->inDim;
+	uint outDim = cache->layer0->outDim;
+	uint inDim = cache->layer0->inDim;
 	
 	float *distances = calloc(outDim,sizeof(float));
 	computeDistToHPS(p, cache, distances);

@@ -17,9 +17,6 @@ void freeLayer(nnLayer *layer)
 		if(layer->A){
 			free(layer->A);
 		}
-		if(layer->b){
-			free(layer->b);
-		}
 		free(layer);
 	}
 }
