@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../utils/paralleltree.h"
+#include "../utils/parallelTree.h"
 
 
 
@@ -14,6 +14,7 @@ typedef struct dataStruct {
 typedef struct dataInput {
 	int value;
 	char error;
+	uint key[1];
 } dataInput;
 
 void dataModifier(void * input, void * data)
@@ -72,6 +73,7 @@ dataInput  *createRandomArray(int numElements,  int max)
 	for(i=0;i<numElements;i++){
 		randArr[i].value = (rand() % max);
 		randArr[i].error = (rand() % 2);
+		randArr[i].key[0] = randArr[i].value % 200;
 	}
 	return randArr;
 }
@@ -96,7 +98,7 @@ void * addBatch_thread(void *thread_args)
 
 	int i = 0;
 	for(i=tid;i<numkeys;i=i+numThreads){
-		addData(tree,((int)data[i].value) % 200, (void *)&(data[i]));
+		addData(tree,data[i].key, data + i);
 	}
 	pthread_exit(NULL);
 }
@@ -106,6 +108,9 @@ void addBatch(Tree * tree, struct dataInput *data, int numKeys)
 	int maxThreads = sysconf(_SC_NPROCESSORS_ONLN);
 	int rc =0;
 	int i =0;
+
+	//Add one data to the first node so that we can avoid the race condition.
+	
 
 	struct dataAddThreadArgs *thread_args = malloc(maxThreads*sizeof(struct dataAddThreadArgs));
 
@@ -117,8 +122,8 @@ void addBatch(Tree * tree, struct dataInput *data, int numKeys)
 	
 	for(i=0;i<maxThreads;i++){
 		thread_args[i].tree = tree;
-		thread_args[i].numKeys = numKeys;
-		thread_args[i].data = data;
+		thread_args[i].numKeys = numKeys ;
+		thread_args[i].data = data ;
 		thread_args[i].numThreads = maxThreads;
 		thread_args[i].tid = i;
 		rc = pthread_create(&threads[i], NULL, addBatch_thread, (void *)&thread_args[i]);
@@ -148,8 +153,9 @@ int main(int argc, char* argv[])
 	dataInput * randArr;
 	randArr = createRandomArray(population,max);
 	printf("Success!\n");
+	uint keyLength = calcKeyLen(1);
 	printf("Creating the tree and allocating the first node.\n");
-	Tree *tree = createTree(treeDepth, dataCreator,dataModifier,dataDestroy);
+	Tree *tree = createTree(treeDepth,keyLength, dataCreator,dataModifier,dataDestroy);
 	printf("Success!\n");
 	
 	printf("Adding %d nodes with addVector\n", population);

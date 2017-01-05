@@ -1,10 +1,20 @@
 #include "ipCalculator.h"
 #include <float.h>
+#ifdef MKL
+#include <mkl.h>
+#include <mkl_cblas.h>
+#include <mkl_blas.h>
+#include <mkl_lapack.h>
+#include <mkl_lapacke.h>
+#endif
+
+#ifndef MKL
+#define MKL_INT const int
+#endif
 
 typedef struct ipCacheInput {
 	//This should be a constant
 	const ipCache * info;
-	const nnLayer *layer0;
 	//This shouldn't be
 	uint *key;
 } ipCacheInput;
@@ -32,6 +42,7 @@ struct ipCacheData * solve(float *A, MKL_INT m, MKL_INT n, float *b)
 	float *s = calloc(n,sizeof(float));
 	float *u = calloc(ldu*m , sizeof(float));
 	float *vt = calloc(ldvt*n, sizeof(float));
+	struct ipCacheData *output = malloc(sizeof(struct ipCacheData));
 
 
 	/* Executable statements */
@@ -66,7 +77,7 @@ struct ipCacheData * solve(float *A, MKL_INT m, MKL_INT n, float *b)
 	cblas_sgemv (layout, trans, m, n,1, c, n, b, 1, 0, solution, 1);
 	// Saving the kernel basis from vt
 	if(m<n){
-		void cblas_sgemm (layout, trans, noTrans, m, m, n-m, 1, vt+n*m, n-m, vt+n*m, n, 0, projection, m);
+		cblas_sgemm (layout, trans, noTrans, m, m, (n-m), 1, vt+n*m, (n-m), vt+n*m, n, 0, projection, m);
 	}
 	free(s);
 	free(u);
@@ -75,7 +86,7 @@ struct ipCacheData * solve(float *A, MKL_INT m, MKL_INT n, float *b)
 	// Incase of memory leaks:
 	//mkl_thread_free_buffers();
 
-	struct ipCacheData *output = malloc(sizeof(struct ipCacheData));
+	
 	output->solution = solution;
 	output->projection = projection;
 	return output;
@@ -85,7 +96,7 @@ void * ipCacheDataCreator(void * input)
 {
 	struct ipCacheInput *myInput;
 	myInput = (struct ipCacheInput *) input;
-	nnLayer *layer0 = input->info->layer0;
+	nnLayer *layer0 = myInput->info->layer0;
 
 	uint inDim = layer0->inDim;
 	uint outDim = layer0->outDim;
@@ -105,7 +116,7 @@ void * ipCacheDataCreator(void * input)
 	if(numHps <= inDim){
 		MKL_INT m = numHps;
 		MKL_INT n = inDim;
-		return solve(subA, m, n, subB, kernelBasis, solution);
+		return solve(subA, m, n, subB);
 	} else {
 		return NULL;
 	}
@@ -115,48 +126,71 @@ void ipCacheDataDestroy(void * data)
 	struct ipCacheData *myData;
 	myData = (struct ipCacheData *) data;
 	if(myData){
-		if(myData->kernelBasis){
-			free(myData->kernelBasis);
+		if(myData->projection){
+			free(myData->projection);
 		}
 		if(myData->solution){
-			free(solution);
+			free(myData->solution);
 		}
 		free(myData);
 	}
 }
 
-void createHPCache(ipCache *ipCache, nnLayer *layer0)
+void createHPCache(ipCache *cache, nnLayer *layer0)
 {
-	
+	#ifdef DEBUG
+		printf("Setting up hyperplanes\n");
+	#endif
+	uint i = 0;
+	uint inDim = layer0->inDim;
+	uint outDim = layer0->outDim;
+
+	cache->hpNormals = calloc(outDim*inDim,sizeof(float));
+	cache->hpOffsetVecs = calloc(outDim*inDim,sizeof(float));
+
+	float scaling = 1;
+	for(i=0;i<outDim;i++){
+		scaling = cblas_snrm2 (inDim, layer0->A + inDim*i, 1);
+		cblas_saxpy (inDim,1/scaling,layer0->A+inDim*i,0,cache->hpNormals + inDim*i,1);
+		cblas_saxpy (inDim,layer0->b[i]/scaling,cache->hpNormals+inDim*i,0,cache->hpOffsetVecs + inDim*i,1);
+	}
 }
 
-ipCache * allocateCache(nnLayer *layer0)
+ipCache * allocateCache(nnLayer *layer0, float threshhold)
 {
 	ipCache *cache = malloc(sizeof(ipCache));
-	cache->bases = createTree(8, ipCacheDataCreator, NULL, ipCacheDataDestroy);
+	uint keyLen = calcKeyLen(layer0->outDim);
+	cache->bases = createTree(8,keyLen , ipCacheDataCreator, NULL, ipCacheDataDestroy);
 
-	createHPCache(ipCache *ipCache, layer0);
+	createHPCache(cache, layer0);
+	cache->layer0 = layer0;
+	cache->inDim = layer0->inDim;
+	cache->outDim = layer0->outDim;
+	cache->threshold = threshhold;
 }
 
 void freeCache(ipCache * cache)
 {
-
+	freeTree(cache->bases);
+	free(cache->hpOffsetVecs);
+	free(cache->hpNormals);
+	free(cache);
 }
 
-float computeDist(float * p, ipCacheInput * myInput, Tree * ipCache)
+float computeDist(float * p, uint *ipSignature, ipCache *cache)
 {
 	CBLAS_LAYOUT    layout 	= CblasRowMajor;
 	CBLAS_TRANSPOSE noTrans = CblasNoTrans;
-	CBLAS_TRANSPOSE trans 	= CblasTrans;
-	struct ipCacheData *myBasis = (struct *ipCacheData) addData(ipCache, myInput->key, myInput);;
+	CBLAS_TRANSPOSE trans 	= CblasTrans;	
+	ipCacheInput myInput = {.info = cache, .key = ipSignature};
+	struct ipCacheData *myBasis = addData(cache->bases, ipSignature, &myInput);;
 	
-	if(myData){
-		MKL_INT inDim = myInput->layer->inDim;
-		MKL_INT dimKernel = myBasis->dimKernel;
-		float * px = malloc(myInput->layer->inDim * sizeof(float));
+	if(myBasis){
+		MKL_INT inDim = cache->inDim;
+		float * px = malloc(inDim * sizeof(float));
 		cblas_scopy (inDim, p, 1, px, 1);
 		cblas_saxpy (inDim,1,myBasis->solution,1,px,1);
-		cblas_sgemv (layout, noTrans, inDim, inDim,-1,myData->projection, inDim, px, 1, 1, px, 1);
+		cblas_sgemv (layout, noTrans, inDim, inDim,-1,myBasis->projection, inDim, px, 1, 1, px, 1);
 		float norm = cblas_snrm2 (inDim, px, 1);
 		free(px);
 		return norm;
@@ -181,40 +215,37 @@ void computeDistToHPS(float *p, ipCache *cache, float *distances)
 }
 
 
-void getInterSig(float *p, uint *ipSignature, ipCache * cache, nnLayer *layer0)
+void getInterSig(float *p, uint *ipSignature, ipCache * cache)
 {
-	#ifdef DEBUG
-		cout << "Getting the intersection signature for " << endl << v;
-	#endif
+	printf("Is the mistake after this?\n");
 	uint outDim = cache->outDim;
 	uint inDim = cache->inDim;
-	ipCacheInput myInput = {info = info, key = ipSignature};
-
+	
 	float *distances = calloc(outDim,sizeof(float));
 	computeDistToHPS(p, cache, distances);
 	uint j = 1, k = 1;
 	
-	clearKey(ipSignature, uint dataLen);
+	clearKey(ipSignature,cache->bases->keyLength);
 
 	// Get the distance to the closest hyperplane and blank it from the distance array
 	uint curSmallestIndex = cblas_isamin (outDim, distances, 1);
 	float curDist = distances[curSmallestIndex];
 	distances[curSmallestIndex] = FLT_MAX;
-	addIndexToKey(ipSignature, currentSmallestIndex);
+	addIndexToKey(ipSignature, curSmallestIndex);
 
 	// Get the distance to the second closest hyperplane and blank it
 	curSmallestIndex = cblas_isamin (outDim, distances, 1);
 	float nextDist = distances[curSmallestIndex];
 	distances[curSmallestIndex] = FLT_MAX;
 
-	while(curDist>0 && nextDist < SCALEDTUBETHRESHOLD*curDist && j < inDim)
+	while(curDist>0 && nextDist < cache->threshold*curDist && j < inDim)
 	{	
 
 		addIndexToKey(ipSignature, curSmallestIndex);
 		// Prepare for next loop
 		curSmallestIndex = cblas_isamin (outDim, distances, 1);
 		// Current distance should be the distance to the current IP set
-		curDist = computeDist(p, &myInput, cache);
+		curDist = computeDist(p, ipSignature, cache);
 		// Next distance should either be to the next hyperplane or the next closest IP of the same rank.
 		nextDist = distances[curSmallestIndex];
 		distances[curSmallestIndex] = FLT_MAX;

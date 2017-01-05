@@ -1,13 +1,17 @@
-#include "paralleltree.h"
+#include "parallelTree.h"
 
 void fillTreeNodes(TreeNode *node, int nodeDepth)
 {
 	int rc = 0;
 	node->dataModifiedCount = 0;
 	node->created = 0;
-	node->value = 0;
+	node->key = 0;
 	node->dataPointer = NULL;
 
+	rc = pthread_spin_init(&(node->keyspinlock), 0);
+	if (rc != 0) {
+        printf("spinlock Initialization failed at %p", (void *) node);
+    }
 	rc = pthread_spin_init(&(node->smallspinlock), 0);
 	if (rc != 0) {
         printf("spinlock Initialization failed at %p", (void *) node);
@@ -43,13 +47,14 @@ TreeNode * allocateNodes(int treeDepth)
 	return tree;
 }
 
-Tree * createTree(int treeDepth, int keyLength, void * (*dataCreator)(void * input),
+Tree * createTree(int treeDepth, uint keyLength, void * (*dataCreator)(void * input),
 				void (*dataModifier)(void * input, void * data),void (*dataDestroy)(void * data))
 {
 	Tree * tree = malloc(sizeof(Tree));
 	tree->depth = treeDepth;
 	tree->root = allocateNodes(treeDepth);
 	tree->numNodes = 0;
+	tree->keyLength = keyLength;
 	tree->dataCreator = dataCreator;
 	tree->dataModifier = dataModifier;
 	tree->dataDestroy = dataDestroy;
@@ -57,53 +62,58 @@ Tree * createTree(int treeDepth, int keyLength, void * (*dataCreator)(void * inp
 }
 
 
-void * addData(Tree *tree, Key * key, void * datum){
+void * addData(Tree *tree, uint * key, void * datum){
 	TreeNode * node = tree->root;
 	int treeDepth = tree->depth;
+	
+	pthread_spin_lock(&(node->keyspinlock));
 	if (node->created == 0){
 		node->created = 1;
-		node->value = key;
+		node->key = key;
 		node->dataPointer = tree->dataCreator(datum);
 		tree->numNodes++;
 	}
-	int keyCompare = 0;
-	while(keyCompare = compareKey(key,node->value)){
-		if (node->value < key) {
+	int keyCompare = compareKey(key,node->key,tree->keyLength);
+	pthread_spin_unlock(&(node->keyspinlock));
+	while(keyCompare){
+		if (keyCompare == 1) {
 			pthread_spin_lock(&(node->bigspinlock));
 			if(node->bigNode == NULL){
 				node->bigNode = allocateNodes(treeDepth);
 				(node->bigNode)->created = 1;
-				(node->bigNode)->value = key;
+				(node->bigNode)->key = key;
 				(node->bigNode)->dataPointer = tree->dataCreator(datum);
 				tree->numNodes++;
 			} 
 			if ((node->bigNode)->created == 0){
 				(node->bigNode)->created = 1;
-				(node->bigNode)->value = key;
+				(node->bigNode)->key = key;
 				(node->bigNode)->dataPointer = tree->dataCreator(datum);
 				tree->numNodes++;
 			}
 			pthread_spin_unlock(&(node->bigspinlock));
 			node = node->bigNode;
-		} else if (node->value > key) {
+		} else if (keyCompare == -1) {
 			pthread_spin_lock(&(node->smallspinlock));
 			if(node->smallNode == NULL){
 				node->smallNode = allocateNodes(treeDepth);
 				(node->smallNode)->created = 1;
-				(node->smallNode)->value = key;
+				(node->smallNode)->key = key;
 				(node->smallNode)->dataPointer = tree->dataCreator(datum);
 				tree->numNodes++;
 			} 
 			if ((node->smallNode)->created == 0){
 				(node->smallNode)->created = 1;
-				(node->smallNode)->value = key;
+				(node->smallNode)->key = key;
 				(node->smallNode)->dataPointer = tree->dataCreator(datum);
 				tree->numNodes++;
 			}
 			pthread_spin_unlock(&(node->smallspinlock));
 			node = node->smallNode;
 		}
-		
+		pthread_spin_lock(&(node->keyspinlock));
+		keyCompare = compareKey(key,node->key,tree->keyLength);
+		pthread_spin_unlock(&(node->keyspinlock));
 	}
 
 	pthread_spin_lock(&(node->dataspinlock));
@@ -112,24 +122,26 @@ void * addData(Tree *tree, Key * key, void * datum){
 			node->dataModifiedCount++;
 		}		
 	pthread_spin_unlock(&(node->dataspinlock));
-	return (void *) dataPointer;
+	return (void *) node->dataPointer;
 }
 
-void * getData(Tree *tree, Key * key){
+void * getData(Tree *tree, uint *key)
+{
 	TreeNode * node = tree->root;
-	int treeDepth = tree->depth;
 	if (node->created == 0){
 		return NULL;
 	}
-	while(key != node->value){
-		if (node->value < key) {
+	char comparison;
+	while((comparison = compareKey(key,node->key,tree->keyLength))){
+
+		if (comparison == 1) {
 			pthread_spin_lock(&(node->bigspinlock));
 			if(node->bigNode == NULL || node->bigNode->created == 0){
 				return NULL;
 			}
 			pthread_spin_unlock(&(node->bigspinlock));
 			node = node->bigNode;
-		} else if (node->value > key) {
+		} else if (comparison == -1) {
 			pthread_spin_lock(&(node->smallspinlock));
 			if(node->smallNode == NULL || node->smallNode->created == 0){
 				return NULL;
@@ -139,7 +151,7 @@ void * getData(Tree *tree, Key * key){
 		}
 		
 	}
-	return (void *) dataPointer;
+	return (void *) node->dataPointer;
 }
 
 

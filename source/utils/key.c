@@ -8,43 +8,42 @@ uint calcKeyLen(uint dataLen)
 	if(dataLen % DATASIZE){
 		keyLen++;
 	}
+	return keyLen;
 }
 
-char compareKey(uint *x, uint *y, uint length)
+char compareKey(uint *x, uint *y, uint keyLen)
 {
-	int i = 0;
-	for(i = 0; i < length; i++){
-		if(x->key[i] > y->key[i]){
+	uint i = 0;
+	for(i = 0; i < keyLen; i++){
+		if(x[i] > y[i]){
 			return -1;
 		} 
-		if (x->key[i] < y->key[i]){
+		if (x[i] < y[i]){
 			return 1;
 		}
 	}
 	return 0;
 }
 
-uint convertToKey(int * raw, uint *key,uint dataLen)
+void convertToKey(int * raw, uint *key,uint dataLen)
 {
-	uint keyLen = calc(dataLen);
-	key->key = calloc(keyLen , sizeof(DATATYPE));
-	int i = 0,j=0;
+
+	uint keyLen = calcKeyLen(dataLen);
+	clearKey(key, keyLen);
+	uint i = 0,j=0;
 	for(i=0;i<dataLen;i++){
 		j = i % DATASIZE;
 		if(raw[i]){
-			key->key[i/DATASIZE] += (1 << (DATASIZE -j -1))	;
+			key[i/DATASIZE] += (1 << (DATASIZE -j -1))	;
 		}	
 	}
-	return keyLen;
 }
 
 void convertFromKey(uint *key, int * raw, uint dataLen)
 {
-	uint keyLen = calc(dataLen);
-	int i = 0,j=0;
+	uint i = 0;
 	for(i=0;i<dataLen;i++){
-		j = i % DATASIZE;
-		if(checkIndex(key,index)){
+		if(checkIndex(key,i)){
 			raw[i] = 1;
 		} else {
 			raw[i] = 0;
@@ -55,20 +54,19 @@ void convertFromKey(uint *key, int * raw, uint dataLen)
 
 void addIndexToKey(uint * key, uint index)
 {
+	int j = index % DATASIZE;
 	if(checkIndex(key,index)){
-		key->key[index/DATASIZE] += (1 << (DATASIZE-1-j));
+		key[index/DATASIZE] += (1 << (DATASIZE-1-j));
 	}
 }
 
-char checkIndex(uint * key, uint index)
+uint checkIndex(uint * key, uint index)
 {
-	int j = index % DATASIZE;
-	return key->key[index/DATASIZE] & (1 << (DATASIZE-1-j));
+	return key[index/DATASIZE] & (1 << (DATASIZE-1-(index % DATASIZE)));
 }
 
-void clearKey(uint *key, uint dataLen)
+void clearKey(uint *key, uint keyLen)
 {
-	uint keyLen = calcKeyLen(dataLen);
 	uint i = 0;
 	for(i=0;i<keyLen;i++){
 		key[i] = 0;

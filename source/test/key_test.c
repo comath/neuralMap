@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../utils/paralleltree.h"
+#include "../utils/parallelTree.h"
 
 char compareArr(int * x, int * y, int length)
 {
@@ -40,13 +40,13 @@ void printIntArr(int * arr, int numElements){
 
 
 
-void printKeyArr(Key *x){
+void printKeyArr(uint *key, uint length){
 	int i = 0;
 	printf("[");
-	for(i=0;i<x->length;i++){
-		printf("%u,",x->key[i]);
+	for(i=0;i<length;i++){
+		printf("%u,",key[i]);
 	}
-	printf("%u", x->key[x->length]);
+	printf("%u", key[length]);
 	printf("]\n");
 }
 
@@ -60,24 +60,36 @@ void printCharArr(char * arr, int numElements){
 	printf("]\n");
 }
 
+void testKeyLen()
+{
+	uint arrLen = 600;
+	uint keyLen = calcKeyLen(arrLen);
+	uint keyLen2 = (arrLen/32);
+	if(arrLen % 32){
+		keyLen2++;
+	}
+	if(keyLen != keyLen2){
+		printf("Faliure\n");
+	}
+}
+
 void testCompareKey()
 {
 	
-	int arrLength = 600;
+	uint arrLength = 30;
 	int *arr = createRandomBinaryArray(arrLength);
 	int *arr2 = createRandomBinaryArray(arrLength);
+	uint keyLen = calcKeyLen(arrLength);
 
-	Key *testKey = malloc(sizeof(Key));
-	Key *testKey2 = malloc(sizeof(Key));
+	uint *testKey = malloc(keyLen*sizeof(uint));
+	uint *testKey2 = malloc(keyLen*sizeof(uint));
 	convertToKey(arr,testKey,arrLength);
 	convertToKey(arr2,testKey2,arrLength);
-	if(compareKey( testKey, testKey2) != compareArr(arr,arr2,arrLength)){
+	if(compareKey( testKey, testKey2,keyLen) != compareArr(arr,arr2,arrLength)){
 		printf("Faliure\n");
 	}
 	free(arr);
 	free(arr2);
-	free(testKey->key);
-	free(testKey2->key);
 	free(testKey);
 	free(testKey2);
 }
@@ -85,21 +97,25 @@ void testCompareKey()
 void testRebuildKey()
 {
 	
-	int arrLength = 600;
+	int arrLength = 30;
 	int *arr = createRandomBinaryArray(arrLength);
 	int *RecreateArr = malloc(arrLength*sizeof(int));
+	
+	uint keyLen = calcKeyLen(arrLength);
+	uint *testKey = malloc(keyLen*sizeof(uint));
 
-	Key *testKey = malloc(sizeof(Key));
 	convertToKey(arr,testKey,arrLength);
 	convertFromKey(testKey,RecreateArr,arrLength);
 	if(compareArr(arr,RecreateArr,arrLength) != 0){
-		printf("Faliure\n");
+		printf("Faliure, Recreated Arr:\n");
+		printIntArr(RecreateArr,arrLength);
+		printf("Original one:\n");
+		printIntArr(arr,arrLength);
 	}
 
 
 	free(arr);
 	free(RecreateArr);
-	free(testKey->key);
 	free(testKey);
 }
 
@@ -108,13 +124,12 @@ int main(int argc, char* argv[])
 	srand(time(NULL));
 	int i = 0;
 	printf("If no faliures are printed then we are fine.\n");
+	printf("test keyLen\n");
+	void testKeyLen();
 	printf("testCompareKey:\n");
-	for(i=0;i<100;i++){
-		testCompareKey();
-	}
+	testCompareKey();
+	for(i=0;i<100;i++){	testCompareKey(); }
 	printf("testRebuildKey:\n");
-	for(i=0;i<100;i++){
-		testRebuildKey();
-	} 
+	for(i=0;i<100;i++){	testRebuildKey(); } 
 	return 0;
 }

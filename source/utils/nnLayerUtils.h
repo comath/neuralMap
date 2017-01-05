@@ -19,4 +19,7 @@ typedef struct nnLayer {
 	float *b;
 } nnLayer;
 
+nnLayer * createLayer(float *A, float *b, uint outDim, uint inDim);
+void freeLayer(nnLayer * layer);
+
 #endif

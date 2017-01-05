@@ -8,12 +8,10 @@
 
 #include "key.h"
 
-
-
-
-
 typedef struct TreeNode {
 	char created;
+
+	pthread_spinlock_t keyspinlock;
 	uint *key;
 
 	pthread_spinlock_t dataspinlock;
@@ -41,14 +39,11 @@ typedef struct Tree {
 	TreeNode * root;
 } Tree;
 
-Tree * createTree(int depth, void * (*dataCreator)(void * input),
+Tree * createTree(int depth, uint keyLength, void * (*dataCreator)(void * input),
 				void (*dataModifier)(void * input, void * data),void (*dataDestroy)(void * data));
-void * addData(Tree *tree, Key *key, void * datum);
-void * getData(Tree *tree,Key *key);
+void * addData(Tree *tree, uint *key, void * datum);
+void * getData(Tree *tree,uint *key);
 void freeTree(Tree *tree);
 
-void convertToKey(int * raw, Key * key,int length);
-void convertFromKey(Key * key, int * output, int length);
-char compareKey(Key *x, Key *y);
 
 #endif

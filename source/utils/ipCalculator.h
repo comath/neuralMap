@@ -3,8 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include "../utils/parallelTree.h"
-#include "../utils/nnLayerUtils.h"
+#include "parallelTree.h"
+#include "nnLayerUtils.h"
 
 #ifdef MKL
 #include <mkl.h>
@@ -20,16 +20,19 @@
 
 
 typedef struct ipCache {
+	nnLayer *layer0;
 	Tree *bases;
 	float *hpOffsetVecs;
 	float *hpNormals;
 	uint inDim;
 	uint outDim;
+	float threshold;
 } ipCache;
 
-ipCache * allocateCache(nnLayer *layer0);
-int * getIntersectionSignature(ipCache *cache, float *v);
+ipCache * allocateCache(nnLayer *layer0, float threshold);
 void freeCache(ipCache *cache);
+
+void getInterSig(float *p, uint *ipSignature, ipCache * cache);
 
 
 
