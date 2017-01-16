@@ -1,4 +1,15 @@
 #import "nnLayerUtils.h"
+#ifdef MKL
+#include <mkl.h>
+#include <mkl_cblas.h>
+#include <mkl_blas.h>
+#include <mkl_lapack.h>
+#include <mkl_lapacke.h>
+#endif
+
+#ifndef MKL
+#define MKL_INT const int
+#endif
 
 nnLayer * createLayer(float * A, float *b, uint inDim, uint outDim)
 {
@@ -6,7 +17,7 @@ nnLayer * createLayer(float * A, float *b, uint inDim, uint outDim)
 	layer->A = malloc((inDim*outDim + outDim)*sizeof(float));
 	layer->b = layer->A + inDim*outDim;
 	cblas_scopy (inDim*outDim, A, 1, layer->A, 1);
-	cblas_scopy (outDim, A, 1, layer->b, 1);
+	cblas_scopy (outDim, b, 1, layer->b, 1);
 	layer->inDim = inDim;
 	layer->outDim = outDim;
 }
@@ -19,4 +30,12 @@ void freeLayer(nnLayer *layer)
 		}
 		free(layer);
 	}
+}
+
+void evalLayer(nnLayer *layer, float * input, float * output)
+{
+	uint inDim = layer->inDim;
+	uint outDim = layer->outDim;
+	cblas_scopy (outDim, layer->b, 1, output, 1);
+	cblas_sgemv (CblasRowMajor, CblasTrans, outDim, inDim,1, layer->A, inDim, input, 1, 1, output, 1);
 }

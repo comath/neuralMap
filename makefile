@@ -8,9 +8,15 @@ MKLROOT = /opt/intel/compilers_and_libraries/linux/mkl
 MKLINC = -I$(MKLROOT)/include/
 MKLLIB = -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_ilp64.a $(MKLROOT)/lib/intel64/libmkl_sequential.a $(MKLROOT)/lib/intel64/libmkl_core.a -Wl,--end-group
 
+PYINCDIR = $(shell python -c \
+			"from distutils import sysconfig; print(sysconfig.get_python_inc())")
+
+PYLIBS = $(shell python -c \
+			"from distutils import sysconfig; print(sysconfig.get_config_var('LIBS'))")
+
 CCFLAGS = $(DEBUG) $(GDB) $(FINAL) $(OPT) $(EXTRA_OPT) 
 BIN=./build/
-LIB=./lib/
+WRAP = ./source/pythonInterface/
 UTILS = ./source/utils/
 TEST = ./source/test/
 
@@ -30,6 +36,10 @@ nnLayerUtils.o: $(UTILS)nnLayerUtils.c
 # IP calculator
 ipCalculator.o: $(UTILS)ipCalculator.c  $(UTILS)nnLayerUtils.c $(UTILS)parallelTree.c
 	$(CC) $(CCFLAGS) $(MKLINC) -c $< -o $(BIN)$@
+
+#Cython Wrappers
+nnLayerUtilsWrap.c:
+	cython -I $(UTILS) -v --line-directives $(WRAP)nnLayerUtilsWrap.pyx
 
 #Testing
 ipCalculator_test.o: $(TEST)ipCalculator_test.c $(UTILS)ipCalculator.c $(UTILS)parallelTree.c
