@@ -30,7 +30,7 @@ def calcKeyLen(dataLen):
 	return keyLen
 
 class intersectionPoset:
-	def __init__(np.ndarray[float,ndim=2,mode="c"] A not None, np.ndarray[float,ndim=1,mode="c"] b not None, float threshold):
+	def __cinit__(np.ndarray[float,ndim=2,mode="c"] A not None, np.ndarray[float,ndim=1,mode="c"] b not None, float threshold):
 		cdef unsigned int inDim, outDim
 		outDim,inDim = A.shape[0], A.shape[1]
 		layer = createLayer(&A[0,0],&b[0],outDim,inDim)

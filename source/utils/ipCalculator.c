@@ -29,9 +29,6 @@ typedef struct ipCacheData {
 */
 struct ipCacheData * solve(float *A, MKL_INT m, MKL_INT n, float *b)
 {
-	CBLAS_LAYOUT    layout = CblasRowMajor;
-	CBLAS_TRANSPOSE noTrans = CblasNoTrans;
-	CBLAS_TRANSPOSE trans = CblasTrans;
 	MKL_INT lda = n;
 	MKL_INT ldu = m;
 	MKL_INT ldvt = n;
@@ -72,12 +69,12 @@ struct ipCacheData * solve(float *A, MKL_INT m, MKL_INT n, float *b)
 	float * solution = calloc(n, sizeof(float));
 	float *c = calloc(n*m , sizeof(float));
 	// Multiplying u sigma+t with vt
-	cblas_sgemm (layout, noTrans, noTrans, m, n, m, 1, u, ldu, vt, ldvt, 0,c, n);
+	cblas_sgemm (CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, m, 1, u, ldu, vt, ldvt, 0,c, n);
 	// Multiplying v sigma+ u with b for the solution
-	cblas_sgemv (layout, trans, m, n,1, c, n, b, 1, 0, solution, 1);
+	cblas_sgemv (CblasRowMajor, CblasTrans, m, n,1, c, n, b, 1, 0, solution, 1);
 	// Saving the kernel basis from vt
 	if(m<n){
-		cblas_sgemm (layout, trans, noTrans, m, m, (n-m), 1, vt+n*m, (n-m), vt+n*m, n, 0, projection, m);
+		cblas_sgemm (CblasRowMajor, CblasTrans, CblasNoTrans, m, m, (n-m), 1, vt+n*m, (n-m), vt+n*m, n, 0, projection, m);
 	}
 	free(s);
 	free(u);
@@ -179,9 +176,7 @@ void freeCache(ipCache * cache)
 
 float computeDist(float * p, uint *ipSignature, ipCache *cache)
 {
-	CBLAS_LAYOUT    layout 	= CblasRowMajor;
-	CBLAS_TRANSPOSE noTrans = CblasNoTrans;
-	CBLAS_TRANSPOSE trans 	= CblasTrans;	
+
 	ipCacheInput myInput = {.info = cache, .key = ipSignature};
 	struct ipCacheData *myBasis = addData(cache->bases, ipSignature, &myInput);;
 	
@@ -190,7 +185,7 @@ float computeDist(float * p, uint *ipSignature, ipCache *cache)
 		float * px = malloc(inDim * sizeof(float));
 		cblas_scopy (inDim, p, 1, px, 1);
 		cblas_saxpy (inDim,1,myBasis->solution,1,px,1);
-		cblas_sgemv (layout, noTrans, inDim, inDim,-1,myBasis->projection, inDim, px, 1, 1, px, 1);
+		cblas_sgemv (CblasRowMajor, CblasNoTrans, inDim, inDim,-1,myBasis->projection, inDim, px, 1, 1, px, 1);
 		float norm = cblas_snrm2 (inDim, px, 1);
 		free(px);
 		return norm;
