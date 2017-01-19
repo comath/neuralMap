@@ -6,8 +6,8 @@ GDB = -g
 
 MKLROOT = /opt/intel/compilers_and_libraries/linux/mkl
 MKLINC = -I$(MKLROOT)/include/
-MKLLIB = -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_ilp64.a $(MKLROOT)/lib/intel64/libmkl_sequential.a $(MKLROOT)/lib/intel64/libmkl_core.a -Wl,--end-group
-
+MKLSTATICLIB = -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_ilp64.a $(MKLROOT)/lib/intel64/libmkl_sequential.a $(MKLROOT)/lib/intel64/libmkl_core.a -Wl,--end-group
+MKLONEDYNAMICLIB =  -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_rt 
 PYINCDIR = $(shell python -c \
 			"from distutils import sysconfig; print(sysconfig.get_python_inc())")
 
@@ -37,16 +37,13 @@ nnLayerUtils.o: $(UTILS)nnLayerUtils.c
 ipCalculator.o: $(UTILS)ipCalculator.c  $(UTILS)nnLayerUtils.c $(UTILS)parallelTree.c
 	$(CC) $(CCFLAGS) $(MKLINC) -c $< -o $(BIN)$@
 
-#Cython Wrappers
-nnLayerUtilsWrap.c:
-	cython -I $(UTILS) -v --line-directives $(WRAP)nnLayerUtilsWrap.pyx
 
 #Testing
 ipCalculator_test.o: $(TEST)ipCalculator_test.c $(UTILS)ipCalculator.c $(UTILS)parallelTree.c
 	$(CC) $(CXXFLAGS) $(MKLINC) -c $< -o $(BIN)$@
 
 ipCalculator_test: ipCalculator_test.o ipCalculator.o parallelTree.o key.o nnLayerUtils.o
-	$(CC) $(CCFLAGS) $(BIN)$< $(BIN)ipCalculator.o $(BIN)nnLayerUtils.o $(BIN)parallelTree.o $(BIN)key.o -o $@ $(MKLLIB) $(LIB_FLAGS) 
+	$(CC) $(CCFLAGS) $(BIN)$< $(BIN)ipCalculator.o $(BIN)nnLayerUtils.o $(BIN)parallelTree.o $(BIN)key.o -o $@ $(MKLONEDYNAMICLIB) $(LIB_FLAGS) 
 
 parallelTree_test.o: $(TEST)parallelTree_test.c $(UTILS)parallelTree.c
 	$(CC) $(CXXFLAGS) -c $< -o $(BIN)$@

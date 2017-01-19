@@ -15,6 +15,7 @@ uint calcKeyLen(uint dataLen);
 void addIndexToKey(uint * key, uint index);
 uint checkIndex(uint * key, uint index);
 void clearKey(uint *key, uint keyLength);
+void printKeyArr(uint *key, uint length);
 
 
 #endif

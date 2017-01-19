@@ -213,7 +213,7 @@ void computeDistToHPS(float *p, ipCache *cache, float *distances)
 }
 
 
-void getInterSig(float *p, uint *ipSignature, ipCache * cache)
+void getInterSig(ipCache * cache, float *p, uint *ipSignature)
 {
 	uint outDim = cache->layer0->outDim;
 	uint inDim = cache->layer0->inDim;
@@ -249,4 +249,82 @@ void getInterSig(float *p, uint *ipSignature, ipCache * cache)
 		j++;
 	}
 	free(distances);
+}
+
+struct dataAddThreadArgs {
+	int tid;
+	int numThreads;
+
+	uint numData;
+	float * data;
+	uint *ipSignature;
+
+	ipCache *cache;
+};
+
+void * addBatch_thread(void *thread_args)
+{
+	struct dataAddThreadArgs *myargs;
+	myargs = (struct dataAddThreadArgs *) thread_args;
+
+	int tid = myargs->tid;	
+	int numThreads = myargs->numThreads;
+
+	uint numData = myargs->numData;
+	float *data = myargs->data;
+	uint *ipSignature = myargs->ipSignature;
+
+	ipCache *cache = myargs->cache;
+
+	uint dim = cache->layer0->inDim;
+	uint keySize = calcKeyLen(cache->layer0->outDim);
+
+	int i = 0;
+	for(i=tid;i<numData;i=i+numThreads){
+		getInterSig(data+i*dim, ipSignature+i*keySize, cache);
+		
+	}
+	pthread_exit(NULL);
+}
+
+void getInterSigBatch(ipCache *cache, float *data, uint *ipSignature, uint numData, uint numProc)
+{
+	int maxThreads = numProc;
+	int rc =0;
+	int i =0;
+
+	//Add one data to the first node so that we can avoid the race condition.
+	
+
+	struct dataAddThreadArgs *thread_args = malloc(maxThreads*sizeof(struct dataAddThreadArgs));
+
+	pthread_t threads[maxThreads];
+	pthread_attr_t attr;
+	void *status;
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+	
+	for(i=0;i<maxThreads;i++){
+		thread_args[i].cache = cache;
+		thread_args[i].numData = numData;
+		thread_args[i].ipSignature = ipSignature;
+		thread_args[i].data = data;
+		thread_args[i].numThreads = maxThreads;
+		thread_args[i].tid = i;
+		rc = pthread_create(&threads[i], NULL, addBatch_thread, (void *)&thread_args[i]);
+		if (rc){
+			printf("Error, unable to create thread\n");
+			exit(-1);
+		}
+	}
+
+	for( i=0; i < maxThreads; i++ ){
+		rc = pthread_join(threads[i], &status);
+		if (rc){
+			printf("Error, unable to join: %d \n", rc);
+			exit(-1);
+     	}
+	}
+
+	free(thread_args);
 }

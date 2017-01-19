@@ -41,4 +41,5 @@ ipCalculatorExt = Extension(name='ipCalculatorWrap',
 
 setup(ext_modules = cythonize(ipCalculatorExt,gdb_debug=True))
 
-os.rename("ipCalculatorWrap.so", testDir+"ipCalculatorWrap.so")
+
+#os.rename("ipCalculatorWrap.so", testDir+"ipCalculatorWrap.so")

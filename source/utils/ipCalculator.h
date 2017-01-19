@@ -25,7 +25,8 @@ typedef struct ipCache {
 ipCache * allocateCache(nnLayer *layer0, float threshold);
 void freeCache(ipCache *cache);
 
-void getInterSig(float *p, uint *ipSignature, ipCache * cache);
+void getInterSig(ipCache * cache, float *p, uint *ipSignature);
+void getInterSigBatch(ipCache *cache, float *data, uint *ipSignature, uint numData, uint numProc);
 
 
 
