@@ -1,16 +1,13 @@
 #include "ipCalculator.h"
 #include <float.h>
-#ifdef MKL
+
 #include <mkl.h>
 #include <mkl_cblas.h>
 #include <mkl_blas.h>
 #include <mkl_lapack.h>
 #include <mkl_lapacke.h>
-#endif
 
-#ifndef MKL
-#define MKL_INT const int
-#endif
+
 
 typedef struct ipCacheInput {
 	//This should be a constant
@@ -59,12 +56,7 @@ struct ipCacheData * solve(float *A, MKL_INT m, MKL_INT n, float *b)
 	for(i=0;i<m;i++){
 		cblas_sscal(m,(1/s[i]),u+i*m,1);
 	}
-	float * projection;
-	if(n == m){
-		output->projection = NULL;
-	} else {
-		output->projection = calloc(n*n,sizeof(float));
-	}
+
 	 
 	float * solution = calloc(n, sizeof(float));
 	float *c = calloc(n*m , sizeof(float));
@@ -74,7 +66,10 @@ struct ipCacheData * solve(float *A, MKL_INT m, MKL_INT n, float *b)
 	cblas_sgemv (CblasRowMajor, CblasTrans, m, n,1, c, n, b, 1, 0, solution, 1);
 	// Saving the kernel basis from vt
 	if(m<n){
-		cblas_sgemm (CblasRowMajor, CblasTrans, CblasNoTrans, m, m, (n-m), 1, vt+n*m, (n-m), vt+n*m, n, 0, projection, m);
+		output->projection = calloc(n*n,sizeof(float));
+		cblas_sgemm (CblasRowMajor, CblasTrans, CblasNoTrans, m, m, (n-m), 1, vt+n*m, (n-m), vt+n*m, n, 0, output->projection, m);
+	} else {
+		output->projection = NULL;
 	}
 	free(s);
 	free(u);
@@ -85,7 +80,6 @@ struct ipCacheData * solve(float *A, MKL_INT m, MKL_INT n, float *b)
 
 	
 	output->solution = solution;
-	output->projection = projection;
 	return output;
 }
 
@@ -160,6 +154,7 @@ ipCache * allocateCache(nnLayer *layer0, float threshhold)
 	uint keyLen = calcKeyLen(layer0->outDim);
 	cache->bases = createTree(8,keyLen , ipCacheDataCreator, NULL, ipCacheDataDestroy);
 
+	printf("Creating cache of inDim %d and outDim %d with threshhold %f \n", layer0->inDim, layer0->outDim, threshhold);
 	cache->layer0 = layer0;
 	createHPCache(cache);
 	cache->threshold = threshhold;
@@ -168,11 +163,19 @@ ipCache * allocateCache(nnLayer *layer0, float threshhold)
 
 void freeCache(ipCache * cache)
 {
-	freeTree(cache->bases);
-	free(cache->hpOffsetVecs);
-	free(cache->hpNormals);
-	free(cache);
+	if(cache){
+		printf("Cache exists, deallocating\n");
+		freeTree(cache->bases);
+		if(cache->hpOffsetVecs){
+			free(cache->hpOffsetVecs);
+		}
+		if(cache->hpNormals){
+			free(cache->hpNormals);
+		}
+		free(cache);
+	}
 }
+
 
 float computeDist(float * p, uint *ipSignature, ipCache *cache)
 {
@@ -217,7 +220,7 @@ void getInterSig(float *p, uint *ipSignature, ipCache * cache)
 	
 	float *distances = calloc(outDim,sizeof(float));
 	computeDistToHPS(p, cache, distances);
-	uint j = 1, k = 1;
+	uint j = 1;
 	
 	clearKey(ipSignature,cache->bases->keyLength);
 

@@ -1,55 +1,61 @@
 import cython
 import numpy as np
 cimport numpy as np
+from libc.stdlib cimport malloc, free
 
-cdef extern from "../utils/nnLayerUtils.h":
-	ctypedef struct nnLayer:
-		float * A
-		float * b
-		unsigned int inDim
-		unsigned int outdim
-	nnLayer * createLayer(float *A, float *b, uint outDim, uint inDim)
-	void freeLayer(nnLayer * layer)
+include "nnLayerUtilsWrap.pyx"
 
+cdef extern from "../utils/key.h":
+	cdef char compareKey(unsigned int *x, unsigned int *y, unsigned int keyLength)
+	cdef void convertToKey(int * raw, unsigned int *key,unsigned int dataLen)
+	cdef void convertFromKey(unsigned int *key, int * output, unsigned int dataLen)
+	cdef unsigned int calcKeyLen(unsigned int dataLen)
+	cdef void addIndexToKey(unsigned int * key, unsigned int index)
+	cdef unsigned int checkIndex(unsigned int * key, unsigned int index)
+	cdef void clearKey(unsigned int *key, unsigned int keyLength)
+	
 cdef extern from "../utils/ipCalculator.h":
 	ctypedef struct ipCache:
-		nnLayer *layer0;
-		Tree *bases;
-		float *hpOffsetVecs;
-		float *hpNormals;
-		float threshold;
+		pass
 	ipCache * allocateCache(nnLayer *layer0, float threshold)
 	void freeCache(ipCache *cache)
 	void getInterSig(float *p, unsigned int *ipSignature, ipCache * cache)
 
-def calcKeyLen(dataLen):
-	keyLen = (dataLen/32)
-	if(dataLen % 32){
-		keyLen++
-	}
-	return keyLen
+cdef class ipCalculator:
+	cdef ipCache * cache
+	cdef nnLayer * layer
+	cdef unsigned int keyLen
+	def __cinit__(self,np.ndarray[float,ndim=2,mode="c"] A not None, np.ndarray[float,ndim=1,mode="c"] b not None, float threshold):
+		print "Called cinit for ipCalculator"
+		cdef unsigned int outDim = A.shape[0]
+		cdef unsigned int inDim  = A.shape[1]
+		self.layer = createLayer(&A[0,0],&b[0],outDim,inDim)
+		self.cache = allocateCache(self.layer,threshold)
 
-class intersectionPoset:
-	def __cinit__(np.ndarray[float,ndim=2,mode="c"] A not None, np.ndarray[float,ndim=1,mode="c"] b not None, float threshold):
-		cdef unsigned int inDim, outDim
-		outDim,inDim = A.shape[0], A.shape[1]
-		layer = createLayer(&A[0,0],&b[0],outDim,inDim)
-		ipCache * self.cache = allocateCache(layer,threshold)
+		if not self.cache:
+			raise MemoryError()
 
-	def calculate(np.ndarray[float,ndim=1,mode="c"] b not None):
+
+	def calculate(self,np.ndarray[float,ndim=1,mode="c"] b not None):
 		cdef unsigned int dim
 		dim = b.shape[0]
-		unsigned int keyLen = calcKeyLen(dim)
-		cdef unsigned int *ipSignature = <unsigned int *>malloc(keyLen * sizeof(unsigned int))
+		keyLen = calcKeyLen(dim)
+		cdef unsigned int *ipSignature_key = <unsigned int *>malloc(keyLen * sizeof(unsigned int))
+		if not ipSignature_key:
+			raise MemoryError()		
+		cdef int *ipSignature = <int *>malloc(dim * sizeof(unsigned int))
 		if not ipSignature:
-            raise MemoryError()
-
+			raise MemoryError()
 		try:	        
-			getInterSig(&b[0],ipSignature, self.cache)
-	        return [ ipSignature[i] for i in range(number) ]
-	    finally:
-	        # return the previously allocated memory to the system
-	        free(ipSignature)
+			getInterSig(&b[0],ipSignature_key, self.cache)
+			convertFromKey(ipSignature_key, ipSignature, dim)
+			return [ ipSignature[i] for i in range(dim) ]
+		finally:
+			free(ipSignature)
+			free(ipSignature_key)
+
 
 	def __dealloc__(self):
-        freeCache(self.cache) 
+		print "Calling dealloc for ipCalculator"
+		freeCache(self.cache)
+		freeLayer(self.layer)

@@ -145,6 +145,7 @@ int main(int argc, char* argv[])
 	printf("If no faliures are printed then we are fine.\n");
 	nnLayer *layer = createDumbLayer(3,3);
 	ipCache *cache = allocateCache(layer,2);
+	
 
 	uint *ipSignature = malloc(keySize*numData*sizeof(uint));
 	float *data = randomData(dim,numData);

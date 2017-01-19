@@ -1,4 +1,4 @@
-#import "nnLayerUtils.h"
+#include "nnLayerUtils.h"
 #ifdef MKL
 #include <mkl.h>
 #include <mkl_cblas.h>
@@ -20,6 +20,7 @@ nnLayer * createLayer(float * A, float *b, uint inDim, uint outDim)
 	cblas_scopy (outDim, b, 1, layer->b, 1);
 	layer->inDim = inDim;
 	layer->outDim = outDim;
+	return layer;
 }
 
 void freeLayer(nnLayer *layer)
