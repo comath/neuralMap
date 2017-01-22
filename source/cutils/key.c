@@ -74,7 +74,7 @@ void clearKey(uint *key, uint keyLen)
 }
 
 void printKeyArr(uint *key, uint length){
-	int i = 0;
+	uint i = 0;
 	printf("[");
 	for(i=0;i<length;i++){
 		printf("%u,",key[i]);

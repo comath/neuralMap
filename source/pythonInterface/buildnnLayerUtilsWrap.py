@@ -12,7 +12,7 @@ print 'Argument List:', str(sys.argv)
 
 BIN 	= "./build/"
 wrapDir = "./source/pythonInterface/"
-utilsDir 	= "./source/utils/"
+utilsDir 	= "./source/cutils/"
 testDir 	= "./source/test/"
 mklRootDir = "/opt/intel/compilers_and_libraries/linux/mkl"
 

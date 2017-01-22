@@ -1,6 +1,6 @@
 CC = gcc -Wall -Wextra -DMKL
 
-OPT = -O2
+OPT = -O1
 DEBUG = -DDEBUG
 GDB = -g
 
@@ -17,7 +17,7 @@ PYLIBS = $(shell python -c \
 CCFLAGS = $(DEBUG) $(GDB) $(FINAL) $(OPT) $(EXTRA_OPT) 
 BIN=./build/
 WRAP = ./source/pythonInterface/
-UTILS = ./source/utils/
+UTILS = ./source/cutils/
 TEST = ./source/test/
 
 LIB_FLAGS = -ldl -lpthread -lm
@@ -36,7 +36,6 @@ nnLayerUtils.o: $(UTILS)nnLayerUtils.c
 # IP calculator
 ipCalculator.o: $(UTILS)ipCalculator.c  $(UTILS)nnLayerUtils.c $(UTILS)parallelTree.c
 	$(CC) $(CCFLAGS) $(MKLINC) -c $< -o $(BIN)$@
-
 
 #Testing
 ipCalculator_test.o: $(TEST)ipCalculator_test.c $(UTILS)ipCalculator.c $(UTILS)parallelTree.c

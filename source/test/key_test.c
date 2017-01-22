@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../utils/parallelTree.h"
+#include "../cutils/parallelTree.h"
 
 char compareArr(int * x, int * y, int length)
 {
@@ -38,17 +38,6 @@ void printIntArr(int * arr, int numElements){
 	printf("]\n");
 }
 
-
-
-void printKeyArr(uint *key, uint length){
-	int i = 0;
-	printf("[");
-	for(i=0;i<length;i++){
-		printf("%u,",key[i]);
-	}
-	printf("%u", key[length]);
-	printf("]\n");
-}
 
 void printCharArr(char * arr, int numElements){
 	int i = 0;

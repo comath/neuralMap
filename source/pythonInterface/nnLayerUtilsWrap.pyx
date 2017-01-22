@@ -2,7 +2,7 @@ import cython
 import numpy as np
 cimport numpy as np
 
-cdef extern from "../utils/nnLayerUtils.h":
+cdef extern from "../cutils/nnLayerUtils.h":
 	ctypedef struct nnLayer:
 		float * A
 		float * b

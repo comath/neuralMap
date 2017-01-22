@@ -14,7 +14,7 @@ def eprint(*args, **kwargs):
 
 include "nnLayerUtilsWrap.pyx"
 
-cdef extern from "../utils/key.h":
+cdef extern from "../cutils/key.h":
 	cdef char compareKey(unsigned int *x, unsigned int *y, unsigned int keyLength)
 	cdef void convertToKey(int * raw, unsigned int *key,unsigned int dataLen)
 	cdef void convertFromKey(unsigned int *key, int * output, unsigned int dataLen)
@@ -23,7 +23,7 @@ cdef extern from "../utils/key.h":
 	cdef unsigned int checkIndex(unsigned int * key, unsigned int index)
 	cdef void clearKey(unsigned int *key, unsigned int keyLength)
 	
-cdef extern from "../utils/ipCalculator.h":
+cdef extern from "../cutils/ipCalculator.h":
 	ctypedef struct ipCache:
 		pass
 	ipCache * allocateCache(nnLayer *layer0, float threshold)

@@ -1,3 +1,6 @@
+# The full test suite for the ipCalulator. 
+# It's mostly graphical for now, there should be some 
+# higher dimensional tests using the connectivity of the data.
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D

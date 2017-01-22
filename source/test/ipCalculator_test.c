@@ -1,10 +1,11 @@
 /*
-This just tests that there's no race conditions, or memory leaks.
+This just tests that there's no race conditions, or memory leaks. 
+Running Valgrind or gdb on the python wrap leads to a bit more headaches.
 */
 #include <stdio.h>
 #include <stdlib.h>
-#include "../utils/nnLayerUtils.h"
-#include "../utils/ipCalculator.h"
+#include "../cutils/nnLayerUtils.h"
+#include "../cutils/ipCalculator.h"
 
 void printFloatArrNoNewLine(float * arr, int numElements){
 	int i = 0;
@@ -40,7 +41,7 @@ nnLayer *createDumbLayer(uint dim, uint numHP)
 
 void randomizePoint(float *p, uint dim)
 {
-	int i = 0;
+	uint i = 0;
 	for(i=0;i<dim;i++){
 		p[i] = (double)((rand() % 20000) - 10000)/10000;
 	}
@@ -49,14 +50,12 @@ void randomizePoint(float *p, uint dim)
 float * randomData(uint dim, uint numData)
 {
 	float * data = malloc(dim*numData*sizeof(float));
-	int i;
+	uint i;
 	for(i=0;i<numData;i++){
 		randomizePoint(data +dim*i,dim);
 	}
 	return data;
 }
-
-
 
 
 int main(int argc, char* argv[])
@@ -68,7 +67,7 @@ int main(int argc, char* argv[])
 	uint maxThreads = sysconf(_SC_NPROCESSORS_ONLN);
 
 	srand(time(NULL));
-	int i = 0;
+	uint i = 0;
 	printf("If no faliures are printed then we are fine.\n");
 	nnLayer *layer = createDumbLayer(3,3);
 	ipCache *cache = allocateCache(layer,2);

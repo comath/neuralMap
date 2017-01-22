@@ -252,8 +252,8 @@ void getInterSig(ipCache * cache, float *p, uint *ipSignature)
 }
 
 struct dataAddThreadArgs {
-	int tid;
-	int numThreads;
+	uint tid;
+	uint numThreads;
 
 	uint numData;
 	float * data;
@@ -267,8 +267,8 @@ void * addBatch_thread(void *thread_args)
 	struct dataAddThreadArgs *myargs;
 	myargs = (struct dataAddThreadArgs *) thread_args;
 
-	int tid = myargs->tid;	
-	int numThreads = myargs->numThreads;
+	uint tid = myargs->tid;	
+	uint numThreads = myargs->numThreads;
 
 	uint numData = myargs->numData;
 	float *data = myargs->data;
@@ -279,10 +279,9 @@ void * addBatch_thread(void *thread_args)
 	uint dim = cache->layer0->inDim;
 	uint keySize = calcKeyLen(cache->layer0->outDim);
 
-	int i = 0;
-	for(i=tid;i<numData;i=i+numThreads){
-		getInterSig(data+i*dim, ipSignature+i*keySize, cache);
-		
+	uint i = 0;
+	for(i=tid;i<numData;i=i+numThreads){		
+		getInterSig(cache,data+i*dim, ipSignature+i*keySize);
 	}
 	pthread_exit(NULL);
 }
@@ -292,7 +291,7 @@ void getInterSigBatch(ipCache *cache, float *data, uint *ipSignature, uint numDa
 	int maxThreads = numProc;
 	int rc =0;
 	int i =0;
-
+	printf("Number of processors: %d\n",maxThreads);
 	//Add one data to the first node so that we can avoid the race condition.
 	
 
