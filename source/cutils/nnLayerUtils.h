@@ -1,5 +1,6 @@
 #ifndef _nnLayerUtils_h
 #define _nnLayerUtils_h
+
 #ifdef MKL
 #include <mkl.h>
 #include <mkl_cblas.h>
@@ -19,5 +20,6 @@ typedef struct nnLayer {
 nnLayer * createLayer(float *A, float *b, uint outDim, uint inDim);
 void freeLayer(nnLayer * layer);
 void evalLayer(nnLayer * layer, float *x, float *output);
+void printFloatArr(float * arr, uint length);
 
 #endif

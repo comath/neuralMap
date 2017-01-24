@@ -203,7 +203,10 @@ void computeDistToHPS(float *p, ipCache *cache, float *distances)
 	uint inDim = cache->layer0->inDim;
 	float * localCopy = calloc(outDim*inDim,sizeof(float));
 	cblas_scopy (inDim*outDim, cache->hpOffsetVecs, 1, localCopy, 1);
-
+	#ifdef DEBUG
+		printf("Copied over the offset vectors: ");
+		printFloatArr(localCopy,inDim);
+	#endif
 
 	for(uint i =0;i<outDim;++i){
 		cblas_saxpy (inDim,1,p,1,localCopy + i*inDim,1);
@@ -217,27 +220,40 @@ void getInterSig(ipCache * cache, float *p, uint *ipSignature)
 {
 	uint outDim = cache->layer0->outDim;
 	uint inDim = cache->layer0->inDim;
+	uint keyLength = cache->bases->keyLength;
 	
 	float *distances = calloc(outDim,sizeof(float));
 	computeDistToHPS(p, cache, distances);
+	printFloatArr(distances,outDim);
 	uint j = 1;
 	
-	clearKey(ipSignature,cache->bases->keyLength);
+	clearKey(ipSignature,keyLength);
 
 	// Get the distance to the closest hyperplane and blank it from the distance array
 	uint curSmallestIndex = cblas_isamin (outDim, distances, 1);
 	float curDist = distances[curSmallestIndex];
+	#ifdef DEBUG
+		printf("The closest hyperplane is %u and is %f away.\n", curSmallestIndex,curDist);
+	#endif
 	distances[curSmallestIndex] = FLT_MAX;
 	addIndexToKey(ipSignature, curSmallestIndex);
-
+	#ifdef DEBUG
+		printf("After adding index %u the key is now: ", curSmallestIndex);
+		printKeyArr(ipSignature,keyLength);
+	#endif	
 	// Get the distance to the second closest hyperplane and blank it
 	curSmallestIndex = cblas_isamin (outDim, distances, 1);
 	float nextDist = distances[curSmallestIndex];
 	distances[curSmallestIndex] = FLT_MAX;
+	#ifdef DEBUG
+		printf("The second closest hyperplane is %u and is %f away.\n", curSmallestIndex,curDist);
+	#endif
 
 	while(curDist>0 && nextDist < cache->threshold*curDist && j < inDim)
 	{	
-
+		#ifdef DEBUG
+			printf("Adding \n");
+		#endif
 		addIndexToKey(ipSignature, curSmallestIndex);
 		// Prepare for next loop
 		curSmallestIndex = cblas_isamin (outDim, distances, 1);

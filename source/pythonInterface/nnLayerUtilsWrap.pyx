@@ -21,7 +21,7 @@ cdef class neuralLayer:
 		self._c_layer = <nnLayer *>createLayer( <float *> A.data,<float *>  b.data,outDim,inDim)
 
 	def eval(self, np.ndarray[float,ndim=2,mode="c"] x not None):
-		cdef np.ndarray output = np.zeros([self.layer.outDim], dtype=np.float)
+		cdef np.ndarray output = np.zeros([self.layer.outDim], dtype=np.float32)
 		cdef np.ndarray x_c = np.ascontiguousarray(x, dtype=np.float)
 		evalLayer(self._c_layer , <float *> x_c.data, <float *> output.data)
 		return output

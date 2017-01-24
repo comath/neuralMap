@@ -1,4 +1,6 @@
 #include "nnLayerUtils.h"
+#include <stdio.h>
+#include <stdlib.h>
 #ifdef MKL
 #include <mkl.h>
 #include <mkl_cblas.h>
@@ -40,3 +42,14 @@ void evalLayer(nnLayer *layer, float * input, float * output)
 	cblas_scopy (outDim, layer->b, 1, output, 1);
 	cblas_sgemv (CblasRowMajor, CblasTrans, outDim, inDim,1, layer->A, inDim, input, 1, 1, output, 1);
 }
+
+void printFloatArr(float *arr, uint length){
+	uint i = 0;
+	printf("[");
+	for(i=0;i<length;i++){
+		printf("%f,",arr[i]);
+	}	
+	printf("%f", arr[length]);
+	printf("]\n");
+}
+

@@ -8,12 +8,15 @@ from ipCalculatorWrap import ipCalculator
 
 
 
-idMat = np.identity(3,dtype=np.float32)
-zeroVec = np.zeros([3],dtype=np.float32)
+idMat = np.identity(2,dtype=np.float32)
+zeroVec = np.zeros([2],dtype=np.float32)
 ipCalc = ipCalculator(idMat,zeroVec,2)
-print ipCalc.calculate(np.zeros([3],dtype=np.float32))
+print ipCalc.calculate(np.zeros([2],dtype=np.float32)) #Should be 1,1,1
 
-fig = plt.figure()
-ax = fig.add_subplot(111, projection='3d')
 
-ax.scatter(xs, ys, zs, c=c, marker=m)
+mean = [0,0]
+cov = [[1,0],[0,1]]
+data = np.random.multivariate_normal(mean,cov,3).astype(dtype=np.float32)
+
+print ipCalc.batchCalculate(data)
+

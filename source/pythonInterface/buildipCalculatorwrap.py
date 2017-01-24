@@ -8,8 +8,6 @@ import os
 
 import sys
 
-print 'Number of arguments:', len(sys.argv), 'arguments.'
-print 'Argument List:', str(sys.argv)
 
 buildDir 	= "build/"
 wrapDir = "source/pythonInterface/"
@@ -36,10 +34,11 @@ ipCalculatorExt = Extension(name='ipCalculatorWrap',
 						libraries=['mkl_rt',
 									'pthread', 'm', 'dl'],
 						extra_compile_args=[ '-DMKL_ILP64','-DMKL', "-O2", '-m64'],
-						extra_link_args=['-Wl,--no-as-needed']
+						extra_link_args=['-Wl,--no-as-needed'],
+						define_macros=[('DEBUG',None)]
 						)
 
 setup(ext_modules = cythonize(ipCalculatorExt,gdb_debug=True))
 
 
-#os.rename("ipCalculatorWrap.so", testDir+"ipCalculatorWrap.so")
+os.rename("ipCalculatorWrap.so", testDir+"ipCalculatorWrap.so")

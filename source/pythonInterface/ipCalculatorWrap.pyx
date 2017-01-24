@@ -66,7 +66,7 @@ cdef class ipCalculator:
 
 	#Batch calculate, this is multithreaded and you can specify the number of threads you want to use.
 	#It defaults, and takes a maximum of 
-	def calculate(self,np.ndarray[float,ndim=2,mode="c"] data not None, unsigned int numProc=None):
+	def batchCalculate(self,np.ndarray[float,ndim=2,mode="c"] data not None, numProc=None):
 		if numProc == None:
 			numProc = multiprocessing.cpu_count()
 		if numProc > multiprocessing.cpu_count():
@@ -77,18 +77,18 @@ cdef class ipCalculator:
 		dim = data.shape[0]
 		numData = data.shape[1]
 		keyLen = calcKeyLen(dim)
-		cdef unsigned int *ipSignature_key = <unsigned int *>malloc(keyLen * sizeof(unsigned int))
+		cdef unsigned int *ipSignature_key = <unsigned int *>malloc(numData * keyLen * sizeof(unsigned int))
 		if not ipSignature_key:
-			raise MemoryError()		
-		cdef int *ipSignature = <int *>malloc(dim * numData * sizeof(unsigned int))
-		if not ipSignature:
 			raise MemoryError()
+
+		cdef np.ndarray[np.int32_t,ndim=2] ipSignature = np.zeros([dim,numData], dtype=np.int32)
+
+
 		try:	        
 			getInterSigBatch(self.cache,&data[0,0],ipSignature_key, numData, numProc)
-			convertFromKey(ipSignature_key, ipSignature, dim)
-			return [ ipSignature[i] for i in range(dim) ]
+			convertFromKey(ipSignature_key, <int *> ipSignature.data, dim)
+			return ipSignature
 		finally:
-			free(ipSignature)
 			free(ipSignature_key)
 
 
