@@ -24,25 +24,25 @@ typedef struct ipCacheData {
 /*
  This can only handle neural networks whose input dimension is greater than the number of nodes in the first layer
 */
-struct ipCacheData * solve(float *A, MKL_INT m, MKL_INT n, float *b)
+struct ipCacheData * solve(float *A, MKL_INT outDim, MKL_INT inDim, float *b)
 {
-	MKL_INT lda = n;
-	MKL_INT ldu = m;
-	MKL_INT ldvt = n;
 	MKL_INT info;
-	MKL_INT minMN = ((n)>(m)?(m):(n));
-	float superb[minMN-1]; 
+	MKL_INT minMN = ((inDim)>(outDim)?(outDim):(inDim));
+	float *superb = calloc(minMN, sizeof(float)); 
 	/* Local arrays */
-	float *s = calloc(n,sizeof(float));
-	float *u = calloc(ldu*m , sizeof(float));
-	float *vt = calloc(ldvt*n, sizeof(float));
+	float *s = calloc(inDim
+		,sizeof(float));
+	float *u = calloc(outDim*outDim , sizeof(float));
+	float *vt = calloc(inDim*inDim, sizeof(float));
 	struct ipCacheData *output = malloc(sizeof(struct ipCacheData));
 
 
 	/* Executable statements */
-	printf( "LAPACKE_sgesvd (row-major, high-level) Example Program Results\n" );
-	info = LAPACKE_sgesvd( LAPACK_ROW_MAJOR, 'A', 'A', m, n, A, lda,
-		    s, u, ldu, vt, ldvt, superb );
+	info = LAPACKE_sgesvd( LAPACK_ROW_MAJOR, 'A', 'A',
+						  outDim, inDim, A, inDim,
+		    			  s, u, outDim,
+		    			  vt, inDim,
+		    			  superb);
 	// Incase of memory leaks:
 	//mkl_thread_free_buffers();
 	if( info > 0 ) {
@@ -53,21 +53,26 @@ struct ipCacheData * solve(float *A, MKL_INT m, MKL_INT n, float *b)
 
 	// Multiplying Sigma+t with u
 	int i = 0;
-	for(i=0;i<m;i++){
-		cblas_sscal(m,(1/s[i]),u+i*m,1);
+	for(i=0;i<outDim;i++){
+		cblas_sscal(outDim,(1/s[i]),u+i*outDim,1);
 	}
-
-	 
-	float * solution = calloc(n, sizeof(float));
-	float *c = calloc(n*m , sizeof(float));
+		 
+	float * solution = calloc(inDim, sizeof(float));
+	float *c = calloc(inDim*outDim , sizeof(float));
 	// Multiplying u sigma+t with vt
-	cblas_sgemm (CblasRowMajor, CblasNoTrans, CblasNoTrans, m, n, m, 1, u, ldu, vt, ldvt, 0,c, n);
+	cblas_sgemm (CblasRowMajor, CblasNoTrans, CblasNoTrans,
+				outDim, inDim, outDim, 1, u,
+				outDim, vt, inDim,
+				0,c, inDim);
 	// Multiplying v sigma+ u with b for the solution
-	cblas_sgemv (CblasRowMajor, CblasTrans, m, n,1, c, n, b, 1, 0, solution, 1);
+	cblas_sgemv (CblasRowMajor, CblasTrans, outDim, inDim,1, c, inDim, b, 1, 0, solution, 1);
 	// Saving the kernel basis from vt
-	if(m<n){
-		output->projection = calloc(n*n,sizeof(float));
-		cblas_sgemm (CblasRowMajor, CblasTrans, CblasNoTrans, m, m, (n-m), 1, vt+n*m, (n-m), vt+n*m, n, 0, output->projection, m);
+	if(outDim<inDim){
+		output->projection = calloc(inDim*inDim,sizeof(float));
+		cblas_sgemm (CblasRowMajor, CblasTrans, CblasNoTrans,
+					outDim, outDim, (inDim-outDim), 1, vt+inDim*outDim,
+					(inDim-outDim), vt+inDim*outDim, inDim,
+					0, output->projection, outDim);
 	} else {
 		output->projection = NULL;
 	}
@@ -75,11 +80,12 @@ struct ipCacheData * solve(float *A, MKL_INT m, MKL_INT n, float *b)
 	free(u);
 	free(vt);
 	free(c);
+	free(superb);
 	// Incase of memory leaks:
 	//mkl_thread_free_buffers();
 
-	
 	output->solution = solution;
+	
 	return output;
 }
 
@@ -129,9 +135,7 @@ void ipCacheDataDestroy(void * data)
 
 void createHPCache(ipCache *cache)
 {
-	#ifdef DEBUG
-		printf("Setting up hyperplanes\n");
-	#endif
+	
 	uint i = 0;
 	nnLayer *layer0 = cache->layer0;
 	uint inDim = layer0->inDim;
@@ -141,11 +145,32 @@ void createHPCache(ipCache *cache)
 	cache->hpOffsetVecs = calloc(outDim*inDim,sizeof(float));
 
 	float scaling = 1;
+	#ifdef DEBUG
+		printf("--------createHPCache-------------\n");
+		printf("inDim: %u\n", inDim);
+		printf("outDim: %u\n", outDim);
+	#endif
 	for(i=0;i<outDim;i++){
+		#ifdef DEBUG
+			printf("----%u----\n",i);
+			printf("Hyperplane vector: ");
+			printFloatArr(layer0->A + inDim*i,inDim);
+			printf("Offset Value: %f\n",layer0->b[i]);			
+		#endif
 		scaling = cblas_snrm2 (inDim, layer0->A + inDim*i, 1);
-		cblas_saxpy (inDim,1/scaling,layer0->A+inDim*i,0,cache->hpNormals + inDim*i,1);
-		cblas_saxpy (inDim,layer0->b[i]/scaling,cache->hpNormals+inDim*i,0,cache->hpOffsetVecs + inDim*i,1);
+		cblas_saxpy (inDim,1/scaling,layer0->A + inDim*i,1,cache->hpNormals + inDim*i,1);
+		cblas_saxpy (inDim,layer0->b[i]/scaling,cache->hpNormals+inDim*i,1,cache->hpOffsetVecs + inDim*i,1);
+		#ifdef DEBUG
+			printf("Scaling factor (norm of hyperplane vector): %f\n",scaling);
+			printf("Normalized normal vector: ");
+			printFloatArr(cache->hpNormals + i*inDim,inDim);
+			printf("Offset vector: ");
+			printFloatArr(cache->hpOffsetVecs+ i*inDim,inDim);
+		#endif
 	}
+	#ifdef DEBUG
+		printf("---------------------------------\n");
+	#endif
 }
 
 ipCache * allocateCache(nnLayer *layer0, float threshhold)
@@ -155,9 +180,22 @@ ipCache * allocateCache(nnLayer *layer0, float threshhold)
 	cache->bases = createTree(8,keyLen , ipCacheDataCreator, NULL, ipCacheDataDestroy);
 
 	printf("Creating cache of inDim %d and outDim %d with threshhold %f \n", layer0->inDim, layer0->outDim, threshhold);
+	#ifdef DEBUG
+		printf("-----------------allocateCache--------------------\n");
+		printf("The matrix is: \n");
+		uint i =0;
+		for(i=0;i<layer0->outDim;i++){
+			printFloatArr(layer0->A + layer0->inDim*i,layer0->inDim);
+		}
+		printf("The offset vector is: ");
+		printFloatArr(layer0->b, layer0->outDim);
+	#endif
 	cache->layer0 = layer0;
 	createHPCache(cache);
 	cache->threshold = threshhold;
+	#ifdef DEBUG
+		printf("--------------------------------------------------\n");
+	#endif
 	return cache;
 }
 
@@ -190,6 +228,9 @@ float computeDist(float * p, uint *ipSignature, ipCache *cache)
 		cblas_saxpy (inDim,1,myBasis->solution,1,px,1);
 		cblas_sgemv (CblasRowMajor, CblasNoTrans, inDim, inDim,-1,myBasis->projection, inDim, px, 1, 1, px, 1);
 		float norm = cblas_snrm2 (inDim, px, 1);
+		if(norm < 0){
+			norm = -norm;
+		}
 		free(px);
 		return norm;
 	} else {
@@ -203,15 +244,37 @@ void computeDistToHPS(float *p, ipCache *cache, float *distances)
 	uint inDim = cache->layer0->inDim;
 	float * localCopy = calloc(outDim*inDim,sizeof(float));
 	cblas_scopy (inDim*outDim, cache->hpOffsetVecs, 1, localCopy, 1);
+	
 	#ifdef DEBUG
-		printf("Copied over the offset vectors: ");
-		printFloatArr(localCopy,inDim);
+		printf("--------computeDistToHPS---------\n");
 	#endif
-
 	for(uint i =0;i<outDim;++i){
+		#ifdef DEBUG
+			printf("----%d----\n",i);
+			printf("Point were taking the distance to: ");
+			printFloatArr(p,inDim);
+			printf("Copied over the offset vectors: ");
+			printFloatArr(localCopy + i*inDim,inDim);
+			printf("Original offset vectors: ");
+			printFloatArr(cache->hpOffsetVecs+ i*inDim,inDim);
+			printf("Normal Vectors: ");
+			printFloatArr(cache->hpNormals + i*inDim,inDim);
+		#endif
 		cblas_saxpy (inDim,1,p,1,localCopy + i*inDim,1);
 		distances[i] = cblas_sdot (inDim, localCopy + i*inDim, 1, cache->hpNormals + i*inDim, 1);
+		if(distances[i] < 0){
+			distances[i] = -distances[i];
+		}
+		#ifdef DEBUG
+			printf("p + offset vector: ");
+			printFloatArr(localCopy+i*inDim,inDim);
+			printf("Final distance (normal dotted with p+offset): %f \n",distances[i]);
+			printf("---------\n");
+		#endif
 	}
+	#ifdef DEBUG
+		printf("---------------------------------\n");
+	#endif
 	free(localCopy);
 }
 
@@ -228,6 +291,10 @@ void getInterSig(ipCache * cache, float *p, uint *ipSignature)
 	uint j = 1;
 	
 	clearKey(ipSignature,keyLength);
+	#ifdef DEBUG
+		printf("Aquiring the ipSignature of ");
+		printFloatArr(p,inDim);
+	#endif
 
 	// Get the distance to the closest hyperplane and blank it from the distance array
 	uint curSmallestIndex = cblas_isamin (outDim, distances, 1);

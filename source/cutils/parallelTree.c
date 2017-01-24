@@ -117,7 +117,7 @@ void * addData(Tree *tree, uint * key, void * datum){
 	}
 
 	pthread_spin_lock(&(node->dataspinlock));
-		if(node->dataPointer){
+		if(tree->dataModifier){
 			tree->dataModifier(datum,node->dataPointer);
 			node->dataModifiedCount++;
 		}		

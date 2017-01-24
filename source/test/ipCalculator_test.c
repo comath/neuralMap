@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
 
 	printf("Calculating the signature of Points\n");
 
-	getInterSigBatch(cache, data, ipSignature, numData, maxThreads);
+	getInterSigBatch(cache, data, ipSignature, numData, 1);
 
 	for(i = 0; i < numData; i++){
 		printFloatArrNoNewLine(data+i*dim,dim);

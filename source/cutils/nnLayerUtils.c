@@ -46,10 +46,10 @@ void evalLayer(nnLayer *layer, float * input, float * output)
 void printFloatArr(float *arr, uint length){
 	uint i = 0;
 	printf("[");
-	for(i=0;i<length;i++){
+	for(i=0;i<length-1;i++){
 		printf("%f,",arr[i]);
 	}	
-	printf("%f", arr[length]);
+	printf("%f", arr[length-1]);
 	printf("]\n");
 }
 
