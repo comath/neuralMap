@@ -53,3 +53,11 @@ void printFloatArr(float *arr, uint length){
 	printf("]\n");
 }
 
+void printMatrix(float *arr, uint inDim, uint outDim){
+	uint i = 0;
+	for(i=0;i<outDim;i++){
+		printFloatArr(arr + inDim*i,inDim);
+	}
+}
+	
+

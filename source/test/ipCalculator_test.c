@@ -61,15 +61,15 @@ float * randomData(uint dim, uint numData)
 int main(int argc, char* argv[])
 {
 	uint dim = 3;
-	uint numHP = 3;
-	uint numData = 100;
+	uint numHP = 4;
+	uint numData = 5;
 	uint keySize = calcKeyLen(numHP);
 	uint maxThreads = sysconf(_SC_NPROCESSORS_ONLN);
 
 	srand(time(NULL));
 	uint i = 0;
 	printf("If no faliures are printed then we are fine.\n");
-	nnLayer *layer = createDumbLayer(3,3);
+	nnLayer *layer = createDumbLayer(dim,numHP);
 	ipCache *cache = allocateCache(layer,2);
 	
 

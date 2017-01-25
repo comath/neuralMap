@@ -28,15 +28,7 @@ int * createRandomBinaryArray(int numElements)
 	return randArr;
 }
 
-void printIntArr(int * arr, int numElements){
-	int i = 0;
-	printf("[");
-	for(i=0;i<numElements-1;i++){
-		printf("%u,",arr[i]);
-	}
-	printf("%d", arr[numElements-1]);
-	printf("]\n");
-}
+
 
 
 void printCharArr(char * arr, int numElements){
@@ -108,6 +100,27 @@ void testRebuildKey()
 	free(testKey);
 }
 
+void testChromaticKey()
+{
+	int arrLength = 30;
+	int *arr = createRandomBinaryArray(arrLength);
+	uint keyLen = calcKeyLen(arrLength);
+	uint *testKey = malloc(keyLen*sizeof(uint));
+	convertToKey(arr,testKey,arrLength);
+
+	float rgb[3];
+	chromaticKey(testKey, rgb, arrLength);
+	float curthreshold = 128;
+	int i = 0;
+	for(i=0;i<arrLength;i++){
+		curthreshold = 256.0f / (1 << (i/3 + 1));
+		//printf("Current Threshold: %f\n", curthreshold);
+		if( 256.0f*rgb[i%3] < curthreshold && arr[i]){
+			printf("Faliure\n");
+		}
+	}
+}
+
 int main(int argc, char* argv[])
 {
 	srand(time(NULL));
@@ -119,6 +132,8 @@ int main(int argc, char* argv[])
 	testCompareKey();
 	for(i=0;i<100;i++){	testCompareKey(); }
 	printf("testRebuildKey:\n");
-	for(i=0;i<100;i++){	testRebuildKey(); } 
+	for(i=0;i<100;i++){	testRebuildKey(); }
+	printf("testChromaticKey:\n");
+	for(i=0;i<100;i++){ testChromaticKey(); }
 	return 0;
 }

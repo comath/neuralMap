@@ -21,5 +21,6 @@ nnLayer * createLayer(float *A, float *b, uint outDim, uint inDim);
 void freeLayer(nnLayer * layer);
 void evalLayer(nnLayer * layer, float *x, float *output);
 void printFloatArr(float * arr, uint length);
+void printMatrix(float * arr, uint inDim, uint outDim);
 
 #endif

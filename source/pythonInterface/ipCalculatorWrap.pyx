@@ -18,10 +18,15 @@ cdef extern from "../cutils/key.h":
 	cdef char compareKey(unsigned int *x, unsigned int *y, unsigned int keyLength)
 	cdef void convertToKey(int * raw, unsigned int *key,unsigned int dataLen)
 	cdef void convertFromKey(unsigned int *key, int * output, unsigned int dataLen)
+
+	cdef void batchConvertToKey(int * raw, unsigned int *key,unsigned int dataLen, unsigned int numData)
+	cdef void batchConvertFromKey(unsigned int *key, int * output, unsigned int dataLen,unsigned int numData)
+
 	cdef unsigned int calcKeyLen(unsigned int dataLen)
 	cdef void addIndexToKey(unsigned int * key, unsigned int index)
 	cdef unsigned int checkIndex(unsigned int * key, unsigned int index)
 	cdef void clearKey(unsigned int *key, unsigned int keyLength)
+	cdef void printKeyArr(unsigned int *key, unsigned int length)
 	
 cdef extern from "../cutils/ipCalculator.h":
 	ctypedef struct ipCache:
@@ -86,7 +91,7 @@ cdef class ipCalculator:
 
 		try:	        
 			getInterSigBatch(self.cache,&data[0,0],ipSignature_key, numData, numProc)
-			convertFromKey(ipSignature_key, <int *> ipSignature.data, dim)
+			batchConvertFromKey(ipSignature_key, <int *> ipSignature.data, dim,numData)
 			return ipSignature
 		finally:
 			free(ipSignature_key)

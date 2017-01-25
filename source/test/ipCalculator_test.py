@@ -8,17 +8,19 @@ from ipCalculatorWrap import ipCalculator
 
 
 
-idMat = 2*np.identity(2,dtype=np.float32)
-originVec = np.zeros([2],dtype=np.float32)
+idMat = 2*np.identity(3,dtype=np.float32)
+originVec = np.zeros([3],dtype=np.float32)
 originVec[0] = 1
 originVec[1] = 1
 ipCalc = ipCalculator(idMat,originVec,2)
-print ipCalc.calculate(np.zeros([2],dtype=np.float32)) #Should be 1,1,1
+
+print ipCalc.calculate(np.zeros([3],dtype=np.float32)) #Should be 1,1,1
 
 
 mean = originVec
 cov = idMat
 data = np.random.multivariate_normal(mean,cov,3).astype(dtype=np.float32)
 
+print data
 print ipCalc.batchCalculate(data,1)
 
