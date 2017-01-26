@@ -110,15 +110,23 @@ void testChromaticKey()
 
 	float rgb[3];
 	chromaticKey(testKey, rgb, arrLength);
-	float curthreshold = 128;
+	float curthreshold = ;1
 	int i = 0;
 	for(i=0;i<arrLength;i++){
-		curthreshold = 256.0f / (1 << (i/3 + 1));
-		//printf("Current Threshold: %f\n", curthreshold);
-		if( 256.0f*rgb[i%3] < curthreshold && arr[i]){
-			printf("Faliure\n");
+		curthreshold = 1.0f / (1 << (i/3 + 1));
+		if( (rgb[i%3] >= curthreshold) ){
+			rgb[i%3] = rgb[i%3] - curthreshold;
 		}
 	}
+	if( rgb[0] ){
+		printf("Red Faliure\n");
+	}
+	if( rgb[1] ){
+		printf("Green Faliure\n");
+	} 
+	if( rgb[2] ){
+		printf("Blue Faliure\n");
+	} 
 }
 
 int main(int argc, char* argv[])

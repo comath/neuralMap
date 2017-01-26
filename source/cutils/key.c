@@ -124,9 +124,9 @@ void chromaticKey(uint* key, float *rgb, uint dataLen)
 	uint i = 0;
 	for(i =0;i<dataLen;i++){
 		if(checkIndex(key,i)){
-			if(i % 3 == 0){ rgb[0]+= 256.0f/ (1 << (int)(i/3+1)); }
-			if(i % 3 == 1){ rgb[1]+= 256.0f/ (1 << (int)(i/3+1)); }
-			if(i % 3 == 2){ rgb[2]+= 256.0f/ (1 << (int)(i/3+1)); }
+			if(i % 3 == 0){ rgb[0]+= 1.0f/ (1 << (int)(i/3+1)); }
+			if(i % 3 == 1){ rgb[1]+= 1.0f/ (1 << (int)(i/3+1)); }
+			if(i % 3 == 2){ rgb[2]+= 1.0f/ (1 << (int)(i/3+1)); }
 		}		
 	}
 }

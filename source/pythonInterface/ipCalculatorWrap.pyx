@@ -44,7 +44,6 @@ cdef class ipCalculator:
 	cdef nnLayer * layer
 	cdef unsigned int keyLen
 	def __cinit__(self,np.ndarray[float,ndim=2,mode="c"] A not None, np.ndarray[float,ndim=1,mode="c"] b not None, float threshold):
-		print("Called cinit for ipCalculator")
 		cdef unsigned int outDim = A.shape[0]
 		cdef unsigned int inDim  = A.shape[1]
 		self.layer = createLayer(&A[0,0],&b[0],outDim,inDim)
@@ -125,14 +124,14 @@ cdef class ipCalculator:
 			numProc = multiprocessing.cpu_count()
 
 		cdef unsigned int dim
-		dim = data.shape[0]
-		numData = data.shape[1]
+		dim = data.shape[1]
+		numData = data.shape[0]
 		keyLen = calcKeyLen(dim)
 		cdef unsigned int *ipSignature_key = <unsigned int *>malloc(numData * keyLen * sizeof(unsigned int))
 		if not ipSignature_key:
 			raise MemoryError()
 
-		cdef np.ndarray[np.int32_t,ndim=2] chromaipSignature = np.zeros([3,numData], dtype=np.float32)
+		cdef np.ndarray[np.float32_t,ndim=2] chromaipSignature = np.zeros([numData,3], dtype=np.float32)
 
 
 		try:	        

@@ -239,7 +239,7 @@ ipCache * allocateCache(nnLayer *layer0, float threshhold)
 void freeCache(ipCache * cache)
 {
 	if(cache){
-		printf("Cache exists, deallocating\n");
+		//printf("Cache exists, deallocating\n");
 		freeTree(cache->bases);
 		if(cache->hpOffsetVecs){
 			free(cache->hpOffsetVecs);
@@ -450,7 +450,7 @@ void getInterSigBatch(ipCache *cache, float *data, uint *ipSignature, uint numDa
 	int maxThreads = numProc;
 	int rc =0;
 	int i =0;
-	printf("Number of processors: %d\n",maxThreads);
+	//printf("Number of processors: %d\n",maxThreads);
 	//Add one data to the first node so that we can avoid the race condition.
 	
 
