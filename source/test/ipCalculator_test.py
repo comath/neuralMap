@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from ipCalculatorWrap import ipCalculator
 
-numData = 500
+numData = 50
 dim = 3
 threshhold = 2
 
@@ -25,7 +25,7 @@ data = np.random.multivariate_normal(mean,cov,numData).astype(dtype=np.float32)
 
 
 chromaSig = ipCalc.batchChromaCalculate(data)
-print chromaSig[0]
+print chromaSig
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
