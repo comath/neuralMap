@@ -15,6 +15,7 @@
 
 nnLayer * createLayer(float * A, float *b, uint inDim, uint outDim)
 {
+	//Allocating A and b together
 	nnLayer * layer = malloc(sizeof(nnLayer));
 	layer->A = malloc((inDim*outDim + outDim)*sizeof(float));
 	layer->b = layer->A + inDim*outDim;
@@ -25,8 +26,14 @@ nnLayer * createLayer(float * A, float *b, uint inDim, uint outDim)
 	return layer;
 }
 
-void freeLayer(nnLayer *layer)
+nnLayer * copyLayer(nnLayer *inputLayer)
 {
+	return createLayer(inputLayer->A, inputLayer->b, inputLayer->inDim, inputLayer->outDim);
+}
+
+void freeLayer(nnLayer *layer)
+{	
+	//As we allocated A and b together there needs to only be 1 free operation, not 2
 	if(layer){
 		if(layer->A){
 			free(layer->A);

@@ -19,9 +19,11 @@ void batchConvertFromKey(uint *key, int * output, uint dataLen,uint numData);
 void batchChromaticKey(uint* key, float *rgb, uint dataLen, uint numData);
 
 uint calcKeyLen(uint dataLen);
+
 void addIndexToKey(uint * key, uint index);
 uint checkIndex(uint * key, uint index);
 void clearKey(uint *key, uint keyLength);
+
 void printKeyArr(uint *key, uint length);
 void printKey(uint* key, uint dataLen);
 

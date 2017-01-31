@@ -13,23 +13,8 @@ def eprint(*args, **kwargs):
 	print(*args, file=sys.stderr, **kwargs)
 
 include "nnLayerUtilsWrap.pyx"
+include "keyWrap.pyx"
 
-cdef extern from "../cutils/key.h":
-	cdef char compareKey(unsigned int *x, unsigned int *y, unsigned int keyLength)
-	
-	cdef void convertToKey(int * raw, unsigned int *key,unsigned int dataLen)
-	cdef void convertFromKey(unsigned int *key, int * output, unsigned int dataLen)
-	cdef void chromaticKey(unsigned int* key, float *rgb, unsigned int dataLen)
-
-	cdef void batchConvertToKey(int * raw, unsigned int *key,unsigned int dataLen, unsigned int numData)
-	cdef void batchConvertFromKey(unsigned int *key, int * output, unsigned int dataLen,unsigned int numData)
-	cdef void batchChromaticKey(unsigned int* key, float *rgb, unsigned int dataLen, unsigned int numData)
-
-	cdef unsigned int calcKeyLen(unsigned int dataLen)
-	cdef void addIndexToKey(unsigned int * key, unsigned int index)
-	cdef unsigned int checkIndex(unsigned int * key, unsigned int index)
-	cdef void clearKey(unsigned int *key, unsigned int keyLength)
-	cdef void printKeyArr(unsigned int *key, unsigned int length)
 	
 cdef extern from "../cutils/ipCalculator.h":
 	ctypedef struct ipCache:
@@ -89,6 +74,8 @@ cdef class ipCalculator:
 			raise MemoryError()
 
 		cdef np.ndarray[np.int32_t,ndim=2] ipSignature = np.zeros([dim,numData], dtype=np.int32)
+		print(ipSignature.shape[0])
+		print(ipSignature.shape[1])
 
 
 		try:	        

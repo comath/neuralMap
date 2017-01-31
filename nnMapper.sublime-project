@@ -1,0 +1,27 @@
+{
+	"folders":
+	[
+		{
+			"path": "."
+		},
+		{
+			"path": "source"
+		},
+		{
+			"path": "source/pythonInterface"
+		},
+		{
+			"path": "source/test"
+		},
+		{
+			"path": "source/cutils"
+		}
+	],
+	"settings":
+	{
+		"env":
+		{
+			"LD_LIBRARY_PATH": "/opt/intel/compilers_and_libraries/linux/mkl/lib/intel64:/opt/intel/compilers_and_libraries/linux/lib/intel64_lin"
+		}
+	}
+}

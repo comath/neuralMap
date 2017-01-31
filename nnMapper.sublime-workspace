@@ -1,0 +1,1565 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"po",
+				"possibleSigs"
+			],
+			[
+				"con",
+				"convertToRGB"
+			],
+			[
+				"ca",
+				"cache"
+			],
+			[
+				"lo",
+				"locationTree"
+			],
+			[
+				"la",
+				"layer0"
+			],
+			[
+				"nn",
+				"nnMap"
+			],
+			[
+				"in",
+				"inputLayer"
+			],
+			[
+				"ip",
+				"ipCache"
+			],
+			[
+				"mapp",
+				"mapperDataDestroy"
+			],
+			[
+				"mapper",
+				"mapperDataCreator"
+			],
+			[
+				"th",
+				"threshhold"
+			],
+			[
+				"test",
+				"testChromaticKey"
+			],
+			[
+				"arr",
+				"arrLength"
+			],
+			[
+				"next",
+				"nextDist"
+			],
+			[
+				"cur",
+				"curDist"
+			],
+			[
+				"print",
+				"printf\tprintf …"
+			],
+			[
+				"pri",
+				"printf\tprintf …"
+			],
+			[
+				"pr",
+				"printKeyArr"
+			],
+			[
+				"key",
+				"keyLength"
+			],
+			[
+				"prin",
+				"printKeyArr"
+			],
+			[
+				"ke",
+				"keyLen"
+			],
+			[
+				"num",
+				"numData"
+			],
+			[
+				"if",
+				"ifdef"
+			],
+			[
+				"hp",
+				"hpOffsetVecs"
+			],
+			[
+				"cb",
+				"cblas_scopy"
+			],
+			[
+				"sub",
+				"subB"
+			],
+			[
+				"v",
+				"vt"
+			],
+			[
+				"out",
+				"outDim"
+			],
+			[
+				"ky",
+				"keyLength"
+			],
+			[
+				"cu",
+				"curSmallestIndex"
+			],
+			[
+				"p",
+				"printf\tprintf …"
+			],
+			[
+				"int",
+				"int32"
+			],
+			[
+				"nu",
+				"numData"
+			],
+			[
+				"ma",
+				"maxThreads"
+			],
+			[
+				"er",
+				"eprint"
+			],
+			[
+				"mk",
+				"mklLibDir"
+			],
+			[
+				"mkl",
+				"mklRootDir"
+			],
+			[
+				"ut",
+				"utilsDir"
+			],
+			[
+				"cython",
+				"cythonize"
+			],
+			[
+				"e",
+				"evalLayer"
+			],
+			[
+				"nd",
+				"ndarray"
+			],
+			[
+				"Ou",
+				"outDim"
+			],
+			[
+				"fre",
+				"freeCache"
+			],
+			[
+				"cal",
+				"calcKeyLen"
+			],
+			[
+				"ipCa",
+				"ipCalculator"
+			],
+			[
+				"siz",
+				"keySize"
+			],
+			[
+				"m",
+				"myargs"
+			],
+			[
+				"ra",
+				"randomData"
+			],
+			[
+				"layr",
+				"layer0"
+			],
+			[
+				"data",
+				"dataPointer"
+			],
+			[
+				"MKL",
+				"MKL_INT"
+			],
+			[
+				"MK",
+				"MKL_INT"
+			],
+			[
+				"li",
+				"linearAlgebra"
+			],
+			[
+				"pa",
+				"paralleltree_test"
+			],
+			[
+				"Tes",
+				"testRebuildKey"
+			],
+			[
+				"te",
+				"testKey"
+			],
+			[
+				"re",
+				"RecreateArr"
+			],
+			[
+				"DA",
+				"DATASIZE"
+			],
+			[
+				"tes",
+				"testKey"
+			],
+			[
+				"com",
+				"compareArr"
+			],
+			[
+				"t",
+				"testKey2"
+			],
+			[
+				"c",
+				"convertFromKey"
+			],
+			[
+				"DATA",
+				"DATASIZE"
+			],
+			[
+				"de",
+				"define"
+			],
+			[
+				"ar",
+				"arrLength"
+			],
+			[
+				"my",
+				"myInput"
+			],
+			[
+				"big",
+				"bigspinlock"
+			],
+			[
+				"dat",
+				"dataInput"
+			],
+			[
+				"ret",
+				"returnArr"
+			],
+			[
+				"val",
+				"value"
+			],
+			[
+				"da",
+				"dataInput"
+			],
+			[
+				"n",
+				"numElements"
+			],
+			[
+				"error",
+				"errorCount"
+			],
+			[
+				"tot",
+				"totalValue"
+			],
+			[
+				"to",
+				"totalCount"
+			],
+			[
+				"total",
+				"totalCount"
+			],
+			[
+				"no",
+				"numToAdd"
+			],
+			[
+				"tr",
+				"treeDepth"
+			],
+			[
+				"a",
+				"allocateTree"
+			],
+			[
+				"par",
+				"parentNode"
+			],
+			[
+				"thre",
+				"thread_args"
+			],
+			[
+				"vec",
+				"vector"
+			],
+			[
+				"pthe",
+				"pthread_spinlock_t"
+			],
+			[
+				"i",
+				"include"
+			],
+			[
+				"tre",
+				"treeDepth"
+			],
+			[
+				"Tree",
+				"TreeNode"
+			],
+			[
+				"Tr",
+				"treeDepth"
+			],
+			[
+				"tree",
+				"treeDepth"
+			],
+			[
+				"mu",
+				"muttarr"
+			],
+			[
+				"ve",
+				"vectorAddThreadArgs"
+			],
+			[
+				"rand",
+				"randArr"
+			],
+			[
+				"ran",
+				"randArr"
+			],
+			[
+				"ther",
+				"thread_args"
+			],
+			[
+				"node",
+				"nodeBig"
+			],
+			[
+				"sma",
+				"smallNode"
+			],
+			[
+				"pthread",
+				"pthread_mutex_t"
+			],
+			[
+				"pth",
+				"pthread_mutex_t"
+			],
+			[
+				"resha",
+				"reshapedInputs"
+			],
+			[
+				"inp",
+				"inputs"
+			],
+			[
+				"ou",
+				"outputLayer"
+			],
+			[
+				"lay",
+				"layer2"
+			],
+			[
+				"hi",
+				"hiddenDim2"
+			],
+			[
+				"sig",
+				"sigmoidalLayer"
+			],
+			[
+				"si",
+				"sigmoidalLayer"
+			],
+			[
+				"rank",
+				"rankRange"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "source/cutils/ipCalculator.h",
+			"settings":
+			{
+				"buffer_size": 667,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "source/cutils/ipCalculator.c",
+			"settings":
+			{
+				"buffer_size": 13804,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "source/cutils/mapper.h",
+			"settings":
+			{
+				"buffer_size": 889,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "source/cutils/mapper.c",
+			"settings":
+			{
+				"buffer_size": 1422,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "source/cutils/parallelTree.c",
+			"settings":
+			{
+				"buffer_size": 5093,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "source/cutils/key.c",
+			"settings":
+			{
+				"buffer_size": 2607,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "nnMapper.sublime-project",
+			"settings":
+			{
+				"buffer_size": 364,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "source/test/ipCalculator_test.c",
+			"settings":
+			{
+				"buffer_size": 2040,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/home/sven/Downloads/buttons.py",
+			"settings":
+			{
+				"buffer_size": 895,
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "source/pythonInterface/keyWrap.pyx",
+			"settings":
+			{
+				"buffer_size": 1673,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "source/pythonInterface/ipCalculatorWrap.pyx",
+			"settings":
+			{
+				"buffer_size": 4456,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "source/cutils/key.h",
+			"settings":
+			{
+				"buffer_size": 834,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "source/test/key_test.c",
+			"settings":
+			{
+				"buffer_size": 2933,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "source/cutils/nnLayerUtils.h",
+			"settings":
+			{
+				"buffer_size": 534,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "source/cutils/nnLayerUtils.c",
+			"settings":
+			{
+				"buffer_size": 1548,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "source/pythonInterface/buildipCalculatorwrap.py",
+			"settings":
+			{
+				"buffer_size": 1333,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "makefile",
+			"settings":
+			{
+				"buffer_size": 2112,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "/home/sven/Downloads/scatter3d_demo.py",
+			"settings":
+			{
+				"buffer_size": 923,
+				"line_ending": "Unix"
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+		[
+			[
+				[
+					"Packages/LaTeXTools/LaTeX.sublime-build",
+					""
+				],
+				[
+					"Packages/LaTeXTools/LaTeX.sublime-build",
+					"Traditional"
+				],
+				[
+					"Packages/LaTeXTools/LaTeX.sublime-build",
+					"PdfLaTeX"
+				],
+				[
+					"Packages/LaTeXTools/LaTeX.sublime-build",
+					"XeLaTeX"
+				],
+				[
+					"Packages/LaTeXTools/LaTeX.sublime-build",
+					"LuaLaTeX"
+				],
+				[
+					"Packages/LaTeXTools/LaTeX.sublime-build",
+					"Basic Builder"
+				],
+				[
+					"Packages/LaTeXTools/LaTeX.sublime-build",
+					"Basic Builder - PdfLaTeX"
+				],
+				[
+					"Packages/LaTeXTools/LaTeX.sublime-build",
+					"Basic Builder - XeLaTeX"
+				],
+				[
+					"Packages/LaTeXTools/LaTeX.sublime-build",
+					"Basic Builder - LuaLaTeX"
+				],
+				[
+					"Packages/LaTeXTools/LaTeX.sublime-build",
+					"Script Builder"
+				]
+			],
+			[
+				"Packages/LaTeXTools/LaTeX.sublime-build",
+				""
+			]
+		],
+		[
+			[
+				[
+					"Packages/Makefile/Make.sublime-build",
+					""
+				],
+				[
+					"Packages/Makefile/Make.sublime-build",
+					"Clean"
+				],
+				[
+					"Packages/Python/Python.sublime-build",
+					""
+				],
+				[
+					"Packages/Python/Python.sublime-build",
+					"Syntax Check"
+				]
+			],
+			[
+				"Packages/Python/Python.sublime-build",
+				""
+			]
+		],
+		[
+			[
+				[
+					"Packages/Python/Python.sublime-build",
+					""
+				],
+				[
+					"Packages/Python/Python.sublime-build",
+					"Syntax Check"
+				]
+			],
+			[
+				"Packages/Python/Python.sublime-build",
+				""
+			]
+		]
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 174.0,
+		"last_filter": "instal",
+		"selected_items":
+		[
+			[
+				"instal",
+				"Package Control: Install Package"
+			],
+			[
+				"isntal",
+				"Install Package Control"
+			]
+		],
+		"width": 414.0
+	},
+	"console":
+	{
+		"height": 126.0,
+		"history":
+		[
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/home/sven/code/nnMapper",
+		"/home/sven/code/nnMapper/build",
+		"/home/sven/code/nnMapper/source",
+		"/home/sven/code/nnMapper/source/cutils",
+		"/home/sven/code/nnMapper/source/pythonInterface",
+		"/home/sven/code/nnMapper/source/test",
+		"/home/sven/code/nnMapper/source"
+	],
+	"file_history":
+	[
+		"/home/sven/code/nnMapper/log.txt",
+		"/home/sven/code/nnMapper/source/test/ipCalculator_test.py",
+		"/home/sven/code/nnMapper/source/test/ipCalculator_test.c",
+		"/home/sven/code/shuffleperiod.py",
+		"/home/sven/code/nnMapper/source/test/key_test.c",
+		"/home/sven/bvlc.prototext",
+		"/home/sven/code/nnMapper/source/cutils/nnLayerUtils.c",
+		"/home/sven/code/nnMapper/source/cutils/ipCalculator.c",
+		"/home/sven/code/nnMapper/source/utils/key.c",
+		"/home/sven/code/nnMapper/source/utils/key.h",
+		"/home/sven/code/nnMapper/source/cutils/key.c",
+		"/home/sven/code/nnMapper/source/pythonInterface/buildnnLayerUtilsWrap.py",
+		"/home/sven/code/nnMapper/source/pythonInterface/buildipCalculatorwrap.py",
+		"/home/sven/code/nnMapper/source/pythonInterface/nnLayerUtilsWrap.pyx",
+		"/home/sven/code/nnMapper/source/pythonInterface/ipCalculatorWrap.pyx",
+		"/home/sven/code/nnMapper/source/test/parallelTree_test.c",
+		"/home/sven/code/nnMapper/source/pythonInterface/ipCalculatorWrap.c",
+		"/home/sven/code/nnMapper/source/utils/ipCalculator.h",
+		"/home/sven/code/nnMapper/source/utils/ipCalculator.c",
+		"/home/sven/code/nnMapper/source/test/buildipCalculatorwrap.py",
+		"/home/sven/code/nnMapper/source/test/buildnnLayerUtilsWrap.py",
+		"/home/sven/code/enryptclass.py",
+		"/home/sven/code/nnMapper/source/pythonInterface/nnLayerUtils.pyx",
+		"/home/sven/code/nnMapper/buildWrappers.py",
+		"/home/sven/Downloads/gap4r8/bin/gap.sh",
+		"/home/sven/code/personalSite/wordpress.txt",
+		"/home/sven/code/autoRip.sh",
+		"/home/sven/code/tfexperiments/rbm.py",
+		"/home/sven/Documents/resume.pdf",
+		"/home/sven/code/nnMapper/source/utils/linearAlgebra_test.c",
+		"/home/sven/code/nnMapper/source/test/linAlg_test.c",
+		"/home/sven/code/nnMapper/source/utils/linAlgMKL.c",
+		"/home/sven/code/nnMapper/source/utils/linearAlgebra.h",
+		"/home/sven/code/nnMapper/source/utils/linearAlgebra.c",
+		"/home/sven/pfSense-udp-1194-sven/pfSense-udp-1194-sven.ovpn",
+		"/media/sven/SIMON/readme.txt",
+		"/home/sven/.abcde.conf",
+		"/opt/intel/compilers_and_libraries_2017/linux/bin/compilervars.csh",
+		"/opt/intel/compilers_and_libraries_2017/linux/bin/compilervars.sh",
+		"/run/user/1000/gvfs/sftp:host=192.168.1.2,user=sven/home/sven/bulk/Videos/American History X [DVDRip]Eng[AC3 5.1] P2P4Life/b/post.txt",
+		"/run/user/1000/gvfs/sftp:host=raffaello.duckdns.org,user=sven/home/sven/code/tfExperiments/grapher.py",
+		"/run/user/1000/gvfs/sftp:host=davincileonardo.duckdns.org,user=sven/home/sven/tfexperiments/rbmMnistExperiment.py",
+		"/home/sven/code/tfexperiments/tf2.py",
+		"/home/sven/code/nnMapper/source/paralleltree.c",
+		"/home/sven/code/nnMapper/source/paralleltree_test.h",
+		"/home/sven/code/nnMapper/source/key_test.c",
+		"/home/sven/code/nnMapper/source/paralleltree_test.c",
+		"/home/sven/code/cs120-examples-f16/exercises/week6/pairwiseSum.c",
+		"/run/user/1000/gvfs/sftp:host=192.168.1.2,user=sven/home/sven/code/installScript/sveninstall1.sh",
+		"/home/sven/code/nnMapper/makefile",
+		"/home/sven/code/tensorflow/tensorflow/examples/tutorials/mnist/mnist_softmax.py",
+		"/home/sven/code/tensorflow/tensorflow/examples/learn/mnist.py",
+		"/home/sven/code/tensorflow/tensorflow/examples/learn/random_forest_mnist.py",
+		"/home/sven/code/tensorflow/tensorflow/examples/learn/BUILD",
+		"/home/sven/code/tensorflow/third_party/gpus/cuda/build_defs.bzl.tpl",
+		"/run/user/1000/gvfs/sftp:host=davincileonardo.duckdns.org,user=sven/home/sven/tfexperiments/randomNormalParallel.py",
+		"/home/sven/code/swig/example.hpp",
+		"/home/sven/code/swig/example.pyc",
+		"/media/sven/042A-8CB0/README.diskdefines",
+		"/home/sven/Downloads/installScript/tfinstall.sh",
+		"/media/sven/042A-8CB0/MMPackages/MM_Ubuntu_config .sh",
+		"/home/sven/code/swig/useOfExample.py",
+		"/home/sven/code/swig/example.py",
+		"/home/sven/code/swig/example.swig"
+	],
+	"find":
+	{
+		"height": 32.0
+	},
+	"find_in_files":
+	{
+		"height": 80.0,
+		"where_history":
+		[
+			"/home/sven/code/nnMapper"
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"chromaSig",
+			"cache",
+			"Cache",
+			"ipCache",
+			"ipCalculator",
+			"k",
+			"while loop ",
+			"ipSignatureRaw",
+			"outDim",
+			"key",
+			"uint",
+			"printFloat",
+			"printf",
+			"layer0->outDim",
+			"cblas_scopy",
+			"key",
+			"cache->bases->keyLength",
+			"utils",
+			"uint",
+			"3",
+			"$(MKLROOT)",
+			"WRAP ",
+			"WRAP",
+			"np",
+			"$",
+			"my_array",
+			"DATASIZE",
+			"double",
+			"MKL_INT",
+			"inDim",
+			"parallelTree",
+			"output",
+			"paralleltree",
+			"length",
+			"key->dataLen",
+			"length",
+			"small",
+			"double",
+			"paralleltree",
+			".",
+			"I",
+			"i",
+			".key",
+			"Int",
+			"numElement",
+			"unsigned",
+			"paralleltree",
+			"dataSize",
+			"ret",
+			"sizeof(unsigned char)",
+			"j",
+			"long int",
+			"numToAdd",
+			"range",
+			"(node->bigNode)",
+			"0x5420898",
+			"big",
+			"0x5420898",
+			"big",
+			"0x5420898",
+			"big",
+			"tree",
+			"Tree",
+			"tree",
+			"Tree",
+			"tree",
+			"data",
+			"randArr",
+			"dataStruct",
+			"data",
+			"total",
+			"dataInput",
+			"keyAddThreadArgs",
+			"vector",
+			"Vector",
+			"vector",
+			"Vector",
+			"vector",
+			"Vector",
+			"vector",
+			"Vector",
+			"vector",
+			"Vector",
+			"vector",
+			"spinlock_init",
+			"spinlock_destroy",
+			"spinlock_unlock",
+			"spinlock_lock",
+			"Mutex",
+			"mutex",
+			"Mutex",
+			"mutex",
+			"Mutex",
+			"mutex",
+			"Mutex",
+			"mutex",
+			"Mutex",
+			"mutex",
+			"Mutex",
+			"mutex",
+			"Mutex",
+			"mutex",
+			"Mutex",
+			"mutex",
+			"Mutex",
+			"mutex",
+			"Mutex",
+			"mutex",
+			"Mutex",
+			"mutex",
+			"tree",
+			"big",
+			"node->bigNode",
+			"node",
+			"0x5422770",
+			"0x54222c0",
+			"0x54225e0",
+			"*node",
+			"*parentNode",
+			"(*parentNode",
+			"*parentNode",
+			"0x5422158",
+			"0x5421108",
+			"0x5420728",
+			"Spin",
+			"spinlock",
+			"datamutex",
+			"bigmutex"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 5,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "source/cutils/ipCalculator.h",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 667,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								273,
+								273
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 9,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "source/cutils/ipCalculator.c",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 13804,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								6525,
+								6525
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 3057.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 6,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "source/cutils/mapper.h",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 889,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								343,
+								343
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 11,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "source/cutils/mapper.c",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1422,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								282,
+								282
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 10,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "source/cutils/parallelTree.c",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 5093,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								5089,
+								5089
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 2142.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 13,
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"file": "source/cutils/key.c",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2607,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2365,
+								2365
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 416.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 6,
+					"file": "nnMapper.sublime-project",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 364,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								236,
+								236
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/JavaScript/JSON.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 7,
+					"file": "source/test/ipCalculator_test.c",
+					"semi_transient": true,
+					"settings":
+					{
+						"buffer_size": 2040,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 8,
+					"file": "/home/sven/Downloads/buttons.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 895,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								647,
+								647
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 168.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 9,
+					"file": "source/pythonInterface/keyWrap.pyx",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1673,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1248,
+								1248
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Cython/Cython.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 8,
+					"type": "text"
+				},
+				{
+					"buffer": 10,
+					"file": "source/pythonInterface/ipCalculatorWrap.pyx",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 4456,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								4382,
+								4382
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Cython/Cython.tmLanguage",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 1344.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 7,
+					"type": "text"
+				},
+				{
+					"buffer": 11,
+					"file": "source/cutils/key.h",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 834,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								699,
+								699
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 12,
+					"type": "text"
+				},
+				{
+					"buffer": 12,
+					"file": "source/test/key_test.c",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2933,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2206,
+								2206
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 1302.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 14,
+					"type": "text"
+				},
+				{
+					"buffer": 13,
+					"file": "source/cutils/nnLayerUtils.h",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 534,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								526,
+								526
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 5,
+					"type": "text"
+				},
+				{
+					"buffer": 14,
+					"file": "source/cutils/nnLayerUtils.c",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1548,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								341,
+								341
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 126.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				},
+				{
+					"buffer": 15,
+					"file": "source/pythonInterface/buildipCalculatorwrap.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1333,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1164,
+								1164
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"translate_tabs_to_spaces": false
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 16,
+					"type": "text"
+				},
+				{
+					"buffer": 16,
+					"file": "makefile",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 2112,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1617,
+								1617
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Makefile/Makefile.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 336.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 17,
+					"type": "text"
+				},
+				{
+					"buffer": 17,
+					"file": "/home/sven/Downloads/scatter3d_demo.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 923,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								192,
+								192
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Python/Python.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 42.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 15,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 22.0
+	},
+	"input":
+	{
+		"height": 31.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.exec":
+	{
+		"height": 272.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"output.latextools":
+	{
+		"height": 100.0
+	},
+	"pinned_build_system": "",
+	"project": "nnMapper.sublime-project",
+	"replace":
+	{
+		"height": 40.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 500.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 380.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 184.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

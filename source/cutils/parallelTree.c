@@ -184,7 +184,9 @@ void freeNode(Tree *tree, TreeNode *node, int nodeDepth)
 
 void freeTree(Tree *tree)
 {
-	freeNode(tree,tree->root,tree->depth);
-	free(tree);
+	if(tree){
+		freeNode(tree,tree->root,tree->depth);
+		free(tree);
+	}
 }
 

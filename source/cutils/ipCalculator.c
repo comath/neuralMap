@@ -239,7 +239,7 @@ ipCache * allocateCache(nnLayer *layer0, float threshhold)
 void freeCache(ipCache * cache)
 {
 	if(cache){
-		//printf("Cache exists, deallocating\n");
+		printf("Cache exists, deallocating\n");
 		freeTree(cache->bases);
 		if(cache->hpOffsetVecs){
 			free(cache->hpOffsetVecs);
