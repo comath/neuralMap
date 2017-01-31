@@ -34,49 +34,32 @@ cov = idMat
 data = np.random.multivariate_normal(mean,cov,numData).astype(dtype=np.float32)
 
 
-sig = ipCalc.batchCalculate(data)
+signatures = ipCalc.batchCalculate(data)
 
 chromaSig = ipCalc.batchChromaCalculate(data)
 
-print sig
-print sig.shape
-print chromaSig
-print chromaSig.shape
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 
-for i in range(numData):
-	xs = data[i][0]
-	ys = data[i][1]
-	zs = data[i][2]
-	ax.scatter(xs, ys, zs, c=convertToRGB(sig[i]), marker='o')
 
-
-def drawSig(signatures,sig):
+#HORIFIC HACK, like my spelling
+def getDataBySig(data,signatures,sig):
+	subdata = []
 	for i in range(numData):
 		if(np.linalg.norm(signatures[i,:]-sig) == 0):
-			xs = data[i][0]
-			ys = data[i][1]
-			zs = data[i][2]
-			ax.scatter(xs, ys, zs, c=convertToRGB(signatures[i]), marker='o')
-	plt.draw()
+			subdata.append(data[i])
+	retdata = np.zeros([len(subdata),data[i].size])
+	for i,datum in enumerate(subdata):
+		retdata[i] = datum
+	return retdata
 
-axprev = plt.axes([0.7, 0.05, 0.1, 0.075])
-axnext = plt.axes([0.81, 0.05, 0.1, 0.075])
-bnext = Button(axnext, '[0,0,0]')
-bnext.on_clicked(drawSig(sig,possibleSigs[0,:]))
-bprev = Button(axprev, '[1,0,0]')
-bnext.on_clicked(drawSig(sig,possibleSigs[1,:]))
+print getDataBySig(data,signatures,possibleSigs[7])
 
 
+ax.scatter(data[:,0],data[:,1],data[:,2], c=chromaSig, marker='o')
 
-n = 100
-print sig[0,:]
-print possibleSigs[0,:]
-print np.linalg.norm(sig[0,:]-possibleSigs[0,:])
-# For each set of style and range settings, plot n random points in the box
-# defined by x in [23, 32], y in [0, 100], z in [zlow, zhigh].
+
 
 
 

@@ -39,18 +39,7 @@ void convertToKey(int * raw, uint *key,uint dataLen)
 	}
 }
 
-void convertFromKey(uint *key, int * raw, uint dataLen)
-{
-	uint i = 0;
-	for(i=0;i<dataLen;i++){
-		if(checkIndex(key,i)){
-			raw[i] = 1;
-		} else {
-			raw[i] = 0;
-		}
-	}
 
-}
 
 void batchConvertToKey(int * raw, uint *key,uint dataLen, uint numData){
 	uint i =0;
@@ -59,13 +48,7 @@ void batchConvertToKey(int * raw, uint *key,uint dataLen, uint numData){
 		convertToKey(raw + i*dataLen, key +i*keyLen,dataLen);
 	}
 }
-void batchConvertFromKey(uint *key, int * raw, uint dataLen,uint numData){
-	uint i =0;
-	uint keyLen = calcKeyLen(dataLen);
-	for(i=0;i<numData;i++){
-		convertFromKey(key + i*keyLen, raw +i*dataLen,dataLen);
-	}
-}
+
 
 
 void addIndexToKey(uint * key, uint index)
@@ -114,6 +97,31 @@ void printKey(uint* key, uint dataLen){
 	convertFromKey(key,raw,dataLen);
 	printIntArr(raw,dataLen);
 	free(raw);
+}
+
+void convertFromKey(uint *key, int * raw, uint dataLen)
+{
+
+
+
+	uint i = 0;
+	for(i=0;i<dataLen;i++){
+		if(checkIndex(key,i)){
+			raw[i] = 1;
+		} else {
+			raw[i] = 0;
+		}
+	}
+
+}
+
+void batchConvertFromKey(uint *key, int * raw, uint dataLen,uint numData){
+	uint i =0;
+	uint keyLen = calcKeyLen(dataLen);
+	printf("Converting a key. Data length: %u, numData: %u\n",dataLen,numData );
+	for(i=0;i<numData;i++){
+		convertFromKey(key + i*keyLen, raw +i*dataLen,dataLen);
+	}
 }
 
 void chromaticKey(uint* key, float *rgb, uint dataLen)

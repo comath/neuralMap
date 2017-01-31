@@ -66,17 +66,16 @@ cdef class ipCalculator:
 			numProc = multiprocessing.cpu_count()
 
 		cdef unsigned int dim
-		dim = data.shape[0]
-		numData = data.shape[1]
+		dim = data.shape[1]
+		numData = data.shape[0]
+
 		keyLen = calcKeyLen(dim)
 		cdef unsigned int *ipSignature_key = <unsigned int *>malloc(numData * keyLen * sizeof(unsigned int))
 		if not ipSignature_key:
 			raise MemoryError()
 
-		cdef np.ndarray[np.int32_t,ndim=2] ipSignature = np.zeros([dim,numData], dtype=np.int32)
-		print(ipSignature.shape[0])
-		print(ipSignature.shape[1])
-
+		cdef np.ndarray[np.int32_t,ndim=2] ipSignature = np.zeros([numData,dim], dtype=np.int32)
+		
 
 		try:	        
 			getInterSigBatch(self.cache,&data[0,0],ipSignature_key, numData, numProc)
