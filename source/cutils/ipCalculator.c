@@ -333,41 +333,43 @@ void computeDistToHPS(float *p, ipCache *cache, float *distances)
 
 void getInterSig(ipCache * cache, float *p, uint *ipSignature)
 {
+	// Prepare all the internal values and place commonly referenced ones on the stack
 	uint outDim = cache->layer0->outDim;
 	uint inDim = cache->layer0->inDim;
 	uint keyLength = cache->bases->keyLength;
+	clearKey(ipSignature,keyLength);
+	uint j = 1;
+
+	// Compute the distances to all the hyperplanes.
+	float *distances = calloc(outDim,sizeof(float));
+	computeDistToHPS(p, cache, distances);
+		
+
 	#ifdef DEBUG
 		printf("--------------------------getInterSig-----------------------------------------------\n");
 		printf("Aquiring the ipSignature of ");
 		printFloatArr(p,inDim);
-	#endif
-	float *distances = calloc(outDim,sizeof(float));
-	computeDistToHPS(p, cache, distances);
-	#ifdef DEBUG
 		printf("The distances to the hyperplanes are ");
 		printFloatArr(distances,outDim);
 	#endif
-	uint j = 1;
 	
-	clearKey(ipSignature,keyLength);
-	
-
 	// Get the distance to the closest hyperplane and blank it from the distance array
 	uint curSmallestIndex = cblas_isamin (outDim, distances, 1);
 	float curDist = distances[curSmallestIndex];
-	#ifdef DEBUG
-		printf("The closest hyperplane is %u and is %f away.\n", curSmallestIndex,curDist);
-	#endif
 	distances[curSmallestIndex] = FLT_MAX;
 	addIndexToKey(ipSignature, curSmallestIndex);
+
 	#ifdef DEBUG
+		printf("The closest hyperplane is %u and is %f away.\n", curSmallestIndex,curDist);
 		printf("After adding index %u the key is now: ", curSmallestIndex);
 		printKey(ipSignature,outDim);
-	#endif	
+	#endif
+
 	// Get the distance to the second closest hyperplane and blank it
 	curSmallestIndex = cblas_isamin (outDim, distances, 1);
 	float nextDist = distances[curSmallestIndex];
 	distances[curSmallestIndex] = FLT_MAX;
+
 	#ifdef DEBUG
 		printf("The second closest hyperplane is %u and is %f away.\n", curSmallestIndex,nextDist);
 		if(!(curDist>0 && nextDist < cache->threshold*curDist && j < inDim)){
@@ -375,17 +377,14 @@ void getInterSig(ipCache * cache, float *p, uint *ipSignature)
 		}
 	#endif
 
+	// The main loop
 	while(curDist>0 && nextDist < cache->threshold*curDist && j < inDim)
 	{	
+		addIndexToKey(ipSignature, curSmallestIndex);
 		#ifdef DEBUG
 			printf("----While Loop %u----\n", j);
 			printf("Current Distance is %f, nextDist is %f\n", curDist, nextDist);
 			printf("Adding %u to the ipSignature and finding the distance to the associated intersection\n",curSmallestIndex);
-		#endif
-		addIndexToKey(ipSignature, curSmallestIndex);
-		#ifdef DEBUG
-			printf("The raw interSig is (in key form)");
-			printKeyArr(ipSignature,keyLength);
 			printf("The unfurled interSig is ");
 			printKey(ipSignature,outDim);
 		#endif
@@ -394,9 +393,12 @@ void getInterSig(ipCache * cache, float *p, uint *ipSignature)
 		curSmallestIndex = cblas_isamin (outDim, distances, 1);
 		// Current distance should be the distance to the current IP set
 		curDist = computeDist(p, ipSignature, cache);
+
 		// Next distance should either be to the next hyperplane or the next closest IP of the same rank.
 		nextDist = distances[curSmallestIndex];
 		distances[curSmallestIndex] = FLT_MAX;
+
+		
 		j++;
 	}
 	#ifdef DEBUG
