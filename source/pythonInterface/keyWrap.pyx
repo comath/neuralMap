@@ -8,8 +8,6 @@ from libc.stdlib cimport malloc, free
 
 import sys
 
-def eprint(*args, **kwargs):
-	print(*args, file=sys.stderr, **kwargs)
 
 cdef extern from "../cutils/key.h":
 	cdef char compareKey(unsigned int *x, unsigned int *y, unsigned int keyLength)

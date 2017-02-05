@@ -412,7 +412,7 @@ void getInterSig(ipCache * cache, float *p, uint *ipSignature)
 	free(distances);
 }
 
-struct dataAddThreadArgs {
+struct IPAddThreadArgs {
 	uint tid;
 	uint numThreads;
 
@@ -423,10 +423,10 @@ struct dataAddThreadArgs {
 	ipCache *cache;
 };
 
-void * addBatch_thread(void *thread_args)
+void * addIPBatch_thread(void *thread_args)
 {
-	struct dataAddThreadArgs *myargs;
-	myargs = (struct dataAddThreadArgs *) thread_args;
+	struct IPAddThreadArgs *myargs;
+	myargs = (struct IPAddThreadArgs *) thread_args;
 
 	uint tid = myargs->tid;	
 	uint numThreads = myargs->numThreads;
@@ -456,7 +456,7 @@ void getInterSigBatch(ipCache *cache, float *data, uint *ipSignature, uint numDa
 	//Add one data to the first node so that we can avoid the race condition.
 	
 
-	struct dataAddThreadArgs *thread_args = malloc(maxThreads*sizeof(struct dataAddThreadArgs));
+	struct IPAddThreadArgs *thread_args = malloc(maxThreads*sizeof(struct IPAddThreadArgs));
 
 	pthread_t threads[maxThreads];
 	pthread_attr_t attr;
@@ -471,7 +471,7 @@ void getInterSigBatch(ipCache *cache, float *data, uint *ipSignature, uint numDa
 		thread_args[i].data = data;
 		thread_args[i].numThreads = maxThreads;
 		thread_args[i].tid = i;
-		rc = pthread_create(&threads[i], NULL, addBatch_thread, (void *)&thread_args[i]);
+		rc = pthread_create(&threads[i], NULL, addIPBatch_thread, (void *)&thread_args[i]);
 		if (rc){
 			printf("Error, unable to create thread\n");
 			exit(-1);

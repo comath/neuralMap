@@ -11,7 +11,9 @@
 char compareKey(uint *x, uint *y, uint keyLength);
 
 void convertToKey(int * raw, uint *key,uint dataLen);
+void convertFloatToKey(float * raw, uint *key,uint dataLen);
 void convertFromKey(uint *key, int * output, uint dataLen);
+void convertFromKeyToFloat(uint *key, float * output, uint dataLen);
 void chromaticKey(uint* key, float *rgb, uint dataLen);
 
 void batchConvertToKey(int * raw, uint *key,uint dataLen, uint numData);

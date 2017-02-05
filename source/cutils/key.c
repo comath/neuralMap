@@ -101,9 +101,6 @@ void printKey(uint* key, uint dataLen){
 
 void convertFromKey(uint *key, int * raw, uint dataLen)
 {
-
-
-
 	uint i = 0;
 	for(i=0;i<dataLen;i++){
 		if(checkIndex(key,i)){
@@ -112,7 +109,6 @@ void convertFromKey(uint *key, int * raw, uint dataLen)
 			raw[i] = 0;
 		}
 	}
-
 }
 
 void batchConvertFromKey(uint *key, int * raw, uint dataLen,uint numData){
@@ -144,5 +140,30 @@ void batchChromaticKey(uint* key, float *rgb, uint dataLen, uint numData){
 	uint keyLen = calcKeyLen(dataLen);
 	for(i=0;i<numData;i++){
 		chromaticKey(key + i*keyLen, rgb +i*3,dataLen);
+	}
+}
+
+void convertFloatToKey(float * raw, uint *key,uint dataLen)
+{
+	uint keyLen = calcKeyLen(dataLen);
+	clearKey(key, keyLen);
+	uint i = 0,j=0;
+	for(i=0;i<dataLen;i++){
+		j = i % DATASIZE;
+		if(raw[i]>0){
+			key[i/DATASIZE] += (1 << (DATASIZE -j -1))	;
+		}	
+	}
+}
+
+void convertFromKeyToFloat(uint *key, float * raw, uint dataLen)
+{
+	uint i = 0;
+	for(i=0;i<dataLen;i++){
+		if(checkIndex(key,i)){
+			raw[i] = 1.0;
+		} else {
+			raw[i] = 0.0;
+		}
 	}
 }

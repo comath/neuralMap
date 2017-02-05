@@ -33,9 +33,15 @@ key.o: $(UTILS)key.c
 nnLayerUtils.o: $(UTILS)nnLayerUtils.c 
 	$(CC) $(CCFLAGS) $(MKLINC) -c $< -o $(BIN)$@
 
-# IP calculator
+# Main Utilities
 ipCalculator.o: $(UTILS)ipCalculator.c  $(UTILS)nnLayerUtils.c $(UTILS)parallelTree.c
 	$(CC) $(CCFLAGS) $(MKLINC) -c $< -o $(BIN)$@
+mapper.o: $(UTILS)mapper.c $(UTILS)ipCalculator.c  $(UTILS)nnLayerUtils.c $(UTILS)parallelTree.c
+	$(CC) $(CCFLAGS) $(MKLINC) -c $< -o $(BIN)$@
+
+#Python Interface
+mapperWrap:
+	python $(WRAP)buildMapperWrap.py build_ext -i
 
 #Testing
 ipCalculator_test.o: $(TEST)ipCalculator_test.c $(UTILS)ipCalculator.c $(UTILS)parallelTree.c

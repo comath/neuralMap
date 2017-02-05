@@ -22,21 +22,22 @@ typedef struct location {
 	float *avgErrorPoint;
 } location;
 
-typedef struct nnMap {
+typedef struct _nnMap {
 	nnLayer *layer0;
 	nnLayer *layer1;
 	Tree *locationTree;
 	ipCache *cache;
-} nnMap;
 
-nnMap * allocateMap(nnLayer *layer0, float threshold);
-void freeMap(nnMap *map);
+	float errorThreshhold;
+} _nnMap;
 
-void addDatum(nnMap * map, float *datum);
-void addData(nnMap *map, float *data, uint numData, uint numProc);
+_nnMap * allocateMap(nnLayer *layer0, nnLayer *layer1, float threshold, float errorThreshhold);
+void freeMap(_nnMap *map);
 
-location getMaxErrorLoc(nnMap * map);
-location * getLocationArray(nnMap * map);
-location getLocationByKey(nnMap *map, uint * ipSig, uint * regSig);
+void addDatumToMap(_nnMap * map, float *datum, float errorMargin);
+void addDataToMapBatch(_nnMap * map, float *data, float * errorMargins, uint numData, uint numProc);
+
+location getMaxErrorLoc(_nnMap * map);
+location * getLocationArray(_nnMap * map);
 
 #endif
