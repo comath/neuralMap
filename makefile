@@ -47,8 +47,14 @@ mapperWrap:
 ipCalculator_test.o: $(TEST)ipCalculator_test.c $(UTILS)ipCalculator.c $(UTILS)parallelTree.c
 	$(CC) $(CXXFLAGS) $(MKLINC) -c $< -o $(BIN)$@
 
+mapper_test.o: $(TEST)mapper_test.c $(UTILS)mapper.c $(UTILS)ipCalculator.c $(UTILS)parallelTree.c
+	$(CC) $(CXXFLAGS) $(MKLINC) -c $< -o $(BIN)$@
+
 ipCalculator_test: ipCalculator_test.o ipCalculator.o parallelTree.o key.o nnLayerUtils.o
 	$(CC) $(CCFLAGS) $(BIN)$< $(BIN)ipCalculator.o $(BIN)nnLayerUtils.o $(BIN)parallelTree.o $(BIN)key.o -o $@ $(MKLONEDYNAMICLIB) $(LIB_FLAGS) 
+
+mapper_test: mapper_test.o mapper.o ipCalculator.o parallelTree.o key.o nnLayerUtils.o
+	$(CC) $(CCFLAGS) $(BIN)$< $(BIN)mapper.o $(BIN)ipCalculator.o $(BIN)nnLayerUtils.o $(BIN)parallelTree.o $(BIN)key.o -o $@ $(MKLONEDYNAMICLIB) $(LIB_FLAGS) 
 
 parallelTree_test.o: $(TEST)parallelTree_test.c $(UTILS)parallelTree.c
 	$(CC) $(CXXFLAGS) -c $< -o $(BIN)$@

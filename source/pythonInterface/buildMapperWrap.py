@@ -36,7 +36,7 @@ mapperExt = Extension(name='mapperWrap',
 									'pthread', 'm', 'dl'],
 						extra_compile_args=[ '-DMKL_ILP64','-DMKL', "-O2", '-m64'],
 						extra_link_args=['-Wl,--no-as-needed']
-						,define_macros=[('DEBUG',None)]
+						#,define_macros=[('DEBUG',None)]
 						)
 
 setup(ext_modules = cythonize(mapperExt,gdb_debug=True))

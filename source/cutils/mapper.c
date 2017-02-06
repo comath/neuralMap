@@ -91,7 +91,6 @@ _nnMap * allocateMap(nnLayer *layer0, nnLayer *layer1, float threshhold, float e
 	map->layer1 = layer1;
 	map->cache = allocateCache(map->layer0, threshhold);
 	map->errorThreshhold = errorThreshhold;
-
 	return map;
 }
 void freeMap(_nnMap *map)
@@ -152,12 +151,14 @@ void * addMapperBatch_thread(void *thread_args)
 	uint numThreads = myargs->numThreads;
 
 	uint numData = myargs->numData;
-	_nnMap * map = map;
+	_nnMap * map = myargs->map;
+
+	
 	float * errorMargins = myargs->errorMargins;
 	float * data = myargs->data;
-
-	uint dim = map->cache->layer0->inDim;
-
+		
+	uint dim = map->layer0->inDim;
+	
 	uint i = 0;
 	for(i=tid;i<numData;i=i+numThreads){		
 		addDatumToMap(map, data + i*dim, errorMargins[i]);
@@ -179,7 +180,6 @@ void addDataToMapBatch(_nnMap * map, float *data, float * errorMargins, uint num
 	void *status;
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
-	
 	for(i=0;i<maxThreads;i++){
 		thread_args[i].numThreads = maxThreads;
 		thread_args[i].tid = i;
@@ -187,7 +187,7 @@ void addDataToMapBatch(_nnMap * map, float *data, float * errorMargins, uint num
 		thread_args[i].numData = numData;
 		thread_args[i].map = map;
 		thread_args[i].data = data;
-
+		thread_args[i].errorMargins = errorMargins;
 		
 		rc = pthread_create(&threads[i], NULL, addMapperBatch_thread, (void *)&thread_args[i]);
 		if (rc){
@@ -207,6 +207,11 @@ void addDataToMapBatch(_nnMap * map, float *data, float * errorMargins, uint num
 	free(thread_args);
 }
 
+unsigned int numLoc(_nnMap * map)
+{
+	return map->locationTree->numNodes;
+}
+
 location * getLocationArray(_nnMap * map)
 {	
 	uint numLoc = map->locationTree->numNodes;
@@ -214,8 +219,6 @@ location * getLocationArray(_nnMap * map)
 	traverseLocationSubtree(map, locArr, map->locationTree->root);
 	return locArr;
 }
-
-void traverseLocationSubtree(_nnMap * map, location * locArr, TreeNode *node);
 
 void traverseLocationSubtree(_nnMap * map, location * locArr, TreeNode *node)
 {

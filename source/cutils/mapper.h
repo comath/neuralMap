@@ -37,6 +37,7 @@ void freeMap(_nnMap *map);
 void addDatumToMap(_nnMap * map, float *datum, float errorMargin);
 void addDataToMapBatch(_nnMap * map, float *data, float * errorMargins, uint numData, uint numProc);
 
+unsigned int numLoc(_nnMap * map);
 location getMaxErrorLoc(_nnMap * map);
 location * getLocationArray(_nnMap * map);
 

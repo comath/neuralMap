@@ -2,7 +2,6 @@
 # It's mostly graphical for now, there should be some 
 # higher dimensional tests using the connectivity of the data.
 import numpy as np
-from scipy.linalg import qr
 import matplotlib.pyplot as plt
 from matplotlib.widgets import CheckButtons
 from mpl_toolkits.mplot3d import Axes3D
