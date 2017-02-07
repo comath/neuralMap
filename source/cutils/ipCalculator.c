@@ -41,7 +41,8 @@ struct ipCacheData * solve(float *A, MKL_INT outDim, MKL_INT inDim, float *b)
 
 
 	/* Executable statements */
-	info = LAPACKE_sgesvd( LAPACK_ROW_MAJOR, 'A', 'A',
+	info = LAPACKE_sgesvd( LAPACK_ROW_MAJOR, 'A', 'A'
+		
 						  outDim, inDim, A, inDim,
 		    			  s, u, outDim,
 		    			  vt, inDim,
@@ -49,7 +50,7 @@ struct ipCacheData * solve(float *A, MKL_INT outDim, MKL_INT inDim, float *b)
 	// Incase of memory leaks:
 	//mkl_thread_free_buffers();
 	if( info > 0 ) {
-		printf( "The algorithm computing SVD failed to converge.\n" );
+		printf( "The algorithm computing SVD failed to converge. %d \n",info );
 		exit( 1 );
 	}
 
@@ -63,12 +64,14 @@ struct ipCacheData * solve(float *A, MKL_INT outDim, MKL_INT inDim, float *b)
 	float *solution = calloc(inDim, sizeof(float));
 	float *c = calloc(inDim*outDim, sizeof(float));
 	#ifdef DEBUG
-		printf("U:\n");
-		printMatrix(u,outDim,outDim);
-		printf("Diagonal entries of S:\n");
-		printFloatArr(s,minMN);
-		printf("V^T:\n");
-		printMatrix(vt,inDim,inDim);
+		if(inDim < 10 && outDim < 20){
+			printf("U:\n");
+			printMatrix(u,outDim,outDim);
+			printf("Diagonal entries of S:\n");
+			printFloatArr(s,minMN);
+			printf("V^T:\n");
+			printMatrix(vt,inDim,inDim);
+		}
 		printf("Multiplying u sigma+t with vt\n");
 	#endif
 	// Multiplying u sigma+t with vt
@@ -77,17 +80,22 @@ struct ipCacheData * solve(float *A, MKL_INT outDim, MKL_INT inDim, float *b)
 				outDim, vt, inDim,
 				0,c, inDim);
 	#ifdef DEBUG
-		printf("Result of the previous multiplication:\n");
-		printMatrix(c,inDim,outDim);
+		if(inDim < 10 && outDim < 20){
+			printf("Result of the previous multiplication:\n");
+			printMatrix(c,inDim,outDim);
+			printf("b:");
+			printFloatArr(b,outDim);
+		}
 		printf("Multiplying v sigma+ u with b for the solution \n");
-		printf("b:");
-		printFloatArr(b,outDim);
+		
 	#endif
 	// Multiplying v sigma+ u with b for the solution				\/ param 7
 	cblas_sgemv (CblasRowMajor, CblasTrans, inDim, outDim,1, c, outDim, b, 1, 0, solution, 1);
 	#ifdef DEBUG
 		printf("Result of the previous multiplication:\n");
-		printFloatArr(solution,inDim);
+		if(inDim < 10){
+			printFloatArr(solution,inDim);
+		}
 		
 	#endif
 	// Saving the kernel basis from vt
@@ -188,8 +196,10 @@ void createHPCache(ipCache *cache)
 	for(i=0;i<outDim;i++){
 		#ifdef DEBUG
 			printf("----%u----\n",i);
-			printf("Hyperplane vector: ");
-			printFloatArr(layer0->A + inDim*i,inDim);
+			if(inDim < 10){
+				printf("Hyperplane vector: ");
+				printFloatArr(layer0->A + inDim*i,inDim);
+			}
 			printf("Offset Value: %f\n",layer0->b[i]);			
 		#endif	
 		scaling = cblas_snrm2 (inDim, layer0->A + inDim*i, 1);
@@ -198,10 +208,14 @@ void createHPCache(ipCache *cache)
 			cblas_saxpy (inDim,layer0->b[i]/scaling,cache->hpNormals+inDim*i,1,cache->hpOffsetVecs + inDim*i,1);
 			#ifdef DEBUG
 				printf("Scaling factor (norm of hyperplane vector): %f\n",scaling);
-				printf("Normalized normal vector: ");
-				printFloatArr(cache->hpNormals + i*inDim,inDim);
-				printf("Offset vector: ");
-				printFloatArr(cache->hpOffsetVecs+ i*inDim,inDim);
+				
+				if(inDim < 10){
+					printf("Normalized normal vector: ");
+					printFloatArr(cache->hpNormals + i*inDim,inDim);
+					printf("Offset vector: ");
+					printFloatArr(cache->hpOffsetVecs+ i*inDim,inDim);
+				}
+				
 			#endif
 		} else {
 			// HP normals has length 0, thus it is 0. The offset vector should also be 0
@@ -222,10 +236,12 @@ ipCache * allocateCache(nnLayer *layer0, float threshhold)
 	printf("Creating cache of inDim %d and outDim %d with threshhold %f \n", layer0->inDim, layer0->outDim, threshhold);
 	#ifdef DEBUG
 		printf("-----------------allocateCache--------------------\n");
-		printf("The matrix is: \n");
-		printMatrix(layer0->A,layer0->inDim,layer0->outDim);
-		printf("The offset vector is: ");
-		printFloatArr(layer0->b, layer0->outDim);
+		if(layer0->inDim < 10 && layer0->outDim <20){
+			printf("The matrix is: \n");
+			printMatrix(layer0->A,layer0->inDim,layer0->outDim);
+			printf("The offset vector is: ");
+			printFloatArr(layer0->b, layer0->outDim);
+		}
 	#endif
 	cache->layer0 = layer0;
 	createHPCache(cache);
@@ -288,14 +304,16 @@ void computeDistToHPS(float *p, ipCache *cache, float *distances)
 	for(uint i =0;i<outDim;++i){
 		#ifdef DEBUG
 			printf("----%d----\n",i);
-			printf("Point were taking the distance to: ");
-			printFloatArr(p,inDim);
-			printf("Copied over the offset vectors: ");
-			printFloatArr(localCopy + i*inDim,inDim);
-			printf("Original offset vectors: ");
-			printFloatArr(cache->hpOffsetVecs+ i*inDim,inDim);
-			printf("Normal Vectors: ");
-			printFloatArr(cache->hpNormals + i*inDim,inDim);
+			if(inDim < 10){
+				printf("Point were taking the distance to: ");
+				printFloatArr(p,inDim);
+				printf("Copied over the offset vectors: ");
+				printFloatArr(localCopy + i*inDim,inDim);
+				printf("Original offset vectors: ");
+				printFloatArr(cache->hpOffsetVecs+ i*inDim,inDim);
+				printf("Normal Vectors: ");
+				printFloatArr(cache->hpNormals + i*inDim,inDim);
+			}
 		#endif
 		cblas_saxpy (inDim,1,p,1,localCopy + i*inDim,1);
 		distances[i] = cblas_sdot (inDim, localCopy + i*inDim, 1, cache->hpNormals + i*inDim, 1);
@@ -315,7 +333,9 @@ void computeDistToHPS(float *p, ipCache *cache, float *distances)
 		}
 		#ifdef DEBUG
 			printf("p + offset vector: ");
-			printFloatArr(localCopy+i*inDim,inDim);
+			if(inDim < 10){
+				printFloatArr(localCopy+i*inDim,inDim);
+			}
 			if(distances[i] == FLT_MAX){
 				printf("Final distance is massive as the hp does not exist\n");
 			} else {
@@ -348,9 +368,13 @@ void getInterSig(ipCache * cache, float *p, uint *ipSignature)
 	#ifdef DEBUG
 		printf("--------------------------getInterSig-----------------------------------------------\n");
 		printf("Aquiring the ipSignature of ");
-		printFloatArr(p,inDim);
+		if(inDim < 10){
+			printFloatArr(p,inDim);
+		}
 		printf("The distances to the hyperplanes are ");
-		printFloatArr(distances,outDim);
+		if(outDim < 15){
+			printFloatArr(distances,outDim);
+		}
 	#endif
 	
 	// Get the distance to the closest hyperplane and blank it from the distance array

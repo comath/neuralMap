@@ -42,6 +42,9 @@ mapper.o: $(UTILS)mapper.c $(UTILS)ipCalculator.c  $(UTILS)nnLayerUtils.c $(UTIL
 #Python Interface
 mapperWrap:
 	python $(WRAP)buildMapperWrap.py build_ext -i
+#Python Interface
+ipCalculatorWrap:
+	python $(WRAP)buildipCalculatorWrap.py build_ext -i
 
 #Testing
 ipCalculator_test.o: $(TEST)ipCalculator_test.c $(UTILS)ipCalculator.c $(UTILS)parallelTree.c

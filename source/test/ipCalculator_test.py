@@ -8,7 +8,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from ipCalculatorWrap import ipCalculator
 from ipCalculatorWrap import convertToRGB
 
-numData = 500
+numData = 2000
 dim = 3
 threshhold = 2
 

@@ -7,12 +7,7 @@ from matplotlib.widgets import CheckButtons
 from mpl_toolkits.mplot3d import Axes3D
 from mapperWrap import nnMap
 from mapperWrap import convertToRGB
-
 import tensorflow as tf
-
-numData = 500
-dim = 3
-threshhold = 2
 
 
 class nnLayer:
@@ -45,27 +40,31 @@ def loss(logits, labels):
 	labels = tf.to_float(labels, name='ToFloat')
 	return ms(logits-labels)
 
+def checkSphere(randomPoints):
+	norm = np.linalg.norm(randomPoints, axis=1)
+	return np.sign(norm-3)
 
-from tensorflow.examples.tutorials.mnist import input_data
-from tensorflow.examples.tutorials.mnist import mnist
-mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
-trX, trY, teX, teY = mnist.train.images, mnist.train.labels,\
-mnist.test.images, mnist.test.labels
 
-inputDim = 28*28
-hiddenDim1 = 400
-hiddenDim2 = 200
-outDim = 10
-batchSize = 100
+inputDim = 10
+hiddenDim1 = 10
+outDim = 1
+numData = 100
+
+idMat = np.identity(inputDim,dtype=np.float32)
+originVec = np.zeros([inputDim],dtype=np.float32)
+mean = originVec
+cov = idMat
+
+
 
 layer0 = nnLayer(inputDim,hiddenDim1)
-layer1 = nnLayer(hiddenDim1,hiddenDim2)
-layer2 = nnLayer(hiddenDim2,outDim)
+layer1 = nnLayer(hiddenDim1,outDim)
 
-X = tf.placeholder(tf.float32,[batchSize,inputDim], name="input")
-Y = tf.placeholder(tf.int32,[batchSize,outDim], name="output")
 
-output = layer2.eval(layer1.eval(layer0.eval(X)))
+X = tf.placeholder(tf.float32,[numData,inputDim], name="input")
+Y = tf.placeholder(tf.int32,[numData,outDim], name="output")
+
+output = layer1.eval(layer0.eval(X))
 
 loss = loss(output,Y)
 
@@ -81,19 +80,17 @@ sess.run(init)
 
 weights0,bias0,weights1,bias1 = sess.run([layer0.weights, layer0.bias,layer1.weights,layer1.bias])
 map1 = nnMap(weights0,bias0,weights1,bias1,2,0.5)
-tr_x, tr_y  = mnist.train.next_batch(batchSize)
 
+data = np.random.multivariate_normal(mean,cov,numData).astype(dtype=np.float32)
+labels = checkSphere(data)
 
-map1.batchAdd(tr_x,sess.run(errorRate(output,Y),feed_dict={X: tr_x, Y:tr_y}))
+map1.batchAdd(data,sess.run(errorRate(output,Y),feed_dict={X: data, Y:labels}),1)
 
 ipSignature,regSignature,avgPoint,avgErrorPoint,thisLoc.numPoints,thisLoc.numErrorPoints = map1.location(0)
 print ipSignature
 
-for i in range(1, 10000):
-	tr_x, tr_y  = mnist.train.next_batch(batchSize)
-	sess.run([train_op, loss], feed_dict={X: tr_x, Y:tr_y})
-	if(i%100==0):
-		print errorRate
+
+
 		
 
 	
