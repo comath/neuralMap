@@ -37,12 +37,43 @@ cdef extern from "../cutils/mapper.h":
 	cdef location getMaxErrorLoc(_nnMap * internalMap)
 	cdef location * getLocationArray(_nnMap * internalMap)
 
+cdef class _location:
+	cdef unsigned int dim 
+	cdef location * thisLoc
+	@staticmethod
+	cdef _location create(location* ptr, unsigned int dim):
+		obj = _location() # create instance without calling __init__
+		obj.thisLoc = ptr
+		obj.dim = dim
+		return obj
+	def ipSig(self):
+		cdef np.ndarray[np.int32_t,ndim=1] ipSignature = np.zeros([self.dim], dtype=np.int32)
+		convertFromKey(self.thisLoc.ipSig, <int *> ipSignature.data, self.dim)
+		return ipSignature
+	def regSig(self):
+		cdef np.ndarray[np.int32_t,ndim=1] regSignature = np.zeros([self.dim], dtype=np.int32)
+		convertFromKey(self.thisLoc.regSig, <int *> regSignature.data, self.dim)
+		return regSignature
+	def avgPoint(self):
+		cdef np.ndarray[np.float32_t,ndim=1] avgPoint = np.zeros([self.dim], dtype=np.float32)
+		for i in range(self.dim):
+			avgPoint[i] = self.thisLoc.avgPoint[i]
+		return avgPoint
+	def avgErrorPoint(self):
+		cdef np.ndarray[np.float32_t,ndim=1] avgErrorPoint = np.zeros([self.dim], dtype=np.float32)
+		for i in range(self.dim):
+			avgErrorPoint[i] = self.thisLoc.avgErrorPoint[i]
+		return avgErrorPoint
+	def numErrorPoints(self):
+		return self.thisLoc.numErrorPoints
+	def numPoints(self):
+		return self.thisLoc.numPoints
+
 cdef class nnMap:
 	cdef _nnMap * internalMap
 	cdef nnLayer * layer0
 	cdef nnLayer * layer1
 	cdef unsigned int keyLen
-	cdef unsigned int dim
 	cdef unsigned int numLocations
 	cdef location * locArr
 
@@ -51,7 +82,6 @@ cdef class nnMap:
 					   float threshold, float errorThreshhold):
 		cdef unsigned int outDim0 = A0.shape[0]
 		cdef unsigned int inDim0  = A0.shape[1]
-		dim = inDim0
 		cdef unsigned int outDim1 = A1.shape[0]
 		cdef unsigned int inDim1  = A1.shape[1]
 		self.layer0 = createLayer(&A0[0,0],&b0[0],outDim0,inDim0)
@@ -91,22 +121,10 @@ cdef class nnMap:
 		if(i > self.numLocations):
 			eprint("Index out of bounds")
 			raise MemoryError()
-		cdef location thisLoc = self.locArr[i]
-		cdef np.ndarray[np.int32_t,ndim=1] ipSignature = np.zeros([self.dim], dtype=np.int32)
-		cdef np.ndarray[np.int32_t,ndim=1] regSignature = np.zeros([self.dim], dtype=np.int32)
-		cdef np.ndarray[np.float32_t,ndim=1] avgPoint = np.zeros([self.dim], dtype=np.float32)
-		cdef np.ndarray[np.float32_t,ndim=1] avgErrorPoint = np.zeros([self.dim], dtype=np.float32)
-		convertFromKey(thisLoc.ipSig, <int *> ipSignature.data, self.dim)
-		convertFromKey(thisLoc.regSig, <int *> regSignature.data, self.dim)
-		for i in range(self.dim):
-			avgPoint[i] = thisLoc.avgPoint[i]
-			avgErrorPoint[i] = thisLoc.avgErrorPoint[i]
-		return ipSignature,regSignature,avgPoint,avgErrorPoint,thisLoc.numPoints,thisLoc.numErrorPoints
+		return _location.create( &(self.locArr[i]) , self.layer0.inDim)
 	
-#	def __dealloc__(self):
-#		freeMap(self.internalMap)
-#		freeLayer(self.layer0)
-#		freeLayer(self.layer1)
-#		if self.locArr:
-#			free(self.locArr)
+	def __dealloc__(self):
+		freeMap(self.internalMap)
+		if self.locArr:
+			free(self.locArr)
 	

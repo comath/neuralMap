@@ -86,8 +86,8 @@ tr_x, tr_y  = mnist.train.next_batch(batchSize)
 
 map1.batchAdd(tr_x,sess.run(errorRate(output,Y),feed_dict={X: tr_x, Y:tr_y}))
 
-ipSignature,regSignature,avgPoint,avgErrorPoint,numPoints,numErrorPoints = map1.location(0)
-print ipSignature
+
+print map1.location(0).ipSig()
 
 for i in range(1, 10000):
 	tr_x, tr_y  = mnist.train.next_batch(batchSize)

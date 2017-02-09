@@ -230,10 +230,6 @@ void traverseLocationSubtree(_nnMap * map, location * locArr, TreeNode *node)
 	#ifdef DEBUG
 		printf("Working on node %p node\n",node);
 	#endif
-	if(node == NULL){
-		printf("Called on an empty node\n");
-		exit(1);
-	}
 	int i = 0;
 	int nodeDepth = map->locationTree->depth;
 	node = node - (1 << nodeDepth) + 1;
