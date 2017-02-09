@@ -108,7 +108,9 @@ cdef class nnMap:
 			eprint("WARNING: Specified too many cores. Reducing to the number you actually have.")
 			numProc = multiprocessing.cpu_count()
 
-		numData = data.shape[0]       
+		numData = data.shape[0]
+		if(data.shape[1] != self.layer0.inDim):
+			eprint("Data is of the wrong dimension.")   
 		addDataToMapBatch(self.internalMap,<float *> data.data, <float *> errorMargins.data, numData, numProc)
 		self.numLocations = numLoc(self.internalMap)
 

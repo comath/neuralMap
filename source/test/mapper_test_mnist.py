@@ -76,18 +76,19 @@ train_op = optimizer.minimize(loss, global_step=global_step)
 
 
 sess = tf.Session()
-init = tf.initialize_all_variables()
+init = tf.global_variables_initializer()
 sess.run(init)
 
 weights0,bias0,weights1,bias1 = sess.run([layer0.weights, layer0.bias,layer1.weights,layer1.bias])
-map1 = nnMap(weights0,bias0,weights1,bias1,2,0.5)
+map1 = nnMap(np.copy(weights0),np.copy(bias0),np.copy(weights1),np.copy(bias1),2,0.5)
 tr_x, tr_y  = mnist.train.next_batch(batchSize)
 
+errorMargins = sess.run(errorRate(output,Y),feed_dict={X: tr_x, Y:tr_y})
 
-map1.batchAdd(tr_x,sess.run(errorRate(output,Y),feed_dict={X: tr_x, Y:tr_y}))
-
-
+map1.batchAdd(tr_x,np.copy(errorMargins))
 print map1.location(0).ipSig()
+
+print "Not My Fault"
 
 for i in range(1, 10000):
 	tr_x, tr_y  = mnist.train.next_batch(batchSize)

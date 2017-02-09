@@ -110,7 +110,7 @@ void addDatumToMap(_nnMap * map, float *datum, float errorMargin)
 {
 	uint inDim = map->layer0->inDim;
 	uint outDim = map->layer0->outDim;
-	uint keyLength = calcKeyLen(inDim);
+	uint keyLength = calcKeyLen(outDim);
 	float * outOfLayer0 = malloc(outDim* sizeof(float));
 
 	// The data is stored lexographically by (ipSig,regSig) as one long key.
@@ -121,7 +121,7 @@ void addDatumToMap(_nnMap * map, float *datum, float errorMargin)
 	getInterSig(map->cache, datum, sig);
 	// Get the Region Signature, save it offset by keyLength
 	evalLayer(map->layer0, datum, outOfLayer0);
-	convertFloatToKey(outOfLayer0,sig + keyLength,inDim);
+	convertFloatToKey(outOfLayer0,sig + keyLength,outDim);
 
 	mapperInput inputStruct;
 	inputStruct.point = datum;
@@ -225,6 +225,8 @@ location * getLocationArray(_nnMap * map)
 	return locArr;
 }
 
+
+
 void traverseLocationSubtree(_nnMap * map, location * locArr, TreeNode *node)
 {
 	#ifdef DEBUG
@@ -239,9 +241,12 @@ void traverseLocationSubtree(_nnMap * map, location * locArr, TreeNode *node)
 
 
 	for(i=0;i<n;i++){
+		#ifdef DEBUG
+			printf("smallNode:%p dataPointer: %p bigNode: %p\n",node[i].smallNode,node[i].dataPointer,node[i].bigNode);
+		#endif
 		if(i%2==0 && node[i].smallNode){
 			traverseLocationSubtree(map, locArr, node[i].smallNode);
-		}
+		}		
 		if(node[i].dataPointer){
 			locArr[i].ipSig = node[i].key;
 			locArr[i].regSig = node[i].key + map->locationTree->keyLength;
