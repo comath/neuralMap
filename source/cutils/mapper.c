@@ -212,23 +212,37 @@ unsigned int numLoc(_nnMap * map)
 	return map->locationTree->numNodes;
 }
 
+
+
 location * getLocationArray(_nnMap * map)
 {	
 	uint numLoc = map->locationTree->numNodes;
 	location * locArr = malloc(numLoc * sizeof(location));
+	#ifdef DEBUG
+		printf("Root node is %p, numNodes is %u\n",map->locationTree->root, numLoc);
+	#endif
 	traverseLocationSubtree(map, locArr, map->locationTree->root);
 	return locArr;
 }
 
 void traverseLocationSubtree(_nnMap * map, location * locArr, TreeNode *node)
 {
+	#ifdef DEBUG
+		printf("Working on node %p node\n",node);
+	#endif
+	if(node == NULL){
+		printf("Called on an empty node\n");
+		exit(1);
+	}
 	int i = 0;
 	int nodeDepth = map->locationTree->depth;
 	node = node - (1 << nodeDepth) + 1;
 	struct mapperData *myData = NULL;
 	int n = (1 << (nodeDepth+1)) - 1;
 
-	for(i=0;i<n;i=i){
+
+
+	for(i=0;i<n;i++){
 		if(i%2==0 && node[i].smallNode){
 			traverseLocationSubtree(map, locArr, node[i].smallNode);
 		}
@@ -247,3 +261,4 @@ void traverseLocationSubtree(_nnMap * map, location * locArr, TreeNode *node)
 		}
 	}	
 }
+

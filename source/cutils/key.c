@@ -93,10 +93,14 @@ void printIntArr(int *arr, uint length){
 }
 
 void printKey(uint* key, uint dataLen){
-	int *raw = calloc(dataLen,sizeof(int));
-	convertFromKey(key,raw,dataLen);
-	printIntArr(raw,dataLen);
-	free(raw);
+	uint i=0;
+	printf("[");
+	for(i=0;i<dataLen-1;i++){
+		if(checkIndex(key,i)){
+			printf("%u,",i);
+		}
+	}
+	printf("]\n");
 }
 
 void convertFromKey(uint *key, int * raw, uint dataLen)
@@ -108,6 +112,14 @@ void convertFromKey(uint *key, int * raw, uint dataLen)
 		} else {
 			raw[i] = 0;
 		}
+	}
+}
+
+void copyKey(uint *key1, int * key2, uint keyLen)
+{
+	uint i = 0;
+	for(i=0;i<keyLen;i++){
+		key2[i] = key1[i];
 	}
 }
 

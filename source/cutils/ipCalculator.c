@@ -40,17 +40,26 @@ struct ipCacheData * solve(float *A, MKL_INT outDim, MKL_INT inDim, float *b)
 	struct ipCacheData *output = malloc(sizeof(struct ipCacheData));
 
 
-	/* Executable statements */
-	info = LAPACKE_sgesvd( LAPACK_ROW_MAJOR, 'A', 'A'
-		
+	/* Standard SVD, not the new type */
+	/*
+	info = LAPACKE_sgesvd( LAPACK_ROW_MAJOR, 'A', 'A',
 						  outDim, inDim, A, inDim,
 		    			  s, u, outDim,
 		    			  vt, inDim,
 		    			  superb);
+	*/
+	info = LAPACKE_sgesdd( LAPACK_ROW_MAJOR, 'A', outDim, inDim, A, inDim, 
+							s, 
+							u, outDim, 
+							vt, inDim );
 	// Incase of memory leaks:
 	//mkl_thread_free_buffers();
-	if( info > 0 ) {
-		printf( "The algorithm computing SVD failed to converge. %d \n",info );
+	if( info ) {
+		if(info > 0){
+			printf( "The algorithm computing SVD failed to converge.\n" );
+		} else {
+			printf("There was an illegal value.\n");
+		}
 		exit( 1 );
 	}
 
@@ -129,19 +138,30 @@ struct ipCacheData * solve(float *A, MKL_INT outDim, MKL_INT inDim, float *b)
 
 void * ipCacheDataCreator(void * input)
 {
+	#ifdef DEBUG 
+		printf("-------------------ipCacheDataCreator--------------------------------\n");
+	#endif
 	struct ipCacheInput *myInput;
 	myInput = (struct ipCacheInput *) input;
 	nnLayer *layer0 = myInput->info->layer0;
 
 	uint inDim = layer0->inDim;
 	uint outDim = layer0->outDim;
+	
 
 	float *subA = calloc(inDim*outDim, sizeof(float));
 	float *subB = calloc(outDim,sizeof(float));
 	uint i = 0;
 	uint numHps = 0;
-	for(i=0;i<inDim;i++){
+	#ifdef DEBUG 
+		printf("Processing Key\n");
+		printKey(myInput->key,outDim);
+	#endif
+	for(i=0;i<outDim;i++){
 		if(checkIndex(myInput->key,i)){
+			#ifdef DEBUG 
+				printf("Adding %u to submatrix\n",i);
+			#endif
 			cblas_scopy (inDim, layer0->A +i*inDim, 1, subA + numHps*inDim, 1);
 			subB[numHps] = layer0->b[i];
 			numHps++;
@@ -160,6 +180,9 @@ void * ipCacheDataCreator(void * input)
 		free(subB);
 		return NULL;
 	}
+	#ifdef DEBUG 
+		printf("-------------------/ipCacheDataCreator--------------------------------\n");
+	#endif
 }
 void ipCacheDataDestroy(void * data)
 {
@@ -270,7 +293,9 @@ void freeCache(ipCache * cache)
 
 float computeDist(float * p, uint *ipSignature, ipCache *cache)
 {
-
+	#ifdef DEBUG 
+		printf("-------------------computeDist--------------------------------\n");
+	#endif
 	ipCacheInput myInput = {.info = cache, .key = ipSignature};
 	struct ipCacheData *myBasis = addData(cache->bases, ipSignature, &myInput);;
 	
@@ -288,8 +313,13 @@ float computeDist(float * p, uint *ipSignature, ipCache *cache)
 		return norm;
 	} else {
 		return -1;
-	}	
+	}
+	#ifdef DEBUG 
+		printf("-------------------/computeDist--------------------------------\n");
+	#endif
 }
+
+
 
 void computeDistToHPS(float *p, ipCache *cache, float *distances)
 {
@@ -351,13 +381,16 @@ void computeDistToHPS(float *p, ipCache *cache, float *distances)
 }
 
 
-void getInterSig(ipCache * cache, float *p, uint *ipSignature)
+
+void getInterSig(ipCache * cache, float *p, uint * ipSignature)
 {
 	// Prepare all the internal values and place commonly referenced ones on the stack
 	uint outDim = cache->layer0->outDim;
 	uint inDim = cache->layer0->inDim;
 	uint keyLength = cache->bases->keyLength;
-	clearKey(ipSignature,keyLength);
+	//uint *currentPosetKey  = calloc(keyLength,sizeof(uint));
+	uint *nextPosetKey  = calloc(keyLength,sizeof(uint));
+
 	uint j = 1;
 
 	// Compute the distances to all the hyperplanes.
@@ -382,6 +415,7 @@ void getInterSig(ipCache * cache, float *p, uint *ipSignature)
 	float curDist = distances[curSmallestIndex];
 	distances[curSmallestIndex] = FLT_MAX;
 	addIndexToKey(ipSignature, curSmallestIndex);
+	addIndexToKey(nextPosetKey, curSmallestIndex);
 
 	#ifdef DEBUG
 		printf("The closest hyperplane is %u and is %f away.\n", curSmallestIndex,curDist);
@@ -393,6 +427,9 @@ void getInterSig(ipCache * cache, float *p, uint *ipSignature)
 	curSmallestIndex = cblas_isamin (outDim, distances, 1);
 	float nextDist = distances[curSmallestIndex];
 	distances[curSmallestIndex] = FLT_MAX;
+	// We'll be testing if we need to jump up to this poset. 
+	addIndexToKey(nextPosetKey, curSmallestIndex);
+	float distToNextPoset = computeDist(p, nextPosetKey, cache);
 
 	#ifdef DEBUG
 		printf("The second closest hyperplane is %u and is %f away.\n", curSmallestIndex,nextDist);
@@ -402,7 +439,7 @@ void getInterSig(ipCache * cache, float *p, uint *ipSignature)
 	#endif
 
 	// The main loop
-	while(curDist>0 && nextDist < cache->threshold*curDist && j < inDim)
+	while(curDist>0 && nextDist < cache->threshold*curDist && distToNextPoset < cache->threshold*curDist && j < inDim)
 	{	
 		addIndexToKey(ipSignature, curSmallestIndex);
 		#ifdef DEBUG
@@ -415,8 +452,10 @@ void getInterSig(ipCache * cache, float *p, uint *ipSignature)
 		
 		// Prepare for next loop
 		curSmallestIndex = cblas_isamin (outDim, distances, 1);
+		addIndexToKey(nextPosetKey, curSmallestIndex);
+		float distToNextPoset = computeDist(p, nextPosetKey, cache);
 		// Current distance should be the distance to the current IP set
-		curDist = computeDist(p, ipSignature, cache);
+		curDist = distToNextPoset;
 
 		// Next distance should either be to the next hyperplane or the next closest IP of the same rank.
 		nextDist = distances[curSmallestIndex];
@@ -433,6 +472,7 @@ void getInterSig(ipCache * cache, float *p, uint *ipSignature)
 		printKey(ipSignature,outDim);
 		printf("--------------------------/getInterSig-----------------------------------------------\n");;
 	#endif
+	free(nextPosetKey);
 	free(distances);
 }
 
