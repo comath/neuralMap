@@ -69,7 +69,6 @@ output = layer2.eval(layer1.eval(layer0.eval(X)))
 
 loss = loss(output,Y)
 
-
 optimizer = tf.train.GradientDescentOptimizer(0.05)
 global_step = tf.Variable(0, name='global_step', trainable=False)
 train_op = optimizer.minimize(loss, global_step=global_step)
@@ -87,8 +86,6 @@ errorMargins = sess.run(errorRate(output,Y),feed_dict={X: tr_x, Y:tr_y})
 print errorMargins
 map1.batchAdd(tr_x,np.copy(errorMargins),1)
 print map1.location(0)
-
-print "Not My Fault"
 
 for i in range(1, 100):
 	tr_x, tr_y  = mnist.train.next_batch(batchSize)

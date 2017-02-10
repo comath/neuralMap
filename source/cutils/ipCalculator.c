@@ -99,7 +99,7 @@ struct ipCacheData * solve(float *A, MKL_INT outDim, MKL_INT inDim, float *b)
 		
 	#endif
 	// Multiplying v sigma+ u with b for the solution				\/ param 7
-	cblas_sgemv (CblasRowMajor, CblasTrans, inDim, outDim,1, c, outDim, b, 1, 0, solution, 1);
+	cblas_sgemv (CblasRowMajor, CblasTrans, outDim, inDim,1, c, inDim, b, 1, 0, solution, 1);
 	#ifdef DEBUG
 		printf("Result of the previous multiplication:\n");
 		if(inDim < 10){
