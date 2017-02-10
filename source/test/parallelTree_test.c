@@ -142,7 +142,62 @@ void addBatch(Tree * tree, struct dataInput *data, int numKeys)
 	}
 
 	free(thread_args);
-}	
+}
+
+typedef struct location {
+	uint *key;
+	double totalValue;
+	int totalCount;
+	double errorValue;
+	int errorCount;
+} location;
+
+location * getLocationArray(Tree * myTree)
+{	
+	uint numLoc = myTree->numNodes;
+	location * locArr = malloc(numLoc * sizeof(location));
+	#ifdef DEBUG
+		printf("Root node is %p, numNodes is %u\n",myTree->root, numLoc);
+	#endif
+	traverseLocationSubtree(myTree, locArr, myTree->root);
+	return locArr;
+}
+
+
+
+void traverseLocationSubtree(Tree * myTree, location * locArr, TreeNode *node)
+{
+	#ifdef DEBUG
+		printf("Working on node %p node\n",node);
+	#endif
+	int i = 0;
+	int nodeDepth = myTree->depth;
+	node = node - (1 << nodeDepth) + 1;
+	struct dataStruct *myData = NULL;
+	int n = (1 << (nodeDepth+1)) - 1;
+
+
+
+	for(i=0;i<n;i++){
+		#ifdef DEBUG
+			printf("smallNode:%p dataPointer: %p bigNode: %p\n",node[i].smallNode,node[i].dataPointer,node[i].bigNode);
+		#endif
+		if(i%2==0 && node[i].smallNode){
+			traverseLocationSubtree(myTree, locArr, node[i].smallNode);
+		}		
+		if(node[i].dataPointer){
+			locArr[i].key = node[i].key;
+			myData = (struct dataStruct *) node[i].dataPointer;
+			locArr[i].totalValue = myData->totalValue;
+			locArr[i].totalCount = myData->totalCount;
+		}
+		if(i%2==0 && node[i].bigNode){
+			traverseLocationSubtree(myTree, locArr, node[i].bigNode);
+		}
+	}	
+}
+
+#undef DEBUG
 
 int main(int argc, char* argv[])
 {
@@ -161,6 +216,9 @@ int main(int argc, char* argv[])
 	printf("Adding %d nodes with addVector\n", population);
 	addBatch(tree, randArr, population);
 	printf("Success!\n");
+
+	location *locArr = getLocationArray(tree);
+	printf("Location 2 is \n", locArr[2].totalValue);
 	
 	free(randArr);
 	freeTree(tree);

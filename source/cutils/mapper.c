@@ -30,18 +30,9 @@ void * mapperDataCreator(void * input)
 	mapperData * arrayData = malloc(sizeof(mapperData));
 	arrayData->avgPoint = malloc(sizeof(float)* dim * 2);
 	arrayData->avgErrorPoint = arrayData->avgPoint + dim;
+	arrayData->numPoints = 0;
+	arrayData->numErrorPoints = 0;
 	
-	cblas_scopy (dim, myInput->point, 1, arrayData->avgPoint, 1);
-	arrayData->numPoints = 1.0f;
-	
-	if(myInput->errorMargin > myInput->errorThreshhold){
-		cblas_scopy (dim,myInput->point, 1, arrayData->avgPoint, 1);
-		arrayData->numErrorPoints = 1.0f;
-	} else {
-		// Setting the memory to 0 here is pointless, the scopy is done in the modifier
-		//memset(arrayData->avgErrorPoint, 0, dim * sizeof(float));
-		arrayData->numErrorPoints = 0.0f;
-	}
 	return arrayData;
 }
 
@@ -53,14 +44,18 @@ void mapperDataModifier(void * input, void * data)
 	struct mapperData *myData;
 	myData = (struct mapperData *) data;
 
-	cblas_saxpy (dim, 1/myData->numPoints, myInput->point, 1, myData->avgPoint, 1);
-	cblas_sscal (dim, myData->numPoints/(myData->numPoints+1), myData->avgPoint, 1);
-	myData->numPoints++;
-
+	if(myData->numPoints == 0) {
+		cblas_scopy (dim, myInput->point, 1, myData->avgPoint, 1);
+		myData->numPoints = 1.0f;
+	} else {
+		cblas_saxpy (dim, 1/myData->numPoints, myInput->point, 1, myData->avgPoint, 1);
+		cblas_sscal (dim, myData->numPoints/(myData->numPoints+1), myData->avgPoint, 1);
+		myData->numPoints++;
+	}
 	if(myInput->errorMargin > myInput->errorThreshhold){
-		if(myData->numErrorPoints == 0){
+		if(myData->numErrorPoints == 0.0){
 			cblas_scopy (dim,myInput->point, 1, myData->avgErrorPoint, 1);
-			myData->numErrorPoints = 1;
+			myData->numErrorPoints = 1.0f;
 		} else {
 			cblas_saxpy (dim, 1/myData->numErrorPoints, myInput->point, 1, myData->avgErrorPoint, 1);
 			cblas_sscal (dim, myData->numErrorPoints/(myData->numErrorPoints+1), myData->avgErrorPoint, 1);
@@ -212,8 +207,6 @@ unsigned int numLoc(_nnMap * map)
 	return map->locationTree->numNodes;
 }
 
-
-
 location * getLocationArray(_nnMap * map)
 {	
 	uint numLoc = map->locationTree->numNodes;
@@ -241,21 +234,20 @@ void traverseLocationSubtree(_nnMap * map, location * locArr, TreeNode *node)
 
 
 	for(i=0;i<n;i++){
-		#ifdef DEBUG
-			printf("smallNode:%p dataPointer: %p bigNode: %p\n",node[i].smallNode,node[i].dataPointer,node[i].bigNode);
-		#endif
+		
 		if(i%2==0 && node[i].smallNode){
 			traverseLocationSubtree(map, locArr, node[i].smallNode);
 		}		
-		if(node[i].dataPointer){
-			locArr[i].ipSig = node[i].key;
-			locArr[i].regSig = node[i].key + map->locationTree->keyLength;
+		if(node[i].dataPointer && node[i].created){
+			locArr->ipSig = node[i].key;
+			locArr->regSig = node[i].key + map->locationTree->keyLength;
 			myData = (struct mapperData *) node[i].dataPointer;
 			
-			locArr[i].numPoints = myData->numPoints;
-			locArr[i].numErrorPoints = myData->numErrorPoints;
-			locArr[i].avgPoint = myData->avgPoint;
-			locArr[i].avgErrorPoint = myData->avgErrorPoint;
+			locArr->numPoints = myData->numPoints;
+			locArr->numErrorPoints = myData->numErrorPoints;
+			locArr->avgPoint = myData->avgPoint;
+			locArr->avgErrorPoint = myData->avgErrorPoint;
+			locArr++;
 		}
 		if(i%2==0 && node[i].bigNode){
 			traverseLocationSubtree(map, locArr, node[i].bigNode);

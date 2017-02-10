@@ -16,7 +16,7 @@ void convertFloatToKey(float * raw, uint *key,uint dataLen);
 void convertFromKey(uint *key, int * output, uint dataLen);
 void convertFromKeyToFloat(uint *key, float * output, uint dataLen);
 
-void copyKey(uint *key1, int * key2, uint keyLen);
+void copyKey(uint *key1, uint * key2, uint keyLen);
 
 void chromaticKey(uint* key, float *rgb, uint dataLen);
 

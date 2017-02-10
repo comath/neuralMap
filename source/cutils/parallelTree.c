@@ -2,29 +2,6 @@
 
 void fillTreeNodes(TreeNode *node, int nodeDepth)
 {
-	int rc = 0;
-	node->dataModifiedCount = 0;
-	node->created = 0;
-	node->key = 0;
-	node->dataPointer = NULL;
-
-	rc = pthread_spin_init(&(node->keyspinlock), 0);
-	if (rc != 0) {
-        printf("spinlock Initialization failed at %p", (void *) node);
-    }
-	rc = pthread_spin_init(&(node->smallspinlock), 0);
-	if (rc != 0) {
-        printf("spinlock Initialization failed at %p", (void *) node);
-    }
-	rc = pthread_spin_init(&(node->bigspinlock), 0);
-	if (rc != 0) {
-        printf("spinlock Initialization failed at %p", (void *) node);
-    }
-	rc = pthread_spin_init(&(node->dataspinlock), 0);
-	if (rc != 0) {
-        printf("spinlock Initialization failed at %p", (void *) node);
-    }
-
 	if(nodeDepth > -1) {
 		node->smallNode = node - (1 << nodeDepth);
 		node->bigNode = node + (1 << nodeDepth);
@@ -34,16 +11,40 @@ void fillTreeNodes(TreeNode *node, int nodeDepth)
 		node->smallNode = NULL;
 		node->bigNode = NULL;
 	}
-
 }
 
-TreeNode * allocateNodes(int treeDepth)
+TreeNode * allocateNodes(int treeDepth, uint keyLength)
 {
 	const int maxTreeSize = (1 << (treeDepth+1)) - 1;
 	struct TreeNode * tree = malloc(maxTreeSize * sizeof(TreeNode));
-	
+	uint * keys = malloc(maxTreeSize * keyLength * sizeof(uint));
+	int rc = 0;
+	for (int i = 0; i < maxTreeSize; i++)
+	{
+		tree[i].dataModifiedCount = 0;
+		tree[i].created = 0;
+		tree[i].key = keys + i*keyLength;
+		tree[i].dataPointer = NULL;
+
+		rc = pthread_spin_init(&(tree[i].keyspinlock), 0);
+		if (rc != 0) {
+	        printf("spinlock Initialization failed at %p", (void *) tree + i);
+	    }
+		rc = pthread_spin_init(&(tree[i].smallspinlock), 0);
+		if (rc != 0) {
+	        printf("spinlock Initialization failed at %p", (void *) tree + i);
+	    }
+		rc = pthread_spin_init(&(tree[i].bigspinlock), 0);
+		if (rc != 0) {
+	        printf("spinlock Initialization failed at %p", (void *) tree + i);
+	    }
+		rc = pthread_spin_init(&(tree[i].dataspinlock), 0);
+		if (rc != 0) {
+	        printf("spinlock Initialization failed at %p", (void *) tree + i);
+	    }
+	}
 	tree = tree + (1 << treeDepth) - 1;
-	fillTreeNodes(tree ,treeDepth-1);
+	fillTreeNodes(tree,treeDepth-1);
 	return tree;
 }
 
@@ -52,7 +53,7 @@ Tree * createTree(int treeDepth, uint keyLength, void * (*dataCreator)(void * in
 {
 	Tree * tree = malloc(sizeof(Tree));
 	tree->depth = treeDepth;
-	tree->root = allocateNodes(treeDepth);
+	tree->root = allocateNodes(treeDepth,keyLength);
 	tree->numNodes = 0;
 	tree->keyLength = keyLength;
 	tree->dataCreator = dataCreator;
@@ -69,7 +70,7 @@ void * addData(Tree *tree, uint * key, void * datum){
 	pthread_spin_lock(&(node->keyspinlock));
 	if (node->created == 0){
 		node->created = 1;
-		node->key = key;
+		copyKey(key, node->key, tree->keyLength);
 		node->dataPointer = tree->dataCreator(datum);
 		tree->numNodes++;
 	}
@@ -79,15 +80,15 @@ void * addData(Tree *tree, uint * key, void * datum){
 		if (keyCompare == 1) {
 			pthread_spin_lock(&(node->bigspinlock));
 			if(node->bigNode == NULL){
-				node->bigNode = allocateNodes(treeDepth);
+				node->bigNode = allocateNodes(treeDepth,tree->keyLength);
 				(node->bigNode)->created = 1;
-				(node->bigNode)->key = key;
+				copyKey(key, (node->bigNode)->key, tree->keyLength);
 				(node->bigNode)->dataPointer = tree->dataCreator(datum);
 				tree->numNodes++;
 			} 
 			if ((node->bigNode)->created == 0){
 				(node->bigNode)->created = 1;
-				(node->bigNode)->key = key;
+				copyKey(key, (node->bigNode)->key, tree->keyLength);
 				(node->bigNode)->dataPointer = tree->dataCreator(datum);
 				tree->numNodes++;
 			}
@@ -96,15 +97,15 @@ void * addData(Tree *tree, uint * key, void * datum){
 		} else if (keyCompare == -1) {
 			pthread_spin_lock(&(node->smallspinlock));
 			if(node->smallNode == NULL){
-				node->smallNode = allocateNodes(treeDepth);
+				node->smallNode = allocateNodes(treeDepth,tree->keyLength);
 				(node->smallNode)->created = 1;
-				(node->smallNode)->key = key;
+				copyKey(key, (node->smallNode)->key, tree->keyLength);
 				(node->smallNode)->dataPointer = tree->dataCreator(datum);
 				tree->numNodes++;
 			} 
 			if ((node->smallNode)->created == 0){
 				(node->smallNode)->created = 1;
-				(node->smallNode)->key = key;
+				copyKey(key, (node->smallNode)->key, tree->keyLength);
 				(node->smallNode)->dataPointer = tree->dataCreator(datum);
 				tree->numNodes++;
 			}
@@ -159,7 +160,8 @@ void freeNode(Tree *tree, TreeNode *node, int nodeDepth)
 {
 	int i = 0;
 	node = node - (1 << nodeDepth) + 1;
-
+	// Free the keyspace.
+	free(node->key);
 	int n = (1 << (nodeDepth+1)) - 1;
 
 	for(i=0;i<n;i=i+2){

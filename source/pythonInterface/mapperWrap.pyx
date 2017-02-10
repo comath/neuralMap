@@ -38,30 +38,32 @@ cdef extern from "../cutils/mapper.h":
 	cdef location * getLocationArray(_nnMap * internalMap)
 
 cdef class _location:
-	cdef unsigned int dim 
+	cdef unsigned int outDim 
+	cdef unsigned int inDim 
 	cdef location * thisLoc
 	@staticmethod
-	cdef _location create(location* ptr, unsigned int dim):
+	cdef _location create(location* ptr, unsigned int outDim, unsigned int inDim):
 		obj = _location() # create instance without calling __init__
 		obj.thisLoc = ptr
-		obj.dim = dim
+		obj.outDim = outDim
+		obj.inDim = inDim
 		return obj
 	def ipSig(self):
-		cdef np.ndarray[np.int32_t,ndim=1] ipSignature = np.zeros([self.dim], dtype=np.int32)
-		convertFromKey(self.thisLoc.ipSig, <int *> ipSignature.data, self.dim)
+		cdef np.ndarray[np.int32_t,ndim=1] ipSignature = np.zeros([self.outDim], dtype=np.int32)
+		convertFromKey(self.thisLoc.ipSig, <int *> ipSignature.data, self.outDim)
 		return ipSignature
 	def regSig(self):
-		cdef np.ndarray[np.int32_t,ndim=1] regSignature = np.zeros([self.dim], dtype=np.int32)
-		convertFromKey(self.thisLoc.regSig, <int *> regSignature.data, self.dim)
+		cdef np.ndarray[np.int32_t,ndim=1] regSignature = np.zeros([self.outDim], dtype=np.int32)
+		convertFromKey(self.thisLoc.regSig, <int *> regSignature.data, self.outDim)
 		return regSignature
 	def avgPoint(self):
-		cdef np.ndarray[np.float32_t,ndim=1] avgPoint = np.zeros([self.dim], dtype=np.float32)
-		for i in range(self.dim):
+		cdef np.ndarray[np.float32_t,ndim=1] avgPoint = np.zeros([self.inDim], dtype=np.float32)
+		for i in range(self.inDim):
 			avgPoint[i] = self.thisLoc.avgPoint[i]
 		return avgPoint
 	def avgErrorPoint(self):
-		cdef np.ndarray[np.float32_t,ndim=1] avgErrorPoint = np.zeros([self.dim], dtype=np.float32)
-		for i in range(self.dim):
+		cdef np.ndarray[np.float32_t,ndim=1] avgErrorPoint = np.zeros([self.inDim], dtype=np.float32)
+		for i in range(self.inDim):
 			avgErrorPoint[i] = self.thisLoc.avgErrorPoint[i]
 		return avgErrorPoint
 	def numErrorPoints(self):
@@ -123,7 +125,7 @@ cdef class nnMap:
 		if(i > self.numLocations):
 			eprint("Index out of bounds")
 			raise MemoryError()
-		return _location.create( &(self.locArr[i]) , self.layer0.inDim)
+		return _location.create( &(self.locArr[i]) , self.layer0.outDim, self.layer0.inDim)
 	
 	def __dealloc__(self):
 		freeMap(self.internalMap)

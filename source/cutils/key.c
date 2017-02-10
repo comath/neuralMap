@@ -115,7 +115,7 @@ void convertFromKey(uint *key, int * raw, uint dataLen)
 	}
 }
 
-void copyKey(uint *key1, int * key2, uint keyLen)
+void copyKey(uint *key1, uint * key2, uint keyLen)
 {
 	uint i = 0;
 	for(i=0;i<keyLen;i++){

@@ -167,22 +167,27 @@ void * ipCacheDataCreator(void * input)
 			numHps++;
 		}
 	}
+
 	//If there's less included hyperplanes there will be a kernel
 	if(numHps <= inDim){
 		MKL_INT m = numHps;
 		MKL_INT n = inDim;
 		ipCacheData *ret = solve(subA, m, n, subB);
+		#ifdef DEBUG 
+			printf("-------------------/ipCacheDataCreator--------------------------------\n");
+		#endif
 		free(subA);
 		free(subB);
 		return ret;
 	} else {
 		free(subA);
 		free(subB);
+		#ifdef DEBUG 
+			printf("-------------------/ipCacheDataCreator--------------------------------\n");
+		#endif
 		return NULL;
 	}
-	#ifdef DEBUG 
-		printf("-------------------/ipCacheDataCreator--------------------------------\n");
-	#endif
+	
 }
 void ipCacheDataDestroy(void * data)
 {
@@ -297,14 +302,16 @@ float computeDist(float * p, uint *ipSignature, ipCache *cache)
 		printf("-------------------computeDist--------------------------------\n");
 	#endif
 	ipCacheInput myInput = {.info = cache, .key = ipSignature};
-	struct ipCacheData *myBasis = addData(cache->bases, ipSignature, &myInput);;
+	struct ipCacheData *myBasis = addData(cache->bases, ipSignature, &myInput);
 	
 	if(myBasis){
 		MKL_INT inDim = cache->layer0->inDim;
 		float * px = malloc(inDim * sizeof(float));
 		cblas_scopy (inDim, p, 1, px, 1);
 		cblas_saxpy (inDim,1,myBasis->solution,1,px,1);
-		cblas_sgemv (CblasRowMajor, CblasNoTrans, inDim, inDim,-1,myBasis->projection, inDim, px, 1, 1, px, 1);
+		if(myBasis->projection){
+			cblas_sgemv (CblasRowMajor, CblasNoTrans, inDim, inDim,-1,myBasis->projection, inDim, px, 1, 1, px, 1);
+		} 
 		float norm = cblas_snrm2 (inDim, px, 1);
 		if(norm < 0){
 			norm = -norm;
@@ -390,6 +397,8 @@ void getInterSig(ipCache * cache, float *p, uint * ipSignature)
 	uint keyLength = cache->bases->keyLength;
 	//uint *currentPosetKey  = calloc(keyLength,sizeof(uint));
 	uint *nextPosetKey  = calloc(keyLength,sizeof(uint));
+	clearKey(nextPosetKey,keyLength);
+	clearKey(ipSignature, keyLength);	
 
 	uint j = 1;
 
