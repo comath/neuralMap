@@ -218,8 +218,6 @@ location * getLocationArray(_nnMap * map)
 	return locArr;
 }
 
-
-
 void traverseLocationSubtree(_nnMap * map, location * locArr, TreeNode *node)
 {
 	#ifdef DEBUG
@@ -255,3 +253,4 @@ void traverseLocationSubtree(_nnMap * map, location * locArr, TreeNode *node)
 	}	
 }
 
+int refineMap()
