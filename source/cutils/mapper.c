@@ -253,4 +253,68 @@ void traverseLocationSubtree(_nnMap * map, location * locArr, TreeNode *node)
 	}	
 }
 
-int refineMap()
+void refineLocationsByIP(_nnMap *map, location * locArr, float * v, float b, refinedLocation *output)
+{
+	location * finalLocArr = locArr;
+	uint numRegions = 0;
+	uint * ipSig = locArr->ipSig;
+	uint keyLength = (map->locationTree->keyLength)/2; // gives the length of a single key. we doubled it to combine ip and reg
+	while(compareKey(ipSig,finalLocArr->ipSig,keyLength) == 0){
+		finalLocArr++;
+		numRegions++;
+	}
+
+}
+
+struct locLinkedListByIP{
+	location * startLoc;
+	uint numLoc;
+	locLinkedListByIP * next;
+};
+
+locLinkedListByIP * getIParr(_nnMap *map, location * locArr)
+{
+	location * finalLocArr = locArr;
+	uint numIPLoc = 0;
+	uint numRegions = 0;
+	uint keyLength = (map->locationTree->keyLength)/2; // gives the length of a single key. we doubled it to combine ip and reg
+	
+	struct locLinkedListByIP * ipLL = malloc(sizeof(struct locLinkedListByIP));
+	ipLL->startLoc = locArr;
+	ipLL->numLoc = 0;
+	numIPLoc++;
+
+	struct locLinkedListByIP * currentIPLL = ipLL; 
+	struct locLinkedListByIP * nextIpLL;
+
+	while(finalLocArr - locArr < numLoc){
+		while(compareKey(currentIPLL->startLoc->ipSig,finalLocArr->ipSig,keyLength) == 0 && finalLocArr - locArr < numLoc){
+			finalLocArr++;
+			currentIPLL->numRegions++;
+		}
+		nextIpLL = malloc(sizeof(struct locLinkedListByIP));
+		nextIpLL->startLoc = finalLocArr;
+		nextIpLL->numLoc = 0;
+		currentIPLL->next = nextIpLL;
+		currentIPLL = nextIpLL;
+		numIPLoc++;
+	}
+	return ipLL;
+}
+
+void freeIPLinkedList(locLinkedListByIP * ipLL)
+{
+	struct locLinkedListByIP * nextIpLL;
+	while(ipLL->next){
+		nextIpLL = ipLL->next;
+		free(ipLL);
+		ipLL = nextIpLL;
+	}
+}
+
+
+
+int shallowRefineMap(_nnMap *map, location * locArr, float * v, float b, refinedLocation *refinedLinkedList)
+{
+
+}
