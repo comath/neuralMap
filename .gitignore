@@ -3,3 +3,4 @@ cython_debug/
 log.txt
 *.so
 MNIST_data/*
+nnMapper.sublime-workspace
