@@ -76,7 +76,7 @@ cdef class nnMap:
 	cdef nnLayer * layer0
 	cdef nnLayer * layer1
 	cdef unsigned int keyLen
-	cdef unsigned int numLocations
+	cdef unsigned int numLoc
 	cdef location * locArr
 
 	def __cinit__(self,np.ndarray[float,ndim=2,mode="c"] A0 not None, np.ndarray[float,ndim=1,mode="c"] b0 not None,
@@ -99,8 +99,7 @@ cdef class nnMap:
 
 	def add(self,np.ndarray[float,ndim=1,mode="c"] b not None, float errorMargin):       
 		addDatumToMap(self.internalMap,<float *> b.data, errorMargin)
-		self.numLocations = numLoc(self.internalMap)	
-
+		
 	#Batch calculate, this is multithreaded and you can specify the number of threads you want to use.
 	#It defaults to the number of virtual cores you have
 	def batchAdd(self,np.ndarray[float,ndim=2,mode="c"] data not None, np.ndarray[float,ndim=1,mode="c"] errorMargins not None, numProc=None):
@@ -114,15 +113,22 @@ cdef class nnMap:
 		if(data.shape[1] != self.layer0.inDim):
 			eprint("Data is of the wrong dimension.")   
 		addDataToMapBatch(self.internalMap,<float *> data.data, <float *> errorMargins.data, numData, numProc)
-		self.numLocations = numLoc(self.internalMap)
-
-	def location(self,int i):
+		
+	def numLocations(self):
 		if not self.locArr:
-			self.numLocations = numLoc(self.internalMap)
+			self.numLoc = numLoc(self.internalMap)
 			self.locArr = getLocationArray(self.internalMap)
 			if not self.locArr:
 				raise MemoryError()
-		if(i > self.numLocations):
+		return self.numLoc
+
+	def location(self,int i):
+		if not self.locArr:
+			self.numLoc = numLoc(self.internalMap)
+			self.locArr = getLocationArray(self.internalMap)
+			if not self.locArr:
+				raise MemoryError()
+		if(i > self.numLoc):
 			eprint("Index out of bounds")
 			raise MemoryError()
 		return _location.create( &(self.locArr[i]) , self.layer0.outDim, self.layer0.inDim)

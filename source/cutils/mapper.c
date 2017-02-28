@@ -253,4 +253,3 @@ void traverseLocationSubtree(_nnMap * map, location * locArr, TreeNode *node)
 	}	
 }
 
-int refineMap()

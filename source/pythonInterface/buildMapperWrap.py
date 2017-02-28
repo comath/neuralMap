@@ -42,4 +42,3 @@ mapperExt = Extension(name='mapperWrap',
 setup(ext_modules = cythonize(mapperExt,gdb_debug=True))
 
 
-os.rename("mapperWrap.so", testDir+"mapperWrap.so")

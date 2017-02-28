@@ -29,11 +29,6 @@ typedef struct refinedLocation {
 	uint numErrorPoints;
 } refinedLocation;
 
-typedef struct refinedMap {
-	refinedLocation * refinedLocations;
-	uint numRefLoc;
-	refinedLocation * maxErrorLoc;
-}
 
 typedef struct _nnMap {
 	nnLayer *layer0;
