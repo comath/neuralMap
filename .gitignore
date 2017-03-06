@@ -1,9 +1,12 @@
 *_test
 cython_debug/
 log.txt
+*Log.txt
 *.so
 MNIST_data/*
 */MNIST_data/*
 */*/MNIST_data/*
 nnMapper.sublime-workspace
 *.mat
+*.out
+*.prof

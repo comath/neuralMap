@@ -39,7 +39,7 @@ typedef struct _nnMap {
 	float errorThreshhold;
 } _nnMap;
 
-_nnMap * allocateMap(nnLayer *layer0, nnLayer *layer1, float threshold, float errorThreshhold);
+_nnMap * allocateMap(nnLayer *layer0, float threshold, float errorThreshhold);
 void freeMap(_nnMap *map);
 
 void addDatumToMap(_nnMap * map, float *datum, float errorMargin);

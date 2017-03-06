@@ -27,7 +27,7 @@ cdef extern from "../cutils/mapper.h":
 	ctypedef struct _nnMap:
 		pass
 
-	cdef _nnMap * allocateMap(nnLayer *layer0, nnLayer *layer1, float threshold, float errorThreshhold)
+	cdef _nnMap * allocateMap(nnLayer *layer0, float threshold, float errorThreshhold)
 	cdef void freeMap(_nnMap * internalMap)
 
 	cdef void addDatumToMap(_nnMap * internalMap, float *datum, float errorMargin)
@@ -80,24 +80,21 @@ cdef class nnMap:
 	cdef location * locArr
 
 	def __cinit__(self,np.ndarray[float,ndim=2,mode="c"] A0 not None, np.ndarray[float,ndim=1,mode="c"] b0 not None,
-					   np.ndarray[float,ndim=2,mode="c"] A1 not None, np.ndarray[float,ndim=1,mode="c"] b1 not None,
 					   float threshold, float errorThreshhold):
 		cdef unsigned int outDim0 = A0.shape[0]
 		cdef unsigned int inDim0  = A0.shape[1]
-		cdef unsigned int outDim1 = A1.shape[0]
-		cdef unsigned int inDim1  = A1.shape[1]
 		self.layer0 = createLayer(&A0[0,0],&b0[0],outDim0,inDim0)
 		if not self.layer0:
 			raise MemoryError()
-		self.layer1 = createLayer(&A1[0,0],&b1[0],outDim1,inDim1)
-		if not self.layer1:
-			raise MemoryError()
-		self.internalMap = allocateMap(self.layer0,self.layer1,threshold,errorThreshhold)
+		self.internalMap = allocateMap(self.layer0,threshold,errorThreshhold)
 		if not self.internalMap:
 			raise MemoryError()
 
 
-	def add(self,np.ndarray[float,ndim=1,mode="c"] b not None, float errorMargin):       
+	def add(self,np.ndarray[float,ndim=1,mode="c"] b not None, float errorMargin):
+		if self.locArr:
+			self.numLoc = 0
+			free(self.locArr)   
 		addDatumToMap(self.internalMap,<float *> b.data, errorMargin)
 		
 	#Batch calculate, this is multithreaded and you can specify the number of threads you want to use.
@@ -108,6 +105,9 @@ cdef class nnMap:
 		if numProc > multiprocessing.cpu_count():
 			eprint("WARNING: Specified too many cores. Reducing to the number you actually have.")
 			numProc = multiprocessing.cpu_count()
+		if self.locArr:
+			self.numLoc = 0
+			free(self.locArr)
 
 		numData = data.shape[0]
 		if(data.shape[1] != self.layer0.inDim):

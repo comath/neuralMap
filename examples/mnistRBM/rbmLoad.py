@@ -23,6 +23,9 @@ def convertToString(ndarr):
 	for i in range(ndarr.shape[0]):
 		retString = retString + "%(k)d" % {'k':ndarr[i]}
 	return retString
+currentNumLocations = 0
+currentNumPoints = 0
+
 
 for hiddenDim in range(100,101,20):
 	matDic = {}
@@ -36,12 +39,11 @@ for hiddenDim in range(100,101,20):
 	print matrix.shape
 	offset = np.ascontiguousarray(offset, dtype=np.float32)
 	offset.shape = offset.shape[1]
-	hidMat = np.zeros([hiddenDim,2],dtype=np.float32)
-	hidOff = np.zeros([2],dtype=np.float32)
-	map1 = nnMap(matrix,offset,hidMat,hidOff,2,0.5)
+	map1 = nnMap(matrix,offset,2,0.5)
 	for k in range(1, 60):
 		tr_x, tr_y  = mnist.train.next_batch(batchSize)
 		map1.batchAdd(tr_x,errorMargins,1)
+		
 		
 
 	for i in range(map1.numLocations()):

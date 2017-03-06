@@ -76,14 +76,13 @@ void mapperDataDestroy(void * data)
 	}
 }
 
-_nnMap * allocateMap(nnLayer *layer0, nnLayer *layer1, float threshhold, float errorThreshhold)
+_nnMap * allocateMap(nnLayer *layer0, float threshhold, float errorThreshhold)
 {
 	_nnMap *map = malloc(sizeof(_nnMap));
 	uint keyLength = calcKeyLen(layer0->outDim);
 	// The data is stored lexographically by (ipSig,regSig) as one long key. Thus keyLen has to double
 	map->locationTree = createTree(16, 2*keyLength, mapperDataCreator,mapperDataModifier,mapperDataDestroy);
 	map->layer0 = layer0;
-	map->layer1 = layer1;
 	map->cache = allocateCache(map->layer0, threshhold);
 	map->errorThreshhold = errorThreshhold;
 	return map;

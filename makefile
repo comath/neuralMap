@@ -2,7 +2,7 @@ CC = gcc -Wall -Wextra -DMKL
 
 OPT = -O1
 DEBUG = -DDEBUG
-GDB = -g
+GDB = -pg
 
 MKLROOT = /opt/intel/compilers_and_libraries/linux/mkl
 MKLINC = -I$(MKLROOT)/include/

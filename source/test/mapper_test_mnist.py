@@ -8,6 +8,8 @@ from mpl_toolkits.mplot3d import Axes3D
 from mapperWrap import nnMap
 from mapperWrap import convertToRGB
 
+import yep
+
 import tensorflow as tf
 
 numData = 500
@@ -84,8 +86,10 @@ tr_x, tr_y  = mnist.train.next_batch(batchSize)
 
 errorMargins = sess.run(errorRate(output,Y),feed_dict={X: tr_x, Y:tr_y})
 print errorMargins
+yep.start('mapper.out')
 map1.batchAdd(tr_x,np.copy(errorMargins),1)
 print map1.location(0)
+yep.stop()
 
 for i in range(1, 100):
 	tr_x, tr_y  = mnist.train.next_batch(batchSize)

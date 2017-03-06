@@ -72,7 +72,7 @@ int main(int argc, char* argv[])
 	printf("If no faliures are printed then we are fine.\n");
 	nnLayer *layer0 = createDumbLayer(dim,numHP);
 	nnLayer *layer1 = createDumbLayer(numHP,outDim);
-	_nnMap *map = allocateMap(layer0,layer1,2,0.5);
+	_nnMap *map = allocateMap(layer0,2,0.5);
 	
 
 	uint *ipSignature = malloc(keySize*numData*sizeof(uint));
