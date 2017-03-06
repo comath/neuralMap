@@ -29,9 +29,6 @@ class nnLayer:
 def tfNorm(tensor):
 	return tf.reduce_sum(tf.square(tensor), [0])
 
-def ms(tensor):
-	return tf.reduce_mean(tfNorm(tensor))
-
 def errorRate(logits, labels):
 	labels = tf.to_float(labels, name='ToFloat')
 	return tfNorm(logits-labels)
@@ -45,7 +42,7 @@ def loss(logits, labels):
 	loss: Loss tensor of type float.
 	"""
 	labels = tf.to_float(labels, name='ToFloat')
-	return ms(logits-labels)
+	return tf.reduce_mean(tfNorm(logits-labels))
 
 
 from tensorflow.examples.tutorials.mnist import input_data
@@ -94,7 +91,5 @@ yep.stop()
 for i in range(1, 100):
 	tr_x, tr_y  = mnist.train.next_batch(batchSize)
 	sess.run(train_op, feed_dict={X: tr_x, Y:tr_y})
-	
-		
 
 	

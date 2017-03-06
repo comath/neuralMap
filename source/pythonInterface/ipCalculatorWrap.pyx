@@ -28,8 +28,10 @@ cdef class ipCalculator:
 	cdef ipCache * cache
 	cdef nnLayer * layer
 	cdef unsigned int keyLen
+	cdef unsigned int numHP
 	def __cinit__(self,np.ndarray[float,ndim=2,mode="c"] A not None, np.ndarray[float,ndim=1,mode="c"] b not None, float threshold):
 		cdef unsigned int outDim = A.shape[0]
+		numHP = outDim
 		cdef unsigned int inDim  = A.shape[1]
 		self.layer = createLayer(&A[0,0],&b[0],outDim,inDim)
 		self.cache = allocateCache(self.layer,threshold)
@@ -123,6 +125,31 @@ cdef class ipCalculator:
 		try:	        
 			getInterSigBatch(self.cache,&data[0,0],ipSignature_key, numData, numProc)
 			batchChromaticKey(ipSignature_key, <float *> chromaipSignature.data, dim,numData)
+			return chromaipSignature
+		finally:
+			free(ipSignature_key)
+
+	def visualize2d(self,np.ndarray[float,ndim=3,mode="c"] data not None, numProc=None):
+		if numProc == None:
+			numProc = multiprocessing.cpu_count()
+		if numProc > multiprocessing.cpu_count():
+			eprint("WARNING: Specified too many cores. Reducing to the number you actually have.")
+			numProc = multiprocessing.cpu_count()
+		if not data.shape[2] == 2:
+			print("Incorrect data shape")
+		
+		xDim = data.shape[0]
+		yDim = data.shape[1]
+		cdef unsigned int *ipSignature_key = <unsigned int *>malloc(xDim * yDim * sizeof(unsigned int))
+		if not ipSignature_key:
+			raise MemoryError()
+
+		cdef np.ndarray[np.float32_t,ndim=3] chromaipSignature = np.zeros([xDim,yDim,3], dtype=np.float32)
+
+
+		try:	        
+			getInterSigBatch(self.cache,<float *>data.data,ipSignature_key, xDim*yDim, numProc)
+			batchChromaticKey(ipSignature_key, <float *> chromaipSignature.data,self.numHP,xDim*yDim)
 			return chromaipSignature
 		finally:
 			free(ipSignature_key)
