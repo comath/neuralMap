@@ -28,12 +28,13 @@ cdef class ipCalculator:
 	cdef ipCache * cache
 	cdef nnLayer * layer
 	cdef unsigned int keyLen
-	cdef unsigned int numHP
+	cdef unsigned int outDim
+	cdef unsigned int inDim
 	def __cinit__(self,np.ndarray[float,ndim=2,mode="c"] A not None, np.ndarray[float,ndim=1,mode="c"] b not None, float threshold):
-		cdef unsigned int outDim = A.shape[0]
-		numHP = outDim
-		cdef unsigned int inDim  = A.shape[1]
-		self.layer = createLayer(&A[0,0],&b[0],outDim,inDim)
+		self.outDim = A.shape[0]
+	
+		self.inDim  = A.shape[1]
+		self.layer = createLayer(&A[0,0],&b[0],self.outDim,self.inDim)
 		self.cache = allocateCache(self.layer,threshold)
 
 		if not self.cache:
@@ -149,7 +150,7 @@ cdef class ipCalculator:
 
 		try:	        
 			getInterSigBatch(self.cache,<float *>data.data,ipSignature_key, xDim*yDim, numProc)
-			batchChromaticKey(ipSignature_key, <float *> chromaipSignature.data,self.numHP,xDim*yDim)
+			batchChromaticKey(ipSignature_key, <float *> chromaipSignature.data,self.outDim+1,xDim*yDim)
 			return chromaipSignature
 		finally:
 			free(ipSignature_key)

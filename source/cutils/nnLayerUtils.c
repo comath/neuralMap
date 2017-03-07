@@ -1,5 +1,6 @@
 #include "nnLayerUtils.h"
 #include <stdio.h>
+#include <float.h>
 #include <stdlib.h>
 #ifdef MKL
 #include <mkl.h>
@@ -60,9 +61,18 @@ void printFloatArr(float *arr, uint length){
 	uint i = 0;
 	printf("[");
 	for(i=0;i<length-1;i++){
-		printf("%f,",arr[i]);
+		if(arr[i] == FLT_MAX){
+			printf("---,");
+		} else {
+			printf("%f,",arr[i]);
+		}
+		
 	}	
-	printf("%f", arr[length-1]);
+	if(arr[length-1] == FLT_MAX){
+		printf("---,");
+	} else {
+		printf("%f,",arr[length-1]);
+	}
 	printf("]\n");
 }
 
