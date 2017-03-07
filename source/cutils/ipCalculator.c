@@ -426,7 +426,7 @@ void getInterSig(ipCache * cache, float *p, uint * ipSignature)
 	distances[curSmallestIndex] = FLT_MAX;
 	addIndexToKey(posetKey, curSmallestIndex);
 	#ifdef DEBUG
-		printf("curSmallestIndex: %u, nextDist1: %f\n", curSmallestIndex,nextDist1);
+		printf("curSmallestIndex: %u, nextDist1: %f\n", curSmallestIndex,posetDist);
 		printf("The distances to the hyperplanes are ");
 		if(outDim < 15){
 			printFloatArr(distances,outDim);
@@ -435,7 +435,7 @@ void getInterSig(ipCache * cache, float *p, uint * ipSignature)
 
 
 	// Get the distance to the second closest hyperplane and blank it
-	uint curSmallestIndex = cblas_isamin (outDim, distances, 1);
+	curSmallestIndex = cblas_isamin (outDim, distances, 1);
 	float hpDist = distances[curSmallestIndex];
 	distances[curSmallestIndex] = FLT_MAX;
 	addIndexToKey(posetKey, curSmallestIndex);
@@ -480,8 +480,7 @@ void getInterSig(ipCache * cache, float *p, uint * ipSignature)
 		printKey(ipSignature,outDim);
 		printf("--------------------------/getInterSig-----------------------------------------------\n");;
 	#endif
-	free(posetKey1);
-	free(posetKey2);
+	free(posetKey);
 	free(distances);
 }
 
