@@ -31,9 +31,8 @@ cdef class ipCalculator:
 	cdef unsigned int outDim
 	cdef unsigned int inDim
 	def __cinit__(self,np.ndarray[float,ndim=2,mode="c"] A not None, np.ndarray[float,ndim=1,mode="c"] b not None, float threshold):
-		self.outDim = A.shape[0]
-	
-		self.inDim  = A.shape[1]
+		self.outDim = A.shape[1]
+		self.inDim  = A.shape[0]
 		self.layer = createLayer(&A[0,0],&b[0],self.outDim,self.inDim)
 		self.cache = allocateCache(self.layer,threshold)
 

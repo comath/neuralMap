@@ -424,26 +424,43 @@ void getInterSig(ipCache * cache, float *p, uint * ipSignature)
 	uint curSmallestIndex = cblas_isamin (outDim, distances, 1);
 	float posetDist = distances[curSmallestIndex];
 	distances[curSmallestIndex] = FLT_MAX;
-	addIndexToKey(posetKey, curSmallestIndex);
-	#ifdef DEBUG
-		printf("curSmallestIndex: %u, nextDist1: %f\n", curSmallestIndex,posetDist);
-		printf("The distances to the hyperplanes are ");
-		if(outDim < 15){
-			printFloatArr(distances,outDim);
-		}
-	#endif
+	
 
 
 	// Get the distance to the second closest hyperplane and blank it
 	curSmallestIndex = cblas_isamin (outDim, distances, 1);
 	float hpDist = distances[curSmallestIndex];
 	distances[curSmallestIndex] = FLT_MAX;
-	addIndexToKey(posetKey, curSmallestIndex);
 
+	// Check if it is close enough to the first hyperplane compared to the second to add to poset
 	if(posetDist < cache->threshold*hpDist) {
 		addIndexToKey(ipSignature, curSmallestIndex);
 	}
+	#ifdef DEBUG
+		printf("Checking {i}(dist:%f) vs {j}(dist:%f)",posetDist,hpDist);
+		if(posetDist < cache->threshold*hpDist){
+			printf("Passed, ipSignature: ");
+			printKey(ipSignature,outDim);
+		}
+	#endif
 
+	addIndexToKey(posetKey, curSmallestIndex);
+	posetDist = computeDist(p, posetKey, cache);
+
+	curSmallestIndex = cblas_isamin (outDim, distances, 1);
+	hpDist = distances[curSmallestIndex];
+	distances[curSmallestIndex] = FLT_MAX;
+	#ifdef DEBUG
+		printf("Checking {i,j}(dist:%f) vs {k}(dist:%f)",posetDist,hpDist);
+		printf("{i,j}:");
+		printKey(posetKey,outDim);
+		printf("k: %u \n", curSmallestIndex);
+		if(posetDist < cache->threshold*hpDist){
+			printf("Passed, while loop will run\n");
+		} else {
+			printf("Failed, while loop will not run\n");
+		}
+	#endif
 	// The main loop
 	while(posetDist < cache->threshold*hpDist && j < inDim){
 
@@ -456,11 +473,17 @@ void getInterSig(ipCache * cache, float *p, uint * ipSignature)
 
 		
 		#ifdef DEBUG
-			printf("----While Loop %u----\n", j);
-			printf("hpDist: %f, posetDist: %f\n", hpDist, posetDist);
-			printf("Added %u to the ipSignature\n",curSmallestIndex);
-			printf("The unfurled interSig is ");
+			printf("Checking xu{i}(dist:%f) vs {j}(dist:%f)",posetDist,hpDist);
+			printf("xu{i}:");
+			printKey(posetKey,outDim);
+			printf("x:");
 			printKey(ipSignature,outDim);
+			printf("j: %u \n", curSmallestIndex);
+			if(posetDist < cache->threshold*hpDist){
+				printf("Passed, while loop will run\n");
+			} else {
+				printf("Failed, while loop will not run\n");
+			}
 		#endif
 
 
