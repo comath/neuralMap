@@ -9,6 +9,7 @@
 
 
 char compareKey(uint *x, uint *y, uint keyLength);
+char emptyKey(uint key,uint keyLength);
 
 void convertToKey(int * raw, uint *key,uint dataLen);
 void convertFloatToKey(float * raw, uint *key,uint dataLen);
@@ -27,6 +28,7 @@ void batchChromaticKey(uint* key, float *rgb, uint dataLen, uint numData);
 uint calcKeyLen(uint dataLen);
 
 void addIndexToKey(uint * key, uint index);
+void removeIndexFromKey(uint * key, uint index);
 uint checkIndex(uint * key, uint index);
 void clearKey(uint *key, uint keyLength);
 

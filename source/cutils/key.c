@@ -25,6 +25,17 @@ char compareKey(uint *x, uint *y, uint keyLen)
 	return 0;
 }
 
+char checkEmptyKey(uint *key,uint keyLength)
+{
+	uint i = 0;
+	for(i = 0; i < keyLength; i++){
+		if(checkIndex(key,i) == 0){
+			return 1;
+		}
+	}
+	return 0;
+}
+
 void convertToKey(int * raw, uint *key,uint dataLen)
 {
 
@@ -56,6 +67,13 @@ void addIndexToKey(uint * key, uint index)
 	int j = index % DATASIZE;
 	if(checkIndex(key,index) == 0){
 		key[index/DATASIZE] += (1 << (DATASIZE-1-j));
+	}
+}
+void removeIndexFromKey(uint * key, uint index)
+{
+	int j = index % DATASIZE;
+	if(checkIndex(key,index)){
+		key[index/DATASIZE] -= (1 << (DATASIZE-1-j));
 	}
 }
 
@@ -95,7 +113,7 @@ void printIntArr(int *arr, uint length){
 void printKey(uint* key, uint dataLen){
 	uint i=0;
 	printf("[");
-	for(i=0;i<dataLen-1;i++){
+	for(i=0;i<dataLen;i++){
 		if(checkIndex(key,i)){
 			printf("%u,",i);
 		}

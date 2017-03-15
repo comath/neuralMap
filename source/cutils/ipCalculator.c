@@ -301,6 +301,7 @@ float computeDist(float * p, uint *ipSignature, ipCache *cache)
 	#ifdef DEBUG 
 		printf("-------------------computeDist--------------------------------\n");
 	#endif
+	
 	ipCacheInput myInput = {.info = cache, .key = ipSignature};
 	struct ipCacheData *myBasis = addData(cache->bases, ipSignature, &myInput);
 	
@@ -395,116 +396,89 @@ void getInterSig(ipCache * cache, float *p, uint * ipSignature)
 	uint outDim = cache->layer0->outDim;
 	uint inDim = cache->layer0->inDim;
 	uint keyLength = cache->bases->keyLength;
-	//uint *currentPosetKey  = calloc(keyLength,sizeof(uint));
-	uint *posetKey = calloc(keyLength,sizeof(uint));
 	clearKey(ipSignature, keyLength);
 
-
-	uint j = 1;
-	#ifdef DEBUG
-		printf("--------------------------getInterSig-----------------------------------------------\n");
-		printf("Aquiring the ipSignature of ");
-		if(inDim < 10){
-			printFloatArr(p,inDim);
-		}
-	#endif
-	// Compute the distances to all the hyperplanes.
-	
+	float *posetDistToHP = malloc(outDim*sizeof(float));
+	uint *hpDistIndexList = malloc(outDim*sizeof(uint));
 	float *distances = calloc(outDim,sizeof(float));
+	
 	computeDistToHPS(p, cache, distances);
+
+	hpDistIndexList[0] = cblas_isamin (outDim, distances, 1);
+	float posetDist = distances[hpDistIndexList[0]];
+	distances[hpDistIndexList[0]] = FLT_MAX;
+
+	addIndexToKey(ipSignature,hpDistIndexList[0]);
+
+	hpDistIndexList[1] = cblas_isamin (outDim, distances, 1);
+	float hpDist = distances[hpDistIndexList[1]];
+	distances[hpDistIndexList[1]] = FLT_MAX;
+
+	posetDistToHP[0] = cache->threshold*posetDist - hpDist;
+
 	#ifdef DEBUG
-		printf("The distances to the hyperplanes are ");
-		if(outDim < 15){
-			printFloatArr(distances,outDim);
-		}
+		printf("Initial Values:\n");
+		printf("Checking %f*{i}(dist:%f) vs {j}(dist:%f)\n",cache->threshold,posetDist,hpDist);
+		printf("{i}: ");
+		printKey(ipSignature,outDim);
+		printf("j: %u \n", hpDistIndexList[1]);
+		printf("Value of [%u]:%f\n",0,posetDistToHP[0]);
 	#endif
 
-	
-	// Get the distance to the closest hyperplane and blank it from the distance array
-	uint curSmallestIndex = cblas_isamin (outDim, distances, 1);
-	float posetDist = distances[curSmallestIndex];
-	distances[curSmallestIndex] = FLT_MAX;
-	
+	int i = 1;
 
+	do {
+		
+		
+		
+		addIndexToKey(ipSignature,hpDistIndexList[i]);
+		posetDist = computeDist(p, ipSignature, cache);
 
-	// Get the distance to the second closest hyperplane and blank it
-	uint secSmallestIndex = cblas_isamin (outDim, distances, 1);
-	float hpDist = distances[secSmallestIndex];
-	distances[secSmallestIndex] = FLT_MAX;
-
-	// Check if it is close enough to the first hyperplane compared to the second to add to poset
-	if(cache->threshold*posetDist < hpDist) {
-		addIndexToKey(ipSignature, curSmallestIndex);
-	}
-	#ifdef DEBUG
-		printf("Checking {i}(dist:%f) vs %f*{j}(dist:%f)\n",posetDist,cache->threshold,hpDist);
-		if(cache->threshold*posetDist < hpDist){
-			printf("Passed, ipSignature: ");
-			printKey(ipSignature,outDim);
-		}
-
-		printf("The distances to the hyperplanes are ");
-		if(outDim < 15){
-			printFloatArr(distances,outDim);
-		}
-	#endif
-
-	addIndexToKey(posetKey, curSmallestIndex);
-	addIndexToKey(posetKey, secSmallestIndex);
-	posetDist = computeDist(p, posetKey, cache);
-
-	curSmallestIndex = cblas_isamin (outDim, distances, 1);
-	hpDist = distances[curSmallestIndex];
-	distances[curSmallestIndex] = FLT_MAX;
-	#ifdef DEBUG
-		printf("Checking {i,j}(dist:%f) vs %f*{k}(dist:%f)",posetDist,cache->threshold,hpDist);
-		printf("{i,j}:");
-		printKey(posetKey,outDim);
-		printf("k: %u \n", curSmallestIndex);
-		if(cache->threshold*posetDist < hpDist){
-			printf("Passed, while loop will run\n");
+		hpDistIndexList[i+1] = cblas_isamin (outDim, distances, 1);
+		hpDist = distances[hpDistIndexList[i+1]];
+		distances[hpDistIndexList[i+1]] = FLT_MAX;
+		
+		if(!(posetDist < 0) && hpDist != FLT_MAX){
+			posetDistToHP[i] = cache->threshold*posetDist - hpDist;
 		} else {
-			printf("Failed, while loop will not run\n");
+			posetDistToHP[i] = 1;
 		}
-		printf("The distances to the hyperplanes are ");
-		if(outDim < 15){
-			printFloatArr(distances,outDim);
-		}
-	#endif
-	// The main loop
-	while(hpDist != FLT_MAX && posetDist > 0 && cache->threshold*posetDist < hpDist && j < inDim){
-
-		copyKey(posetKey,ipSignature,keyLength);
-		curSmallestIndex = cblas_isamin (outDim, distances, 1);
-		addIndexToKey(posetKey,curSmallestIndex);
-		posetDist = computeDist(p, posetKey, cache);
-		hpDist = distances[curSmallestIndex];
-		distances[curSmallestIndex] = FLT_MAX;
 
 		
 		#ifdef DEBUG
-			printf("Checking xu{i}(dist:%f) vs %f*{j}(dist:%f)",posetDist,cache->threshold,hpDist);
+			printf("Checking %f*xu{i}(dist:%f) vs {j}(dist:%f)\n",cache->threshold,posetDist,hpDist);
 			printf("xu{i}:");
-			printKey(posetKey,outDim);
-			printf("x:");
 			printKey(ipSignature,outDim);
-			printf("j: %u \n", curSmallestIndex);
-			if(hpDist != FLT_MAX && posetDist > 0 && cache->threshold*posetDist < hpDist){
-				printf("Passed, while loop will run\n");
+			printf("j: %u \n", hpDistIndexList[i+1]);
+			if(i < outDim-1 && !(posetDist < 0) && hpDist != FLT_MAX){
+				printf("Passed, Up while loop will run. Value of [%u]:%f\n",i,posetDistToHP[i]);
 			} else {
-				printf("Failed, while loop will not run\n");
+				printf("Failed, Up while loop will not run. Value of [%u]:%f\n",i,posetDistToHP[i]);
 			}
 		#endif
-
-
-		
-		// Next distance should either be to the next hyperplane or the next closest IP of the same rank.
-		
-
-		
-		j++;
+		i++;
+	} while(i < outDim-1 && !(posetDist < 0) && hpDist != FLT_MAX);
+	i--;
+	#ifdef DEBUG
+		if(posetDistToHP[i] > 0 && i > -1){
+			printf("Passed, decrease while loop will run. Value of [%u]:%f\n",i,posetDistToHP[i]);
+		} else {
+			printf("Failed, decrease while loop will not run. Value of [%u]:%f\n",i,posetDistToHP[i]);
+		}
+	#endif
+	while(posetDistToHP[i] > 0 && i > -1){
+		removeIndexFromKey(ipSignature,hpDistIndexList[i]);
+		i--;
+		#ifdef DEBUG
+			if(posetDistToHP[i] > 0 && i > -1){
+				printf("Passed, decrease while loop will run. Value of [%u]:%f\n",i,posetDistToHP[i]);
+			} else {
+				printf("Failed, decrease while loop will not run. Value of [%u]:%f\n",i,posetDistToHP[i]);
+			}
+		#endif
 	}
-
+	
+	
 	#ifdef DEBUG
 		printf("Main While Loop Completed\n");
 		printf("The raw interSig is (in key form)");
@@ -513,8 +487,9 @@ void getInterSig(ipCache * cache, float *p, uint * ipSignature)
 		printKey(ipSignature,outDim);
 		printf("--------------------------/getInterSig-----------------------------------------------\n");;
 	#endif
-	free(posetKey);
 	free(distances);
+	free(posetDistToHP);
+	free(hpDistIndexList);
 }
 
 struct IPAddThreadArgs {

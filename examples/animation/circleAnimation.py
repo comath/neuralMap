@@ -85,7 +85,7 @@ img.save("file.png")
 
 A,b = sess.run(layer0.variables())
 A = np.ascontiguousarray(A.T, dtype=np.float32)
-ipCalc = ipCalculator(A,b,1.5)
+ipCalc = ipCalculator(A,b,2)
 
 imageArray2 = ipCalc.visualize2d(xy,1)
 I8 = (imageArray2 * 255.9).astype(np.uint8)

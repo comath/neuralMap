@@ -3,6 +3,7 @@ CC = gcc -Wall -Wextra -DMKL
 OPT = -O1
 DEBUG = -DDEBUG
 GDB = -pg
+PROFILE = -lprofiler
 
 MKLROOT = /opt/intel/compilers_and_libraries/linux/mkl
 MKLINC = -I$(MKLROOT)/include/
@@ -70,6 +71,38 @@ key_test.o: $(TEST)key_test.c $(UTILS)key.c
 
 key_test: key_test.o key.o
 	$(CC) $(CCFLAGS) $(BIN)$< $(BIN)key.o -o $@ $(LIB_FLAGS) 
+
+#2d Visualization
+
+all: imagetest ann
+
+selectiontrainer.o: $(SOURCE)$(NEURAL)selectiontrainer.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $(BIN)$@
+
+selectiontrainer: selectiontrainer.o
+	$(CXX) $(CXXFLAGS) $(BIN)$<  -o $@ $(LIB_FLAGS) -lpthread -lm
+
+
+pgmreader.o: $(SOURCE)$(IMAGE)pgmreader.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $(BIN)$@ 
+
+annpgm.o: $(SOURCE)$(IMAGE)annpgm.cpp $(SOURCE)$(IMAGE)pgmreader.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $(BIN)$@ 
+
+ann.o: $(SOURCE)$(NEURAL)ann.cpp $(SOURCE)$(IMAGE)pgmreader.cpp $(SOURCE)$(IMAGE)annpgm.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $(BIN)$@  
+
+nnanalyzer.o: $(SOURCE)$(NEURAL)nnanalyzer.cpp $(SOURCE)$(NEURAL)ann.cpp $(SOURCE)$(NEURAL)selectiontrainer.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $(BIN)$@
+
+nnmap.o: $(SOURCE)$(NEURAL)nnmap.cpp $(SOURCE)$(NEURAL)ann.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $(BIN)$@
+
+imagetest.o: $(SOURCE)imagetest.cpp $(SOURCE)$(IMAGE)pgmreader.cpp $(SOURCE)$(NEURAL)ann.cpp $(SOURCE)$(NEURAL)nnanalyzer.cpp $(SOURCE)$(NEURAL)nnmap.cpp $(SOURCE)$(IMAGE)annpgm.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $(BIN)$@
+
+imagetest: imagetest.o pgmreader.o ann.o nnanalyzer.o nnmap.o annpgm.o selectiontrainer.o
+	$(CXX) $(CXXFLAGS)  $(BIN)$< $(BIN)pgmreader.o $(BIN)ann.o $(BIN)nnanalyzer.o $(BIN)nnmap.o $(BIN)annpgm.o $(BIN)selectiontrainer.o -o $@ $(LIB_FLAGS) -lpthread -lm
 
 
 .PHONY: clean

@@ -8,7 +8,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from ipCalculatorWrap import ipCalculator
 from ipCalculatorWrap import convertToRGB
 
-numData = 2000
+numData = 6000
 dim = 3
 threshhold = 2
 
@@ -16,9 +16,9 @@ threshhold = 2
 
 idMat = np.identity(dim,dtype=np.float32)
 originVec = np.zeros([dim],dtype=np.float32)
-originVec[0] = 2
-originVec[1] = 2
-originVec[2] = 2
+originVec[0] = 0
+originVec[1] = 0
+originVec[2] = 0
 ipCalc = ipCalculator(idMat,originVec,threshhold)
 
 
@@ -34,8 +34,8 @@ possibleSigs[7] = [1,1,1]
 
 mean = originVec
 cov = idMat
-data = np.random.multivariate_normal(mean,cov,numData).astype(dtype=np.float32)
-
+data = np.random.uniform(low=-2.0, high=2.0, size=[numData,3])
+data = data.astype(np.float32, copy=False)
 
 signatures = ipCalc.batchCalculate(data,1)
 
