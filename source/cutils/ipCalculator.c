@@ -298,9 +298,6 @@ void freeCache(ipCache * cache)
 
 float computeDist(float * p, uint *ipSignature, ipCache *cache)
 {
-	#ifdef DEBUG 
-		printf("-------------------computeDist--------------------------------\n");
-	#endif
 	
 	ipCacheInput myInput = {.info = cache, .key = ipSignature};
 	struct ipCacheData *myBasis = addData(cache->bases, ipSignature, &myInput);
@@ -322,9 +319,6 @@ float computeDist(float * p, uint *ipSignature, ipCache *cache)
 	} else {
 		return -1;
 	}
-	#ifdef DEBUG 
-		printf("-------------------/computeDist--------------------------------\n");
-	#endif
 }
 
 
@@ -450,14 +444,14 @@ void getInterSig(ipCache * cache, float *p, uint * ipSignature)
 			printf("xu{i}:");
 			printKey(ipSignature,outDim);
 			printf("j: %u \n", hpDistIndexList[i+1]);
-			if(i < outDim-1 && !(posetDist < 0) && hpDist != FLT_MAX){
+			if(i < outDim-2 && posetDist > 0 && hpDist != FLT_MAX){
 				printf("Passed, Up while loop will run. Value of [%u]:%f\n",i,posetDistToHP[i]);
 			} else {
 				printf("Failed, Up while loop will not run. Value of [%u]:%f\n",i,posetDistToHP[i]);
 			}
 		#endif
 		i++;
-	} while(i < outDim-1 && !(posetDist < 0) && hpDist != FLT_MAX);
+	} while(i < outDim-1 && posetDist > 0 && hpDist != FLT_MAX);
 	i--;
 	#ifdef DEBUG
 		if(posetDistToHP[i] > 0 && i > -1){
@@ -470,11 +464,13 @@ void getInterSig(ipCache * cache, float *p, uint * ipSignature)
 		removeIndexFromKey(ipSignature,hpDistIndexList[i]);
 		i--;
 		#ifdef DEBUG
-			if(posetDistToHP[i] > 0 && i > -1){
-				printf("Passed, decrease while loop will run. Value of [%u]:%f\n",i,posetDistToHP[i]);
-			} else {
-				printf("Failed, decrease while loop will not run. Value of [%u]:%f\n",i,posetDistToHP[i]);
-			}
+			if(i > -1){
+				if(posetDistToHP[i] > 0){
+					printf("Passed, decrease while loop will run. Value of [%u]:%f\n",i,posetDistToHP[i]);
+				} else {
+					printf("Failed, decrease while loop will not run. Value of [%u]:%f\n",i,posetDistToHP[i]);
+				}
+			}			
 		#endif
 	}
 	
