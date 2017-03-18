@@ -1,4 +1,5 @@
 #include "parallelTree.h"
+#include <stdint.h>
 
 void fillTreeNodes(TreeNode *node, int nodeDepth)
 {
@@ -17,7 +18,7 @@ TreeNode * allocateNodes(int treeDepth, uint keyLength)
 {
 	const int maxTreeSize = (1 << (treeDepth+1)) - 1;
 	struct TreeNode * tree = malloc(maxTreeSize * sizeof(TreeNode));
-	uint * keys = malloc(maxTreeSize * keyLength * sizeof(uint));
+	kint * keys = malloc(maxTreeSize * keyLength * sizeof(uint));
 	int rc = 0;
 	for (int i = 0; i < maxTreeSize; i++)
 	{
@@ -63,7 +64,7 @@ Tree * createTree(int treeDepth, uint keyLength, void * (*dataCreator)(void * in
 }
 
 
-void * addData(Tree *tree, uint * key, void * datum){
+void * addData(Tree *tree, kint * key, void * datum){
 	TreeNode * node = tree->root;
 	int treeDepth = tree->depth;
 	
@@ -126,7 +127,7 @@ void * addData(Tree *tree, uint * key, void * datum){
 	return (void *) node->dataPointer;
 }
 
-void * getData(Tree *tree, uint *key)
+void * getData(Tree *tree, kint *key)
 {
 	TreeNode * node = tree->root;
 	if (node->created == 0){

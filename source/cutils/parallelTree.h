@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include <error.h>
 #include <unistd.h>
+#include <stdint.h>
 
 #include "key.h"
 
@@ -12,7 +13,7 @@ typedef struct TreeNode {
 	char created;
 
 	pthread_spinlock_t keyspinlock;
-	uint *key;
+	kint *key;
 
 	pthread_spinlock_t dataspinlock;
 	int dataModifiedCount;
@@ -41,8 +42,8 @@ typedef struct Tree {
 
 Tree * createTree(int depth, uint keyLength, void * (*dataCreator)(void * input),
 				void (*dataModifier)(void * input, void * data),void (*dataDestroy)(void * data));
-void * addData(Tree *tree, uint *key, void * datum);
-void * getData(Tree *tree,uint *key);
+void * addData(Tree *tree, kint *key, void * datum);
+void * getData(Tree *tree, kint *key);
 void freeTree(Tree *tree);
 
 

@@ -13,7 +13,7 @@ typedef struct ipCacheInput {
 	//This should be a constant
 	const ipCache * info;
 	//This shouldn't be
-	uint *key;
+	kint *key;
 } ipCacheInput;
 
 typedef struct ipCacheData {
@@ -28,7 +28,7 @@ struct ipCacheData * solve(float *A, MKL_INT outDim, MKL_INT inDim, float *b)
 {	
 	#ifdef DEBUG
 		printf("------------------Solve--------------\n");
-		printf("The dimensions are inDim: %u, outDim: %d \n", inDim, outDim);
+		printf("The dimensions are inDim: %lld, outDim: %lld \n", inDim, outDim);
 	#endif
 	MKL_INT info;
 	MKL_INT minMN = ((inDim)>(outDim)?(outDim):(inDim));
@@ -111,7 +111,7 @@ struct ipCacheData * solve(float *A, MKL_INT outDim, MKL_INT inDim, float *b)
 	if(outDim<inDim){
 		output->projection = calloc(inDim*inDim,sizeof(float));
 		#ifdef DEBUG
-			printf("Multiplying the first %u rows of vt for the projection\n", outDim);
+			printf("Multiplying the first %lld rows of vt for the projection\n", outDim);
 		#endif
 
 		cblas_sgemm (CblasRowMajor, CblasTrans, CblasNoTrans,
@@ -296,7 +296,7 @@ void freeCache(ipCache * cache)
 }
 
 
-float computeDist(float * p, uint *ipSignature, ipCache *cache)
+float computeDist(float * p, kint *ipSignature, ipCache *cache)
 {
 	#ifdef DEBUG 
 		printf("-------------------computeDist--------------------------------\n");
@@ -390,11 +390,10 @@ void computeDistToHPS(float *p, ipCache *cache, float *distances)
 
 
 
-void getInterSig(ipCache * cache, float *p, uint * ipSignature)
+void getInterSig(ipCache * cache, float *p, kint * ipSignature)
 {
 	// Prepare all the internal values and place commonly referenced ones on the stack
 	uint outDim = cache->layer0->outDim;
-	uint inDim = cache->layer0->inDim;
 	uint keyLength = cache->bases->keyLength;
 	clearKey(ipSignature, keyLength);
 
@@ -422,15 +421,12 @@ void getInterSig(ipCache * cache, float *p, uint * ipSignature)
 		printf("{i}: ");
 		printKey(ipSignature,outDim);
 		printf("j: %u \n", hpDistIndexList[1]);
-		printf("Value of [%u]:%f\n",0,posetDistToHP[0]);
+		printf("Value of [%d]:%f\n",0,posetDistToHP[0]);
 	#endif
 
 	int i = 1;
 
 	do {
-		
-		
-		
 		addIndexToKey(ipSignature,hpDistIndexList[i]);
 		posetDist = computeDist(p, ipSignature, cache);
 
@@ -498,7 +494,7 @@ struct IPAddThreadArgs {
 
 	uint numData;
 	float * data;
-	uint *ipSignature;
+	kint *ipSignature;
 
 	ipCache *cache;
 };
@@ -513,7 +509,7 @@ void * addIPBatch_thread(void *thread_args)
 
 	uint numData = myargs->numData;
 	float *data = myargs->data;
-	uint *ipSignature = myargs->ipSignature;
+	kint *ipSignature = myargs->ipSignature;
 
 	ipCache *cache = myargs->cache;
 
@@ -527,7 +523,7 @@ void * addIPBatch_thread(void *thread_args)
 	pthread_exit(NULL);
 }
 
-void getInterSigBatch(ipCache *cache, float *data, uint *ipSignature, uint numData, uint numProc)
+void getInterSigBatch(ipCache *cache, float *data, kint *ipSignature, uint numData, uint numProc)
 {
 	int maxThreads = numProc;
 	int rc =0;

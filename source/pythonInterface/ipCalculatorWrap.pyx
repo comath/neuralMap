@@ -5,15 +5,17 @@ cimport numpy as np
 import multiprocessing
 from libc.stdlib cimport malloc, free
 
+
 #to print to stderr to warn the user of usage errors
 
 import sys
+
 
 def eprint(*args, **kwargs):
 	print(*args, file=sys.stderr, **kwargs)
 
 include "nnLayerUtilsWrap.pyx"
-include "keyWrap.pyx"
+
 
 	
 cdef extern from "../cutils/ipCalculator.h":
@@ -21,8 +23,8 @@ cdef extern from "../cutils/ipCalculator.h":
 		pass
 	ipCache * allocateCache(nnLayer *layer0, float threshold)
 	void freeCache(ipCache *cache)
-	void getInterSig(ipCache * cache, float *data, unsigned int *ipSignature)
-	void getInterSigBatch(ipCache *cache, float *data, unsigned int *ipSignature, unsigned int numData, unsigned int numProc)
+	void getInterSig(ipCache * cache, float *data, kint *ipSignature)
+	void getInterSigBatch(ipCache *cache, float *data, kint *ipSignature, unsigned int numData, unsigned int numProc)
 
 cdef class ipCalculator:
 	cdef ipCache * cache
@@ -39,15 +41,31 @@ cdef class ipCalculator:
 		if not self.cache:
 			raise MemoryError()
 
+	def batchCalculateUncompressed(self,np.ndarray[float,ndim=1,mode="c"] data not None, numProc=None):
+		if numProc == None:
+			numProc = multiprocessing.cpu_count()
+		if numProc > multiprocessing.cpu_count():
+			eprint("WARNING: Specified too many cores. Reducing to the number you actually have.")
+			numProc = multiprocessing.cpu_count()
+
+		cdef unsigned int dim
+		dim = data.shape[1]
+		numData = data.shape[0]
+
+		keyLen = calcKeyLen(dim)
+		cdef np.ndarray[np.uint64_t,ndim=2] ipSignature = np.zeros([numData,keyLen], dtype=np.uint64)        
+		getInterSigBatch(self.cache,<float *> data.data,<kint * >ipSignature.data, numData, numProc)
+		return ipSignature
+		
 
 	def calculate(self,np.ndarray[float,ndim=1,mode="c"] b not None):
 		cdef unsigned int dim
 		dim = b.shape[0]
 		keyLen = calcKeyLen(dim)
-		cdef unsigned int *ipSignature_key = <unsigned int *>malloc(keyLen * sizeof(unsigned int))
+		cdef kint *ipSignature_key = <kint *>malloc(keyLen * sizeof(kint))
 		if not ipSignature_key:
 			raise MemoryError()		
-		cdef int *ipSignature = <int *>malloc(dim * sizeof(unsigned int))
+		cdef int *ipSignature = <int *>malloc(dim * sizeof(int))
 		if not ipSignature:
 			raise MemoryError()
 		try:	        
@@ -72,7 +90,7 @@ cdef class ipCalculator:
 		numData = data.shape[0]
 
 		keyLen = calcKeyLen(dim)
-		cdef unsigned int *ipSignature_key = <unsigned int *>malloc(numData * keyLen * sizeof(unsigned int))
+		cdef kint *ipSignature_key = <kint *>malloc(numData * keyLen * sizeof(kint))
 		if not ipSignature_key:
 			raise MemoryError()
 
@@ -90,7 +108,7 @@ cdef class ipCalculator:
 		cdef unsigned int dim
 		dim = b.shape[0]
 		keyLen = calcKeyLen(dim)
-		cdef unsigned int *ipSignature_key = <unsigned int *>malloc(keyLen * sizeof(unsigned int))
+		cdef kint *ipSignature_key = <kint *>malloc(keyLen * sizeof(kint))
 		if not ipSignature_key:
 			raise MemoryError()		
 		cdef float *ipSignature = <float *>malloc(dim * sizeof(float))
@@ -115,7 +133,7 @@ cdef class ipCalculator:
 		dim = data.shape[1]
 		numData = data.shape[0]
 		keyLen = calcKeyLen(dim)
-		cdef unsigned int *ipSignature_key = <unsigned int *>malloc(numData * keyLen * sizeof(unsigned int))
+		cdef kint *ipSignature_key = <kint *>malloc(numData * keyLen * sizeof(kint))
 		if not ipSignature_key:
 			raise MemoryError()
 
@@ -140,7 +158,7 @@ cdef class ipCalculator:
 		
 		xDim = data.shape[0]
 		yDim = data.shape[1]
-		cdef unsigned int *ipSignature_key = <unsigned int *>malloc(xDim * yDim * sizeof(unsigned int))
+		cdef kint *ipSignature_key = <kint *>malloc(xDim * yDim * sizeof(kint))
 		if not ipSignature_key:
 			raise MemoryError()
 

@@ -27,7 +27,7 @@ currentNumLocations = 0
 currentNumPoints = 0
 
 
-for hiddenDim in range(100,101,20):
+for hiddenDim in range(40,41,20):
 	matDic = {}
 	io.loadmat("mnist%(visibleDim)dx%(hiddenDim)03dstepsize%(stepSize)f.mat" 
 													% {'visibleDim': visibleDim, 'hiddenDim': hiddenDim, 'stepSize':stepSize},
@@ -35,7 +35,7 @@ for hiddenDim in range(100,101,20):
 	
 	matrix = matDic["matrix%(round)04d"% {'round': itte}]
 	offset = matDic["offsetVis%(round)04d"% {'round': itte}]
-	matrix = np.ascontiguousarray(matrix, dtype=np.float32)
+	matrix = np.ascontiguousarray(matrix.T, dtype=np.float32)
 	print matrix.shape
 	offset = np.ascontiguousarray(offset, dtype=np.float32)
 	offset.shape = offset.shape[1]

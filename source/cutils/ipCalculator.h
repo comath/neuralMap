@@ -5,6 +5,7 @@
 #include <pthread.h>
 #include "parallelTree.h"
 #include "nnLayerUtils.h"
+#include <stdint.h>
 
 #include <mkl.h>
 #include <mkl_cblas.h>
@@ -25,8 +26,8 @@ typedef struct ipCache {
 ipCache * allocateCache(nnLayer *layer0, float threshold);
 void freeCache(ipCache *cache);
 
-void getInterSig(ipCache * cache, float *p, uint *ipSignature);
-void getInterSigBatch(ipCache *cache, float *data, uint *ipSignature, uint numData, uint numProc);
+void getInterSig(ipCache * cache, float *p, kint *ipSignature);
+void getInterSigBatch(ipCache *cache, float *data, kint *ipSignature, uint numData, uint numProc);
 
 
 

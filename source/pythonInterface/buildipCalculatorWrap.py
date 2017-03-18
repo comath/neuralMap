@@ -10,10 +10,11 @@ import sys
 
 
 buildDir 	= "build/"
-wrapDir = "source/pythonInterface/"
+wrapDir 	= "source/pythonInterface/"
 utilsDir 	= "source/cutils/"
+pythonDir 	= "source/python/"
 testDir 	= "source/test/"
-mklRootDir = "/opt/intel/compilers_and_libraries/linux/mkl"
+mklRootDir 	= "/opt/intel/compilers_and_libraries/linux/mkl"
 
 mklIncDir =  mklRootDir + "/include/"
 mklLibDir = mklRootDir+'/lib/intel64'
@@ -41,4 +42,4 @@ ipCalculatorExt = Extension(name='ipCalculatorWrap',
 setup(ext_modules = cythonize(ipCalculatorExt,gdb_debug=True))
 
 
-os.rename("ipCalculatorWrap.so", testDir+"ipCalculatorWrap.so")
+os.rename("ipCalculatorWrap.so", pythonDir+"ipCalculatorWrap.so")

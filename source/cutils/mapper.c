@@ -1,5 +1,6 @@
 #include "mapper.h"
 #include <float.h>
+#include <stdint.h>
 
 #include <mkl.h>
 #include <mkl_cblas.h>
@@ -109,7 +110,7 @@ void addDatumToMap(_nnMap * map, float *datum, float errorMargin)
 
 	// The data is stored lexographically by (ipSig,regSig) as one long key.
 	// This can be easily achieved with some pointer arithmetic
-	uint * sig  = malloc(2*keyLength*sizeof(uint));
+	kint * sig  = malloc(2*keyLength*sizeof(uint));
 	
 	// Get the IP Signature
 	getInterSig(map->cache, datum, sig);

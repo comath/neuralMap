@@ -6,6 +6,7 @@
 #include "parallelTree.h"
 #include "ipCalculator.h"
 #include "nnLayerUtils.h"
+#include <stdint.h>
 
 #include <mkl.h>
 #include <mkl_cblas.h>
@@ -14,8 +15,8 @@
 #include <mkl_lapacke.h>
 
 typedef struct location {
-	uint *ipSig;
-	uint *regSig;
+	kint *ipSig;
+	kint *regSig;
 	uint numPoints;
 	uint numErrorPoints;
 	float *avgPoint;
