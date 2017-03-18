@@ -1,6 +1,8 @@
 #include "key.h"
+#include <stdint.h>
 
-#define DATASIZE 32
+#define DATASIZE 64
+
 
 uint calcKeyLen(uint dataLen)
 {
@@ -11,7 +13,7 @@ uint calcKeyLen(uint dataLen)
 	return keyLen;
 }
 
-char compareKey(uint *x, uint *y, uint keyLen)
+char compareKey(kint *x, kint *y, uint keyLen)
 {
 	uint i = 0;
 	for(i = 0; i < keyLen; i++){
@@ -25,7 +27,7 @@ char compareKey(uint *x, uint *y, uint keyLen)
 	return 0;
 }
 
-char checkEmptyKey(uint *key,uint keyLength)
+char checkEmptyKey(kint *key,uint keyLength)
 {
 	uint i = 0;
 	for(i = 0; i < keyLength; i++){
@@ -36,7 +38,7 @@ char checkEmptyKey(uint *key,uint keyLength)
 	return 0;
 }
 
-void convertToKey(int * raw, uint *key,uint dataLen)
+void convertToKey(int * raw, kint *key,uint dataLen)
 {
 
 	uint keyLen = calcKeyLen(dataLen);
@@ -52,7 +54,7 @@ void convertToKey(int * raw, uint *key,uint dataLen)
 
 
 
-void batchConvertToKey(int * raw, uint *key,uint dataLen, uint numData){
+void batchConvertToKey(int * raw, kint *key,uint dataLen, uint numData){
 	uint i =0;
 	uint keyLen = calcKeyLen(dataLen);
 	for(i=0;i<numData;i++){
@@ -62,14 +64,14 @@ void batchConvertToKey(int * raw, uint *key,uint dataLen, uint numData){
 
 
 
-void addIndexToKey(uint * key, uint index)
+void addIndexToKey(kint *key, uint index)
 {
 	int j = index % DATASIZE;
 	if(checkIndex(key,index) == 0){
 		key[index/DATASIZE] += (1 << (DATASIZE-1-j));
 	}
 }
-void removeIndexFromKey(uint * key, uint index)
+void removeIndexFromKey(kint *key, uint index)
 {
 	int j = index % DATASIZE;
 	if(checkIndex(key,index)){
@@ -77,12 +79,12 @@ void removeIndexFromKey(uint * key, uint index)
 	}
 }
 
-uint checkIndex(uint * key, uint index)
+uint checkIndex(kint *key, uint index)
 {
 	return key[index/DATASIZE] & (1 << (DATASIZE-1-(index % DATASIZE)));
 }
 
-void clearKey(uint *key, uint keyLen)
+void clearKey(kint *key, uint keyLen)
 {
 	uint i = 0;
 	for(i=0;i<keyLen;i++){
@@ -90,13 +92,13 @@ void clearKey(uint *key, uint keyLen)
 	}
 }
 
-void printKeyArr(uint *key, uint length){
+void printKeyArr(kint *key, uint length){
 	uint i = 0;
 	printf("[");
 	for(i=0;i<length-1;i++){
-		printf("%u,",key[i]);
+		printf("%lu,",key[i]);
 	}
-	printf("%u", key[length-1]);
+	printf("%lu", key[length-1]);
 	printf("]\n");
 }
 
@@ -110,7 +112,7 @@ void printIntArr(int *arr, uint length){
 	printf("]\n");
 }
 
-void printKey(uint* key, uint dataLen){
+void printKey(kint *key, uint dataLen){
 	uint i=0;
 	printf("[");
 	for(i=0;i<dataLen;i++){
@@ -121,7 +123,7 @@ void printKey(uint* key, uint dataLen){
 	printf("]\n");
 }
 
-void convertFromKey(uint *key, int * raw, uint dataLen)
+void convertFromKey(kint *key, int * raw, uint dataLen)
 {
 	uint i = 0;
 	for(i=0;i<dataLen;i++){
@@ -133,7 +135,7 @@ void convertFromKey(uint *key, int * raw, uint dataLen)
 	}
 }
 
-void copyKey(uint *key1, uint * key2, uint keyLen)
+void copyKey(kint *key1, kint *key2, uint keyLen)
 {
 	uint i = 0;
 	for(i=0;i<keyLen;i++){
@@ -141,7 +143,7 @@ void copyKey(uint *key1, uint * key2, uint keyLen)
 	}
 }
 
-void batchConvertFromKey(uint *key, int * raw, uint dataLen,uint numData){
+void batchConvertFromKey(kint *key, int * raw, uint dataLen,uint numData){
 	uint i =0;
 	uint keyLen = calcKeyLen(dataLen);
 	printf("Converting a key. Data length: %u, numData: %u\n",dataLen,numData );
@@ -150,7 +152,7 @@ void batchConvertFromKey(uint *key, int * raw, uint dataLen,uint numData){
 	}
 }
 
-void chromaticKey(uint* key, float *rgb, uint dataLen)
+void chromaticKey(kint* key, float *rgb, uint dataLen)
 {
 	rgb[0] = 0;
 	rgb[1] = 0;
@@ -165,7 +167,7 @@ void chromaticKey(uint* key, float *rgb, uint dataLen)
 	}
 }
 
-void batchChromaticKey(uint* key, float *rgb, uint dataLen, uint numData){
+void batchChromaticKey(kint* key, float *rgb, uint dataLen, uint numData){
 	uint i =0;
 	uint keyLen = calcKeyLen(dataLen);
 	for(i=0;i<numData;i++){
@@ -173,7 +175,7 @@ void batchChromaticKey(uint* key, float *rgb, uint dataLen, uint numData){
 	}
 }
 
-void convertFloatToKey(float * raw, uint *key,uint dataLen)
+void convertFloatToKey(float * raw, kint *key,uint dataLen)
 {
 	uint keyLen = calcKeyLen(dataLen);
 	clearKey(key, keyLen);
@@ -186,7 +188,7 @@ void convertFloatToKey(float * raw, uint *key,uint dataLen)
 	}
 }
 
-void convertFromKeyToFloat(uint *key, float * raw, uint dataLen)
+void convertFromKeyToFloat(kint *key, float * raw, uint dataLen)
 {
 	uint i = 0;
 	for(i=0;i<dataLen;i++){

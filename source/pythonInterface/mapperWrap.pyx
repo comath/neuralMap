@@ -81,8 +81,8 @@ cdef class nnMap:
 
 	def __cinit__(self,np.ndarray[float,ndim=2,mode="c"] A0 not None, np.ndarray[float,ndim=1,mode="c"] b0 not None,
 					   float threshold, float errorThreshhold):
-		cdef unsigned int outDim0 = A0.shape[0]
-		cdef unsigned int inDim0  = A0.shape[1]
+		cdef unsigned int outDim0 = A0.shape[1]
+		cdef unsigned int inDim0  = A0.shape[0]
 		self.layer0 = createLayer(&A0[0,0],&b0[0],outDim0,inDim0)
 		if not self.layer0:
 			raise MemoryError()

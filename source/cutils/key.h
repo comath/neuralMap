@@ -6,34 +6,36 @@
 #include <error.h>
 #include <unistd.h>
 
+#include <stdint.h>
 
+#define kint uint64_t
 
-char compareKey(uint *x, uint *y, uint keyLength);
-char emptyKey(uint key,uint keyLength);
+char compareKey(kint *x, kint *y, uint keyLength);
+char checkEmptyKey(kint *key, uint keyLength);
 
-void convertToKey(int * raw, uint *key,uint dataLen);
-void convertFloatToKey(float * raw, uint *key,uint dataLen);
+void convertToKey(int * raw, kint *key,uint dataLen);
+void convertFloatToKey(float * raw, kint *key,uint dataLen);
 
-void convertFromKey(uint *key, int * output, uint dataLen);
-void convertFromKeyToFloat(uint *key, float * output, uint dataLen);
+void convertFromKey(kint *key, int * output, uint dataLen);
+void convertFromKeyToFloat(kint *key, float * output, uint dataLen);
 
-void copyKey(uint *key1, uint * key2, uint keyLen);
+void copyKey(kint *key1, kint * key2, uint keyLen);
 
-void chromaticKey(uint* key, float *rgb, uint dataLen);
+void chromaticKey(kint *key, float *rgb, uint dataLen);
 
-void batchConvertToKey(int * raw, uint *key,uint dataLen, uint numData);
-void batchConvertFromKey(uint *key, int * output, uint dataLen,uint numData);
-void batchChromaticKey(uint* key, float *rgb, uint dataLen, uint numData);
+void batchConvertToKey(int *raw, kint *key,uint dataLen, uint numData);
+void batchConvertFromKey(kint *key, int * output, uint dataLen,uint numData);
+void batchChromaticKey(kint *key, float *rgb, uint dataLen, uint numData);
 
 uint calcKeyLen(uint dataLen);
 
-void addIndexToKey(uint * key, uint index);
-void removeIndexFromKey(uint * key, uint index);
-uint checkIndex(uint * key, uint index);
-void clearKey(uint *key, uint keyLength);
+void addIndexToKey(kint * key, uint index);
+void removeIndexFromKey(kint * key, uint index);
+uint checkIndex(kint * key, uint index);
+void clearKey(kint *key, uint keyLength);
 
-void printKeyArr(uint *key, uint length);
-void printKey(uint* key, uint dataLen);
+void printKeyArr(kint *key, uint length);
+void printKey(kint *key, uint dataLen);
 
 
 

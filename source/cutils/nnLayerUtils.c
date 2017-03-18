@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <float.h>
 #include <stdlib.h>
+#include <stdint.h>
+
 #ifdef MKL
 #include <mkl.h>
 #include <mkl_cblas.h>
@@ -84,3 +86,90 @@ void printMatrix(float *arr, uint inDim, uint outDim){
 }
 	
 
+void getRegSig(nnLayer *layer, float *p, kint * regSig)
+{
+	// Prepare all the internal values and place commonly referenced ones on the stack
+	uint outDim = layer->outDim;
+	uint keyLength = calcKeyLen(outDim);
+	clearKey(regSig, keyLength);
+	float *output = malloc(outDim*sizeof(float));
+	evalLayer(layer, p,output);
+	convertFloatToKey(output,regSig,outDim);
+}
+
+struct getRegThreadArgs {
+	uint tid;
+	uint numThreads;
+
+	uint numData;
+	float * data;
+	kint *regSig;
+
+	nnLayer *layer;
+};
+
+void * getRegBatch_thread(void *thread_args)
+{
+	struct getRegThreadArgs *myargs;
+	myargs = (struct getRegThreadArgs *) thread_args;
+
+	uint tid = myargs->tid;	
+	uint numThreads = myargs->numThreads;
+
+	uint numData = myargs->numData;
+	float *data = myargs->data;
+	kint *regSig = myargs->regSig;
+
+	nnLayer *layer = myargs->layer;
+
+	uint dim = layer->inDim;
+	uint keySize = calcKeyLen(layer->outDim);
+
+	uint i = 0;
+	for(i=tid;i<numData;i=i+numThreads){		
+		getRegSig(layer,data+i*dim, regSig+i*keySize);
+	}
+	pthread_exit(NULL);
+}
+
+void getRegSigBatch(nnLayer *layer, float *data, kint *regSig, uint numData, uint numProc)
+{
+	int maxThreads = numProc;
+	int rc =0;
+	int i =0;
+	//printf("Number of processors: %d\n",maxThreads);
+	//Add one data to the first node so that we can avoid the race condition.
+	
+
+	struct getRegThreadArgs *thread_args = malloc(maxThreads*sizeof(struct getRegThreadArgs));
+
+	pthread_t threads[maxThreads];
+	pthread_attr_t attr;
+	void *status;
+	pthread_attr_init(&attr);
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+	
+	for(i=0;i<maxThreads;i++){
+		thread_args[i].layer = layer;
+		thread_args[i].numData = numData;
+		thread_args[i].regSig = regSig;
+		thread_args[i].data = data;
+		thread_args[i].numThreads = maxThreads;
+		thread_args[i].tid = i;
+		rc = pthread_create(&threads[i], NULL, getRegBatch_thread, (void *)&thread_args[i]);
+		if (rc){
+			printf("Error, unable to create thread\n");
+			exit(-1);
+		}
+	}
+
+	for( i=0; i < maxThreads; i++ ){
+		rc = pthread_join(threads[i], &status);
+		if (rc){
+			printf("Error, unable to join: %d \n", rc);
+			exit(-1);
+     	}
+	}
+
+	free(thread_args);
+}
