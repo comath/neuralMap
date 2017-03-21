@@ -16,7 +16,7 @@
 
 
 typedef struct ipCache {
-	nnLayer *layer0;
+	nnLayer *layer;
 	Tree *bases;
 	float *hpOffsetVecs;
 	float *hpNormals;

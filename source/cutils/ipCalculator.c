@@ -136,6 +136,35 @@ struct ipCacheData * solve(float *A, MKL_INT outDim, MKL_INT inDim, float *b)
 	return output;
 }
 
+struct intersection {
+	uint numHps;
+	float *subA;
+	float *subB;
+};
+
+void fillIntersection(kint *key, nnLayer *layer, struct intersection * I)
+{
+	uint inDim = layer->inDim;
+	uint outDim = layer->outDim;
+
+	uint i = 0;
+	I->numHps = 0;
+	#ifdef DEBUG 
+		printf("Processing Key\n");
+		printKey(key,outDim);
+	#endif
+	for(i=0;i<outDim;i++){
+		if(checkIndex(key,i)){
+			#ifdef DEBUG 
+				printf("Adding %u to submatrix\n",i);
+			#endif
+			cblas_scopy (inDim, layer->A +i*inDim, 1, I->subA + I->numHps*inDim, 1);
+			I->subB[I->numHps] = layer->b[i];
+			I->numHps++;
+		}
+	}
+}
+
 void * ipCacheDataCreator(void * input)
 {
 	#ifdef DEBUG 
@@ -143,45 +172,31 @@ void * ipCacheDataCreator(void * input)
 	#endif
 	struct ipCacheInput *myInput;
 	myInput = (struct ipCacheInput *) input;
-	nnLayer *layer0 = myInput->info->layer0;
+	nnLayer *layer = myInput->info->layer;
 
-	uint inDim = layer0->inDim;
-	uint outDim = layer0->outDim;
+	uint inDim = layer->inDim;
+	uint outDim = layer->outDim;
 	
+	struct intersection * I = malloc(sizeof(struct intersection)); 
+	I->subA = calloc(inDim*outDim, sizeof(float));
+	I->subB = calloc(outDim,sizeof(float));
 
-	float *subA = calloc(inDim*outDim, sizeof(float));
-	float *subB = calloc(outDim,sizeof(float));
-	uint i = 0;
-	uint numHps = 0;
-	#ifdef DEBUG 
-		printf("Processing Key\n");
-		printKey(myInput->key,outDim);
-	#endif
-	for(i=0;i<outDim;i++){
-		if(checkIndex(myInput->key,i)){
-			#ifdef DEBUG 
-				printf("Adding %u to submatrix\n",i);
-			#endif
-			cblas_scopy (inDim, layer0->A +i*inDim, 1, subA + numHps*inDim, 1);
-			subB[numHps] = layer0->b[i];
-			numHps++;
-		}
-	}
+	fillIntersection(myInput->key, layer, I);
 
 	//If there's less included hyperplanes there will be a kernel
-	if(numHps <= inDim){
-		MKL_INT m = numHps;
+	if(I->numHps <= inDim){
+		MKL_INT m = I->numHps;
 		MKL_INT n = inDim;
-		ipCacheData *ret = solve(subA, m, n, subB);
+		ipCacheData *ret = solve(I->subA, m, n, I->subB);
 		#ifdef DEBUG 
 			printf("-------------------/ipCacheDataCreator--------------------------------\n");
 		#endif
-		free(subA);
-		free(subB);
+		free(I->subA);
+		free(I->subB);
 		return ret;
 	} else {
-		free(subA);
-		free(subB);
+		free(I->subA);
+		free(I->subB);
 		#ifdef DEBUG 
 			printf("-------------------/ipCacheDataCreator--------------------------------\n");
 		#endif
@@ -208,9 +223,9 @@ void createHPCache(ipCache *cache)
 {
 	
 	uint i = 0;
-	nnLayer *layer0 = cache->layer0;
-	uint inDim = layer0->inDim;
-	uint outDim = layer0->outDim;
+	nnLayer *layer = cache->layer;
+	uint inDim = layer->inDim;
+	uint outDim = layer->outDim;
 
 	cache->hpNormals = calloc(outDim*inDim,sizeof(float));
 	cache->hpOffsetVecs = calloc(outDim*inDim,sizeof(float));
@@ -226,14 +241,14 @@ void createHPCache(ipCache *cache)
 			printf("----%u----\n",i);
 			if(inDim < 10){
 				printf("Hyperplane vector: ");
-				printFloatArr(layer0->A + inDim*i,inDim);
+				printFloatArr(layer->A + inDim*i,inDim);
 			}
-			printf("Offset Value: %f\n",layer0->b[i]);			
+			printf("Offset Value: %f\n",layer->b[i]);			
 		#endif	
-		scaling = cblas_snrm2 (inDim, layer0->A + inDim*i, 1);
+		scaling = cblas_snrm2 (inDim, layer->A + inDim*i, 1);
 		if(scaling){
-			cblas_saxpy (inDim,1/scaling,layer0->A + inDim*i,1,cache->hpNormals + inDim*i,1);
-			cblas_saxpy (inDim,layer0->b[i]/scaling,cache->hpNormals+inDim*i,1,cache->hpOffsetVecs + inDim*i,1);
+			cblas_saxpy (inDim,1/scaling,layer->A + inDim*i,1,cache->hpNormals + inDim*i,1);
+			cblas_saxpy (inDim,layer->b[i]/scaling,cache->hpNormals+inDim*i,1,cache->hpOffsetVecs + inDim*i,1);
 			#ifdef DEBUG
 				printf("Scaling factor (norm of hyperplane vector): %f\n",scaling);
 				
@@ -255,23 +270,23 @@ void createHPCache(ipCache *cache)
 	#endif
 }
 
-ipCache * allocateCache(nnLayer *layer0, float threshhold)
+ipCache * allocateCache(nnLayer *layer, float threshhold)
 {
 	ipCache *cache = malloc(sizeof(ipCache));
-	uint keyLen = calcKeyLen(layer0->outDim);
+	uint keyLen = calcKeyLen(layer->outDim);
 	cache->bases = createTree(8,keyLen , ipCacheDataCreator, NULL, ipCacheDataDestroy);
 
-	printf("Creating cache of inDim %d and outDim %d with threshhold %f \n", layer0->inDim, layer0->outDim, threshhold);
+	printf("Creating cache of inDim %d and outDim %d with threshhold %f \n", layer->inDim, layer->outDim, threshhold);
 	#ifdef DEBUG
 		printf("-----------------allocateCache--------------------\n");
-		if(layer0->inDim < 10 && layer0->outDim <20){
+		if(layer->inDim < 10 && layer->outDim <20){
 			printf("The matrix is: \n");
-			printMatrix(layer0->A,layer0->inDim,layer0->outDim);
+			printMatrix(layer->A,layer->inDim,layer->outDim);
 			printf("The offset vector is: ");
-			printFloatArr(layer0->b, layer0->outDim);
+			printFloatArr(layer->b, layer->outDim);
 		}
 	#endif
-	cache->layer0 = layer0;
+	cache->layer = layer;
 	createHPCache(cache);
 	cache->threshold = threshhold;
 	#ifdef DEBUG
@@ -300,10 +315,12 @@ float computeDist(float * p, kint *ipSignature, ipCache *cache)
 {
 	
 	ipCacheInput myInput = {.info = cache, .key = ipSignature};
-	struct ipCacheData *myBasis = addData(cache->bases, ipSignature, &myInput);
+	//struct ipCacheData *myBasis = addData(cache->bases, ipSignature, &myInput);
 	
+	struct ipCacheData *myBasis = ipCacheDataCreator(&myInput);
+
 	if(myBasis){
-		MKL_INT inDim = cache->layer0->inDim;
+		MKL_INT inDim = cache->layer->inDim;
 		float * px = malloc(inDim * sizeof(float));
 		cblas_scopy (inDim, p, 1, px, 1);
 		cblas_saxpy (inDim,1,myBasis->solution,1,px,1);
@@ -314,6 +331,7 @@ float computeDist(float * p, kint *ipSignature, ipCache *cache)
 		if(norm < 0){
 			norm = -norm;
 		}
+		ipCacheDataDestroy((void *) myBasis);
 		free(px);
 		return norm;
 	} else {
@@ -325,8 +343,8 @@ float computeDist(float * p, kint *ipSignature, ipCache *cache)
 
 void computeDistToHPS(float *p, ipCache *cache, float *distances)
 {
-	uint outDim = cache->layer0->outDim;
-	uint inDim = cache->layer0->inDim;
+	uint outDim = cache->layer->outDim;
+	uint inDim = cache->layer->inDim;
 	float * localCopy = calloc(outDim*inDim,sizeof(float));
 	cblas_scopy (inDim*outDim, cache->hpOffsetVecs, 1, localCopy, 1);
 	
@@ -387,7 +405,7 @@ void computeDistToHPS(float *p, ipCache *cache, float *distances)
 void getInterSig(ipCache * cache, float *p, kint * ipSignature)
 {
 	// Prepare all the internal values and place commonly referenced ones on the stack
-	uint outDim = cache->layer0->outDim;
+	uint outDim = cache->layer->outDim;
 	uint keyLength = cache->bases->keyLength;
 	clearKey(ipSignature, keyLength);
 
@@ -509,8 +527,8 @@ void * addIPBatch_thread(void *thread_args)
 
 	ipCache *cache = myargs->cache;
 
-	uint dim = cache->layer0->inDim;
-	uint keySize = calcKeyLen(cache->layer0->outDim);
+	uint dim = cache->layer->inDim;
+	uint keySize = calcKeyLen(cache->layer->outDim);
 
 	uint i = 0;
 	for(i=tid;i<numData;i=i+numThreads){		

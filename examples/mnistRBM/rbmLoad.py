@@ -41,8 +41,8 @@ for hiddenDim in range(20,21,20):
 	offset = np.ascontiguousarray(offset, dtype=np.float32)
 	offset.shape = offset.shape[1]
 	map1 = nnMap(matrix,offset,'mnistRBM.db','hidden%(hid)03d' % {'hid':hiddenDim})
-	indicies = range(100)
-	map1.addPoints(indicies,trX[0:100,])
+	indicies = range(trX.shape[0])
+	map1.addPoints(indicies,trX)
 #	for k in range(1, 60):
 		
 		
