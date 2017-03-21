@@ -47,3 +47,6 @@ def readKey(np.ndarray[np.uint64_t,ndim=1,mode="c"] compressedKey not None,unsig
 	cdef np.ndarray[np.int32_t,ndim=1] rawKey = np.zeros([dataLen], dtype=np.int32)
 	convertFromKey(<kint *> compressedKey.data, <int *> rawKey.data, dataLen)
 	return rawKey
+
+def pyCalcKeyLen(unsigned int dataLen):
+	return calcKeyLen(dataLen)

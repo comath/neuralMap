@@ -1,3 +1,4 @@
+# cython: profile=True
 from __future__ import print_function
 import cython
 import numpy as np
@@ -41,7 +42,7 @@ cdef class ipCalculator:
 		if not self.cache:
 			raise MemoryError()
 
-	def batchCalculateUncompressed(self,np.ndarray[float,ndim=1,mode="c"] data not None, numProc=None):
+	def batchCalculateUncompressed(self,np.ndarray[float,ndim=2,mode="c"] data not None, numProc=None):
 		if numProc == None:
 			numProc = multiprocessing.cpu_count()
 		if numProc > multiprocessing.cpu_count():

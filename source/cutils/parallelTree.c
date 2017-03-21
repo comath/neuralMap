@@ -18,7 +18,7 @@ TreeNode * allocateNodes(int treeDepth, uint keyLength)
 {
 	const int maxTreeSize = (1 << (treeDepth+1)) - 1;
 	struct TreeNode * tree = malloc(maxTreeSize * sizeof(TreeNode));
-	kint * keys = malloc(maxTreeSize * keyLength * sizeof(uint));
+	kint * keys = malloc(maxTreeSize * keyLength * sizeof(kint));
 	int rc = 0;
 	for (int i = 0; i < maxTreeSize; i++)
 	{
