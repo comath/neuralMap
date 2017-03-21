@@ -26,8 +26,9 @@ def convertToString(ndarr):
 currentNumLocations = 0
 currentNumPoints = 0
 
+print trX.shape
 
-for hiddenDim in range(40,41,20):
+for hiddenDim in range(20,21,20):
 	matDic = {}
 	io.loadmat("mnist%(visibleDim)dx%(hiddenDim)03dstepsize%(stepSize)f.mat" 
 													% {'visibleDim': visibleDim, 'hiddenDim': hiddenDim, 'stepSize':stepSize},
@@ -39,23 +40,10 @@ for hiddenDim in range(40,41,20):
 	print matrix.shape
 	offset = np.ascontiguousarray(offset, dtype=np.float32)
 	offset.shape = offset.shape[1]
-	map1 = nnMap(matrix,offset,2,0.5)
-	for k in range(1, 60):
-		tr_x, tr_y  = mnist.train.next_batch(batchSize)
-		map1.batchAdd(tr_x,errorMargins,1)
+	map1 = nnMap(matrix,offset,'mnistRBM.db','hidden%(hid)03d' % {'hid':hiddenDim})
+	indicies = range(100)
+	map1.addPoints(indicies,trX[0:100,])
+#	for k in range(1, 60):
 		
 		
 
-	for i in range(map1.numLocations()):
-		curloc = map1.location(i)
-		ip = curloc.ipSig()
-		reg = curloc.regSig()
-		avgPoint = curloc.avgPoint()
-		avgPoint.shape = [28,28]
-		ipString = convertToString(ip)
-		regString = convertToString(reg)
-
-		image = Image.fromarray(avgPoint)
-		if image.mode != 'RGB':
-			image = image.convert('RGB')
-		image.save("ip" + ipString + "reg" + regString + ".png")

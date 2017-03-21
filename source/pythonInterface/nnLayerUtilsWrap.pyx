@@ -21,7 +21,7 @@ cdef class neuralLayer:
 	
 	def __cinit__(self,np.ndarray[float,ndim=2,mode="c"] A not None, np.ndarray[float,ndim=1,mode="c"] b not None):
 		cdef unsigned int inDim, outDim
-		outDim,inDim = A.shape[0], A.shape[1]
+		outDim,inDim = A.shape[1], A.shape[0]
 		self._c_layer = <nnLayer *>createLayer( <float *> A.data,<float *>  b.data,outDim,inDim)
 
 	def eval(self, np.ndarray[float,ndim=2,mode="c"] x not None):
@@ -33,7 +33,7 @@ cdef class neuralLayer:
 	def __dealloc__(self):
 		freeLayer(self._c_layer)
 
-	def batchCalculateUncompressed(self,np.ndarray[float,ndim=1,mode="c"] data not None, numProc=None):
+	def batchCalculateUncompressed(self,np.ndarray[float,ndim=2,mode="c"] data not None, numProc=None):
 		if numProc == None:
 			numProc = multiprocessing.cpu_count()
 		if numProc > multiprocessing.cpu_count():
