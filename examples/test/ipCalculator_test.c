@@ -4,8 +4,8 @@ Running Valgrind or gdb on the python wrap leads to a bit more headaches.
 */
 #include <stdio.h>
 #include <stdlib.h>
-#include "../cutils/nnLayerUtils.h"
-#include "../cutils/ipCalculator.h"
+#include "../../source/cutils/nnLayerUtils.h"
+#include "../../source/cutils/ipCalculator.h"
 
 void printFloatArrNoNewLine(float * arr, int numElements){
 	int i = 0;
@@ -73,7 +73,7 @@ int main(int argc, char* argv[])
 	ipCache *cache = allocateCache(layer,2);
 	
 
-	uint *ipSignature = malloc(keySize*numData*sizeof(uint));
+	kint *ipSignature = malloc(keySize*numData*sizeof(kint));
 	float *data = randomData(dim,numData);
 
 	printf("Calculating the signature of Points\n");

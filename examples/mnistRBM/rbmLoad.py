@@ -28,7 +28,7 @@ currentNumPoints = 0
 
 print trX.shape
 
-for hiddenDim in range(20,21,20):
+for hiddenDim in range(100,101,20):
 	matDic = {}
 	io.loadmat("mnist%(visibleDim)dx%(hiddenDim)03dstepsize%(stepSize)f.mat" 
 													% {'visibleDim': visibleDim, 'hiddenDim': hiddenDim, 'stepSize':stepSize},

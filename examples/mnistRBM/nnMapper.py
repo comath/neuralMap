@@ -2,6 +2,7 @@ import fnmatch
 import os
 import re
 import numpy as np
+from scipy.misc import comb
 import io
 import sqlite3
 from ipCalculatorWrap import ipCalculator, neuralLayer,readKey, pyCalcKeyLen
@@ -20,6 +21,19 @@ def convert_array(text):
     out.seek(0)
     return np.load(out)
 
+def sizeCalculator(inDim,outDim,depth):
+	size = 0
+	for i in range(depth):
+		size += comb(outDim,i)
+	size *= (inDim*inDim+inDim)
+	return size
+
+def depthRestrictionCalc(memorySize,inDim,outDim):
+	l = 0
+	while(sizeCalculator(inDim,outDim,l) < memorySize):
+		l +=1
+	return l+3
+
 # Converts np.array to TEXT when inserting
 sqlite3.register_adapter(np.ndarray, adapt_array)
 
@@ -31,7 +45,8 @@ class nnMapper:
 	def __init__(self,matrix,offset,filename,tablename):
 		self.conn = sqlite3.connect(filename)
 		self.curs = self.conn.cursor()
-		self.ipCalc = ipCalculator(matrix,offset,2)
+		depthRestriction = depthRestrictionCalc(64*1000*1000*1000,matrix.shape[0],matrix.shape[1])
+		self.ipCalc = ipCalculator(matrix,offset,2,depthRestriction)
 		self.tablename = tablename
 		self.regCalc = neuralLayer(matrix,offset)
 		self.keyLength = pyCalcKeyLen(offset.shape[0])

@@ -7,11 +7,18 @@
 #include <mkl_lapack.h>
 #include <mkl_lapacke.h>
 
+typedef struct intersection {
+	uint numHps;
+	float *subA;
+	float *subB;
 
+	uint maxNumHps;
+} intersection;
 
 typedef struct ipCacheInput {
 	//This should be a constant
 	const ipCache * info;
+	intersection *I;
 	//This shouldn't be
 	kint *key;
 } ipCacheInput;
@@ -136,34 +143,7 @@ struct ipCacheData * solve(float *A, MKL_INT outDim, MKL_INT inDim, float *b)
 	return output;
 }
 
-struct intersection {
-	uint numHps;
-	float *subA;
-	float *subB;
-};
 
-void fillIntersection(kint *key, nnLayer *layer, struct intersection * I)
-{
-	uint inDim = layer->inDim;
-	uint outDim = layer->outDim;
-
-	uint i = 0;
-	I->numHps = 0;
-	#ifdef DEBUG 
-		printf("Processing Key\n");
-		printKey(key,outDim);
-	#endif
-	for(i=0;i<outDim;i++){
-		if(checkIndex(key,i)){
-			#ifdef DEBUG 
-				printf("Adding %u to submatrix\n",i);
-			#endif
-			cblas_scopy (inDim, layer->A +i*inDim, 1, I->subA + I->numHps*inDim, 1);
-			I->subB[I->numHps] = layer->b[i];
-			I->numHps++;
-		}
-	}
-}
 
 void * ipCacheDataCreator(void * input)
 {
@@ -173,30 +153,20 @@ void * ipCacheDataCreator(void * input)
 	struct ipCacheInput *myInput;
 	myInput = (struct ipCacheInput *) input;
 	nnLayer *layer = myInput->info->layer;
+	intersection * I = myInput->I;
 
-	uint inDim = layer->inDim;
-	uint outDim = layer->outDim;
 	
-	struct intersection * I = malloc(sizeof(struct intersection)); 
-	I->subA = calloc(inDim*outDim, sizeof(float));
-	I->subB = calloc(outDim,sizeof(float));
-
-	fillIntersection(myInput->key, layer, I);
 
 	//If there's less included hyperplanes there will be a kernel
-	if(I->numHps <= inDim){
+	if(I->numHps <= layer->inDim){
 		MKL_INT m = I->numHps;
-		MKL_INT n = inDim;
+		MKL_INT n = layer->inDim;
 		ipCacheData *ret = solve(I->subA, m, n, I->subB);
 		#ifdef DEBUG 
 			printf("-------------------/ipCacheDataCreator--------------------------------\n");
 		#endif
-		free(I->subA);
-		free(I->subB);
 		return ret;
 	} else {
-		free(I->subA);
-		free(I->subB);
 		#ifdef DEBUG 
 			printf("-------------------/ipCacheDataCreator--------------------------------\n");
 		#endif
@@ -270,13 +240,13 @@ void createHPCache(ipCache *cache)
 	#endif
 }
 
-ipCache * allocateCache(nnLayer *layer, float threshhold)
+ipCache * allocateCache(nnLayer *layer, float threshhold, int depthRestriction)
 {
 	ipCache *cache = malloc(sizeof(ipCache));
 	uint keyLen = calcKeyLen(layer->outDim);
 	cache->bases = createTree(8,keyLen , ipCacheDataCreator, NULL, ipCacheDataDestroy);
 
-	printf("Creating cache of inDim %d and outDim %d with threshhold %f \n", layer->inDim, layer->outDim, threshhold);
+	printf("Creating cache of inDim %d and outDim %d with threshhold %f and depth restriction %d \n", layer->inDim, layer->outDim, threshhold,depthRestriction);
 	#ifdef DEBUG
 		printf("-----------------allocateCache--------------------\n");
 		if(layer->inDim < 10 && layer->outDim <20){
@@ -289,6 +259,7 @@ ipCache * allocateCache(nnLayer *layer, float threshhold)
 	cache->layer = layer;
 	createHPCache(cache);
 	cache->threshold = threshhold;
+	cache->depthRestriction = depthRestriction;
 	#ifdef DEBUG
 		printf("--------------------------------------------------\n");
 	#endif
@@ -311,13 +282,24 @@ void freeCache(ipCache * cache)
 }
 
 
-float computeDist(float * p, kint *ipSignature, ipCache *cache)
+float computeDist(float * p, kint *ipSignature, ipCache *cache, intersection *I)
 {
-	
-	ipCacheInput myInput = {.info = cache, .key = ipSignature};
-	//struct ipCacheData *myBasis = addData(cache->bases, ipSignature, &myInput);
-	
-	struct ipCacheData *myBasis = ipCacheDataCreator(&myInput);
+	struct ipCacheData *myBasis;
+	ipCacheInput myInput = {.info = cache, .key = ipSignature, .I=I};
+	char cacheUse =0;
+	if(I->maxNumHps < I->numHps + cache->depthRestriction){
+		#ifdef DEBUG
+			printf("Using Cache\n");
+		#endif
+		myBasis = addData(cache->bases, ipSignature, &myInput);
+		cacheUse = 1;
+	} else {
+		#ifdef DEBUG
+			printf("Computing without cache.\n");
+		#endif
+		myBasis = ipCacheDataCreator(&myInput);
+		cacheUse =0;
+	}
 
 	if(myBasis){
 		MKL_INT inDim = cache->layer->inDim;
@@ -331,7 +313,9 @@ float computeDist(float * p, kint *ipSignature, ipCache *cache)
 		if(norm < 0){
 			norm = -norm;
 		}
-		ipCacheDataDestroy((void *) myBasis);
+		if(!cacheUse){
+			ipCacheDataDestroy((void *) myBasis);
+		}
 		free(px);
 		return norm;
 	} else {
@@ -400,94 +384,92 @@ void computeDistToHPS(float *p, ipCache *cache, float *distances)
 	free(localCopy);
 }
 
+intersection * fillIntersection(uint * hpIndexList, int numRelevantHP, nnLayer *layer)
+{
+	uint inDim = layer->inDim;
+	struct intersection * I = malloc(sizeof(struct intersection)); 
+	I->subA = calloc((inDim+1)*numRelevantHP, sizeof(float));
+	I->subB = I->subA + inDim*numRelevantHP;
+	I->maxNumHps = numRelevantHP;
+	int i = 0;
+	int numHps = 0;
+	for(i=0;i<numRelevantHP;i++){
+		cblas_scopy (inDim, layer->A +hpIndexList[i]*inDim, 1, I->subA + numHps*inDim, 1);
+		I->subB[numHps] = layer->b[i];
+		numHps++;
+	}
+	return I;
+}
 
+void freeIntersection(intersection *I)
+{
+	free(I->subA);
+	free(I);
+}
 
 void getInterSig(ipCache * cache, float *p, kint * ipSignature)
 {
+	int i = 0;
 	// Prepare all the internal values and place commonly referenced ones on the stack
 	uint outDim = cache->layer->outDim;
+	uint inDim = cache->layer->inDim;
 	uint keyLength = cache->bases->keyLength;
 	clearKey(ipSignature, keyLength);
 
+	int numRelevantHP;
+	if(inDim < outDim){
+		/* 
+		If the spacial dim is less than the number of hyperplanes then we want to 
+		take the distance to the closest instersection (which will be of full rank).
+		
+		*/
+		numRelevantHP = inDim + 1;
+	} else {
+		numRelevantHP = outDim;
+	}
+
 	float *posetDistToHP = malloc(outDim*sizeof(float));
-	uint *hpDistIndexList = malloc(outDim*sizeof(uint));
-	float *distances = calloc(outDim,sizeof(float));
+	uint *hpDistIndexList = malloc(numRelevantHP*sizeof(uint));
 	
+	float *distances = malloc(outDim*sizeof(float));
+	float *distancesForSorting = malloc(outDim*sizeof(float));
 	computeDistToHPS(p, cache, distances);
-
-	hpDistIndexList[0] = cblas_isamin (outDim, distances, 1);
-	float posetDist = distances[hpDistIndexList[0]];
-	distances[hpDistIndexList[0]] = FLT_MAX;
-
-	addIndexToKey(ipSignature,hpDistIndexList[0]);
-
-	hpDistIndexList[1] = cblas_isamin (outDim, distances, 1);
-	float hpDist = distances[hpDistIndexList[1]];
-	distances[hpDistIndexList[1]] = FLT_MAX;
-
-	posetDistToHP[0] = cache->threshold*posetDist - hpDist;
-
-	#ifdef DEBUG
-		printf("Initial Values:\n");
-		printf("Checking %f*{i}(dist:%f) vs {j}(dist:%f)\n",cache->threshold,posetDist,hpDist);
-		printf("{i}: ");
-		printKey(ipSignature,outDim);
-		printf("j: %u \n", hpDistIndexList[1]);
-		printf("Value of [%d]:%f\n",0,posetDistToHP[0]);
-	#endif
-
-	int i = 1;
-
-	do {
+	cblas_scopy (outDim, distances, 1, distancesForSorting, 1);
+	for(i=0;i<numRelevantHP;i++){
+		hpDistIndexList[i] = cblas_isamin (outDim, distancesForSorting, 1);
+		distancesForSorting[hpDistIndexList[i]] = FLT_MAX;
 		addIndexToKey(ipSignature,hpDistIndexList[i]);
-		posetDist = computeDist(p, ipSignature, cache);
+	}
+	free(distancesForSorting);
+	
+	intersection *I = fillIntersection(hpDistIndexList,numRelevantHP, cache->layer);
 
-		hpDistIndexList[i+1] = cblas_isamin (outDim, distances, 1);
-		hpDist = distances[hpDistIndexList[i+1]];
-		distances[hpDistIndexList[i+1]] = FLT_MAX;
-		
-		if(!(posetDist < 0) && hpDist != FLT_MAX){
-			posetDistToHP[i] = cache->threshold*posetDist - hpDist;
-		} else {
-			posetDistToHP[i] = 1;
-		}
-
-		
-		#ifdef DEBUG
-			printf("Checking %f*xu{i}(dist:%f) vs {j}(dist:%f)\n",cache->threshold,posetDist,hpDist);
-			printf("xu{i}:");
-			printKey(ipSignature,outDim);
-			printf("j: %u \n", hpDistIndexList[i+1]);
-			if(i < outDim-2 && posetDist > 0 && hpDist != FLT_MAX){
-				printf("Passed, Up while loop will run. Value of [%u]:%f\n",i,posetDistToHP[i]);
-			} else {
-				printf("Failed, Up while loop will not run. Value of [%u]:%f\n",i,posetDistToHP[i]);
-			}
-		#endif
-		i++;
-	} while(i < outDim-1 && posetDist > 0 && hpDist != FLT_MAX);
-	i--;
-	#ifdef DEBUG
-		if(posetDistToHP[i] > 0 && i > -1){
-			printf("Passed, decrease while loop will run. Value of [%u]:%f\n",i,posetDistToHP[i]);
-		} else {
-			printf("Failed, decrease while loop will not run. Value of [%u]:%f\n",i,posetDistToHP[i]);
-		}
-	#endif
-	while(posetDistToHP[i] > 0 && i > -1){
+	float posetDist;
+	float hpDist;
+	i = numRelevantHP-1;
+	do{
 		removeIndexFromKey(ipSignature,hpDistIndexList[i]);
+		I->numHps = i;
+		posetDist = computeDist(p, ipSignature, cache, I);
+		hpDist = distances[hpDistIndexList[i]];
 		i--;
 		#ifdef DEBUG
 			if(i > -1){
 				if(posetDistToHP[i] > 0){
-					printf("Passed, decrease while loop will run. Value of [%u]:%f\n",i,posetDistToHP[i]);
+					printf("Passed, decrease while loop will run. Value of [%u]:%f\n",i,cache->threshold*posetDist - hpDist);
 				} else {
-					printf("Failed, decrease while loop will not run. Value of [%u]:%f\n",i,posetDistToHP[i]);
+					printf("Failed, decrease while loop will not run. Value of [%u]:%f\n",i,cache->threshold*posetDist - hpDist);
 				}
 			}			
 		#endif
+	} while(!(posetDist < 0) && cache->threshold*posetDist - hpDist > 0 && i > 0);
+	if(i == 0){
+		posetDist = distances[hpDistIndexList[0]];
+		hpDist = distances[hpDistIndexList[1]];
+		if(cache->threshold*posetDist - hpDist > 0){
+			removeIndexFromKey(ipSignature,hpDistIndexList[0]);;
+		}
 	}
-	
 	
 	#ifdef DEBUG
 		printf("Main While Loop Completed\n");
@@ -500,6 +482,7 @@ void getInterSig(ipCache * cache, float *p, kint * ipSignature)
 	free(distances);
 	free(posetDistToHP);
 	free(hpDistIndexList);
+	freeIntersection(I);
 }
 
 struct IPAddThreadArgs {

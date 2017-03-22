@@ -21,9 +21,10 @@ typedef struct ipCache {
 	float *hpOffsetVecs;
 	float *hpNormals;
 	float threshold;
+	int depthRestriction;
 } ipCache;
 
-ipCache * allocateCache(nnLayer *layer0, float threshold);
+ipCache * allocateCache(nnLayer *layer0, float threshold, int depthRestriction);
 void freeCache(ipCache *cache);
 
 void getInterSig(ipCache * cache, float *p, kint *ipSignature);

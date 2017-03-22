@@ -22,7 +22,7 @@ include "nnLayerUtilsWrap.pyx"
 cdef extern from "../cutils/ipCalculator.h":
 	ctypedef struct ipCache:
 		pass
-	ipCache * allocateCache(nnLayer *layer0, float threshold)
+	ipCache * allocateCache(nnLayer *layer0, float threshold, int depthRestriction)
 	void freeCache(ipCache *cache)
 	void getInterSig(ipCache * cache, float *data, kint *ipSignature)
 	void getInterSigBatch(ipCache *cache, float *data, kint *ipSignature, unsigned int numData, unsigned int numProc)
@@ -33,11 +33,11 @@ cdef class ipCalculator:
 	cdef unsigned int keyLen
 	cdef unsigned int outDim
 	cdef unsigned int inDim
-	def __cinit__(self,np.ndarray[float,ndim=2,mode="c"] A not None, np.ndarray[float,ndim=1,mode="c"] b not None, float threshold):
+	def __cinit__(self,np.ndarray[float,ndim=2,mode="c"] A not None, np.ndarray[float,ndim=1,mode="c"] b not None, float threshold=2,int depthRestriction=3):
 		self.outDim = A.shape[1]
 		self.inDim  = A.shape[0]
 		self.layer = createLayer(&A[0,0],&b[0],self.outDim,self.inDim)
-		self.cache = allocateCache(self.layer,threshold)
+		self.cache = allocateCache(self.layer,threshold,depthRestriction)
 
 		if not self.cache:
 			raise MemoryError()

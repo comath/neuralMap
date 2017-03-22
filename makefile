@@ -19,7 +19,7 @@ CCFLAGS = $(DEBUG) $(GDB) $(FINAL) $(OPT) $(EXTRA_OPT)
 BIN=./build/
 WRAP = ./source/pythonInterface/
 UTILS = ./source/cutils/
-TEST = ./source/test/
+TEST = ./examples/test/
 
 LIB_FLAGS = -ldl -lpthread -lm
 
@@ -55,7 +55,7 @@ mapper_test.o: $(TEST)mapper_test.c $(UTILS)mapper.c $(UTILS)ipCalculator.c $(UT
 	$(CC) $(CXXFLAGS) $(MKLINC) -c $< -o $(BIN)$@
 
 ipCalculator_test: ipCalculator_test.o ipCalculator.o parallelTree.o key.o nnLayerUtils.o
-	$(CC) $(CCFLAGS) -DDEBUG $(BIN)$< $(BIN)ipCalculator.o $(BIN)nnLayerUtils.o $(BIN)parallelTree.o $(BIN)key.o -o $@ $(MKLONEDYNAMICLIB) $(LIB_FLAGS) 
+	$(CC) $(CCFLAGS)  $(BIN)$< $(BIN)ipCalculator.o $(BIN)nnLayerUtils.o $(BIN)parallelTree.o $(BIN)key.o -o $@ $(MKLONEDYNAMICLIB) $(LIB_FLAGS) 
 
 mapper_test: mapper_test.o mapper.o ipCalculator.o parallelTree.o key.o nnLayerUtils.o
 	$(CC) $(CCFLAGS) $(BIN)$< $(BIN)mapper.o $(BIN)ipCalculator.o $(BIN)nnLayerUtils.o $(BIN)parallelTree.o $(BIN)key.o -o $@ $(MKLONEDYNAMICLIB) $(LIB_FLAGS) 
