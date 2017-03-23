@@ -70,7 +70,7 @@ int main(int argc, char* argv[])
 	uint i = 0;
 	printf("If no faliures are printed then we are fine.\n");
 	nnLayer *layer = createDumbLayer(dim,numHP);
-	ipCache *cache = allocateCache(layer,2);
+	ipCache *cache = allocateCache(layer,2,10);
 	
 
 	kint *ipSignature = malloc(keySize*numData*sizeof(kint));

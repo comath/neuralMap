@@ -287,7 +287,7 @@ float computeDist(float * p, kint *ipSignature, ipCache *cache, intersection *I)
 	struct ipCacheData *myBasis;
 	ipCacheInput myInput = {.info = cache, .key = ipSignature, .I=I};
 	char cacheUse =0;
-	if(I->maxNumHps < I->numHps + cache->depthRestriction){
+	if(1 || I->maxNumHps < I->numHps + cache->depthRestriction){
 		#ifdef DEBUG
 			printf("Using Cache\n");
 		#endif

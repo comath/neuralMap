@@ -10,7 +10,7 @@
 #include "key.h"
 
 typedef struct TreeNode {
-	char created;
+	uint createdKL;
 
 	pthread_spinlock_t keyspinlock;
 	kint *key;
@@ -35,6 +35,7 @@ typedef struct Tree {
 
 	// Tree properties
 	unsigned int keyLength;
+	pthread_spinlock_t nodecountspinlock;
 	unsigned int numNodes;
 	unsigned int depth;
 	TreeNode * root;
@@ -45,6 +46,7 @@ Tree * createTree(int depth, uint keyLength, void * (*dataCreator)(void * input)
 void * addData(Tree *tree, kint *key, void * datum);
 void * getData(Tree *tree, kint *key);
 void freeTree(Tree *tree);
-
+void balanceAndTrimTree(Tree *tree, int finalNodeCount);
+int * getAccessCounts(Tree *tree);
 
 #endif
