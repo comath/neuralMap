@@ -121,7 +121,7 @@ void moveNode(Tree *tree, TreeNode * oldNode){
 void * addData(Tree *tree, kint * key, void * datum){
 	TreeNode * node = tree->root;
 	int treeDepth = tree->depth;
-	
+
 	pthread_spin_lock(&(node->keyspinlock));
 	if (node->createdKL == 0){
 		node->createdKL = tree->keyLength;

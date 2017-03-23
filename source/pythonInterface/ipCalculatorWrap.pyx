@@ -5,6 +5,7 @@ import numpy as np
 cimport numpy as np
 import multiprocessing
 from libc.stdlib cimport malloc, free
+import psutil
 
 
 #to print to stderr to warn the user of usage errors
@@ -22,7 +23,7 @@ include "nnLayerUtilsWrap.pyx"
 cdef extern from "../cutils/ipCalculator.h":
 	ctypedef struct ipCache:
 		pass
-	ipCache * allocateCache(nnLayer *layer0, float threshold, int depthRestriction)
+	ipCache * allocateCache(nnLayer *layer0, float threshold, int depthRestriction, long unsigned int)
 	void freeCache(ipCache *cache)
 	void getInterSig(ipCache * cache, float *data, kint *ipSignature)
 	void getInterSigBatch(ipCache *cache, float *data, kint *ipSignature, unsigned int numData, unsigned int numProc)
@@ -37,7 +38,8 @@ cdef class ipCalculator:
 		self.outDim = A.shape[1]
 		self.inDim  = A.shape[0]
 		self.layer = createLayer(&A[0,0],&b[0],self.outDim,self.inDim)
-		self.cache = allocateCache(self.layer,threshold,depthRestriction)
+		freeMemory = psutil.virtual_memory().free
+		self.cache = allocateCache(self.layer,threshold,depthRestriction,freeMemory)
 
 		if not self.cache:
 			raise MemoryError()

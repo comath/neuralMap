@@ -45,7 +45,7 @@ class nnMapper:
 	def __init__(self,matrix,offset,filename,tablename):
 		self.conn = sqlite3.connect(filename)
 		self.curs = self.conn.cursor()
-		depthRestriction = depthRestrictionCalc(64*1000*1000*1000,matrix.shape[0],matrix.shape[1])
+		depthRestriction = 7 #depthRestrictionCalc(64*1000*1000*1000,matrix.shape[0],matrix.shape[1])
 		self.ipCalc = ipCalculator(matrix,offset,2,depthRestriction)
 		self.tablename = tablename
 		self.regCalc = neuralLayer(matrix,offset)

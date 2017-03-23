@@ -11,6 +11,23 @@ mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 trX, trY, teX, teY = mnist.train.images, mnist.train.labels,\
 mnist.test.images, mnist.test.labels
 
+leaveInData = []
+leaveInLabel = []
+removeData = []
+removeLabel = []
+
+for i,label in enumerate(trY):
+	if(label[9]==1 or label[8]==1):
+		removeData.append(trX[i])
+		removeLabel.append(label)
+	else:
+		leaveInData.append(trX[i])
+		leaveInLabel.append(label)
+leaveInData = np.stack(leaveInData,axis=0)
+leaveInLabel = np.stack(leaveInLabel,axis=0)
+removeData = np.stack(removeData,axis=0)
+removeLabel = np.stack(removeLabel,axis=0)
+
 visibleDim = 28*28
 batchSize = 1000
 stepSize = 0.005
@@ -26,9 +43,9 @@ def convertToString(ndarr):
 currentNumLocations = 0
 currentNumPoints = 0
 
-print trX.shape
+print leaveInData.shape
 
-for hiddenDim in range(100,101,20):
+for hiddenDim in range(100,301,100):
 	matDic = {}
 	io.loadmat("mnist%(visibleDim)dx%(hiddenDim)03dstepsize%(stepSize)f.mat" 
 													% {'visibleDim': visibleDim, 'hiddenDim': hiddenDim, 'stepSize':stepSize},
@@ -37,7 +54,6 @@ for hiddenDim in range(100,101,20):
 	matrix = matDic["matrix%(round)04d"% {'round': itte}]
 	offset = matDic["offsetVis%(round)04d"% {'round': itte}]
 	matrix = np.ascontiguousarray(matrix.T, dtype=np.float32)
-	print matrix.shape
 	offset = np.ascontiguousarray(offset, dtype=np.float32)
 	offset.shape = offset.shape[1]
 	map1 = nnMap(matrix,offset,'mnistRBM.db','hidden%(hid)03d' % {'hid':hiddenDim})

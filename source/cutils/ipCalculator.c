@@ -240,12 +240,19 @@ void createHPCache(ipCache *cache)
 	#endif
 }
 
-ipCache * allocateCache(nnLayer *layer, float threshhold, int depthRestriction)
+ipCache * allocateCache(nnLayer *layer, float threshhold, int depthRestriction, long long int freeMemory)
 {
 	ipCache *cache = malloc(sizeof(ipCache));
 	uint keyLen = calcKeyLen(layer->outDim);
 	cache->bases = createTree(8,keyLen , ipCacheDataCreator, NULL, ipCacheDataDestroy);
 
+	int sizeOfAProjection =  cache->layer->inDim*(cache->layer->inDim+1)*sizeof(float);
+	cache->maxNodesBeforeTrim = (freeMemory)/(sizeOfAProjection);
+	cache->maxNodesAfterTrim = (4*cache->maxNodesBeforeTrim)/5;
+	int rc = pthread_mutex_init(&(cache->balanceLock), 0);
+	if (rc != 0) {
+        printf("balanceLock Initialization failed at");
+    }
 	printf("Creating cache of inDim %d and outDim %d with threshhold %f and depth restriction %d \n", layer->inDim, layer->outDim, threshhold,depthRestriction);
 	#ifdef DEBUG
 		printf("-----------------allocateCache--------------------\n");
@@ -260,6 +267,9 @@ ipCache * allocateCache(nnLayer *layer, float threshhold, int depthRestriction)
 	createHPCache(cache);
 	cache->threshold = threshhold;
 	cache->depthRestriction = depthRestriction;
+
+	
+	
 	#ifdef DEBUG
 		printf("--------------------------------------------------\n");
 	#endif
@@ -493,8 +503,21 @@ struct IPAddThreadArgs {
 	float * data;
 	kint *ipSignature;
 
+	int * joinCondition;
+
 	ipCache *cache;
 };
+
+int checkJoinCondition(int * joinConditionArr, int numThreads)
+{
+	int i = 0;
+	for(i=0;i<numThreads;i++){
+		if(joinConditionArr[i]==0){
+			return 0;
+		}
+	}
+	return 1;
+}
 
 void * addIPBatch_thread(void *thread_args)
 {
@@ -508,6 +531,8 @@ void * addIPBatch_thread(void *thread_args)
 	float *data = myargs->data;
 	kint *ipSignature = myargs->ipSignature;
 
+	int *joinCondition = myargs->joinCondition;
+
 	ipCache *cache = myargs->cache;
 
 	uint dim = cache->layer->inDim;
@@ -516,6 +541,14 @@ void * addIPBatch_thread(void *thread_args)
 	uint i = 0;
 	for(i=tid;i<numData;i=i+numThreads){		
 		getInterSig(cache,data+i*dim, ipSignature+i*keySize);
+		joinCondition[tid] = 1;
+		pthread_mutex_lock(&(cache->balanceLock));
+			if(cache->bases->numNodes > cache->maxNodesBeforeTrim){
+				while(checkJoinCondition(joinCondition,numThreads)){}
+				balanceAndTrimTree(cache->bases, cache->maxNodesAfterTrim);
+			}
+		pthread_mutex_unlock(&(cache->balanceLock));
+		joinCondition[tid] = 0;
 	}
 	pthread_exit(NULL);
 }
@@ -525,10 +558,8 @@ void getInterSigBatch(ipCache *cache, float *data, kint *ipSignature, uint numDa
 	int maxThreads = numProc;
 	int rc =0;
 	int i =0;
-	uint dataPointSize = cache->layer->inDim*(cache->layer->inDim+1)*sizeof(float);
-	uint possibleIPDepth = cache->layer->outDim;
 	struct IPAddThreadArgs *thread_args = malloc(maxThreads*sizeof(struct IPAddThreadArgs));
-
+	int *joinCondition = malloc(maxThreads*sizeof(int));
 	pthread_t threads[maxThreads];
 	pthread_attr_t attr;
 	void *status;
@@ -542,6 +573,7 @@ void getInterSigBatch(ipCache *cache, float *data, kint *ipSignature, uint numDa
 		thread_args[i].data = data;
 		thread_args[i].numThreads = maxThreads;
 		thread_args[i].tid = i;
+		thread_args[i].joinCondition = joinCondition;
 		rc = pthread_create(&threads[i], NULL, addIPBatch_thread, (void *)&thread_args[i]);
 		if (rc){
 			printf("Error, unable to create thread\n");
