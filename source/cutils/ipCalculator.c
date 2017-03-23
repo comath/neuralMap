@@ -525,10 +525,8 @@ void getInterSigBatch(ipCache *cache, float *data, kint *ipSignature, uint numDa
 	int maxThreads = numProc;
 	int rc =0;
 	int i =0;
-	//printf("Number of processors: %d\n",maxThreads);
-	//Add one data to the first node so that we can avoid the race condition.
-	
-
+	uint dataPointSize = cache->layer->inDim*(cache->layer->inDim+1)*sizeof(float);
+	uint possibleIPDepth = cache->layer->outDim;
 	struct IPAddThreadArgs *thread_args = malloc(maxThreads*sizeof(struct IPAddThreadArgs));
 
 	pthread_t threads[maxThreads];

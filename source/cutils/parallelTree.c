@@ -312,7 +312,6 @@ int keyOrderingCmp(const void * a, const void * b)
 
 void recursiveAddNode(TreeNode ** nodeArr, Tree *tree, int recursionDepth)
 {
-	
 	int k = (1 << (recursionDepth))-1;
 	moveNode(tree, nodeArr[k]);
 	if(recursionDepth > 0){
