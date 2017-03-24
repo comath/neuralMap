@@ -7,18 +7,70 @@
 #include <mkl_lapack.h>
 #include <mkl_lapacke.h>
 
-typedef struct intersection {
-	uint numHps;
+typedef struct ipMemory {
+	float *s;  // Diagonal entries
+	float *u; 
+	float *vt; 
+	float *c; 
+	float *distances; 
+	float *distancesForSorting; 
+	float *localCopy;
+	float *superb; 
+	float *px; 
 	float *subA;
-	float *subB;
-
+	float * subB;
+	MKL_INT info;
+	MKL_INT minMN;
+	uint numHps;
 	uint maxNumHps;
-} intersection;
+	uint *hpDistIndexList;
+	
+} ipMemory;
+
+ipMemory * allocateIPMemory(inDim,outDim)
+{
+	int m = inDim;
+	int n = outDim;
+	int numRelevantHP = 0;
+	int minMN = 0
+	if(m < n){
+		/* 
+		If the spacial dim is less than the number of hyperplanes then we want to 
+		take the distance to the closest instersection (which will be of full rank).
+		*/
+		numRelevantHP = m + 1;
+		minMN = m;
+	} else {
+		numRelevantHP = n;
+		minMN = n;
+	}
+	ipMemory *mb = malloc(sizeof(ipMemory));
+	// Each pointer is followed by the number of floats it has all to itself.
+	float * mainBuffer = malloc((2*m+2*n+n*n+m*m+2*n*m+minMN+(m+1)*numRelevantHP)*sizeof(float));
+	mb->s = mainBuffer+0; //m
+	mb->px = mainBuffer+ m; //m
+	mb->distances = mainBuffer+ m; // n
+	mb->distancesForSorting = n; //n
+	mb->u = mainBuffer+ n; //n^2
+	mb->vt = mainBuffer+ n*n; //m^2
+	mb->c = mainBuffer+ m*m; //m*n
+	mb->localCopy =  mainBuffer+ m*n; //m*n
+	mb->superb = mainBuffer+ m*n; // minMN
+	mb->subA = mainBuffer+ minMN; // m*numRelevantHP
+	mb->subB = mainBuffer+ m*numRelevantHP; // numRelevantHP
+	mb->hpDistIndexList = malloc(numRelevantHP*sizeof(uint));
+}
+
+void freeIPMemory(ipMemory *mb)
+{
+	free(mb->s);
+	free(mb->hpDistIndexList);
+}
 
 typedef struct ipCacheInput {
 	//This should be a constant
 	const ipCache * info;
-	intersection *I;
+	ipMemoryBuffer *mb;
 	//This shouldn't be
 	kint *key;
 } ipCacheInput;
@@ -31,7 +83,7 @@ typedef struct ipCacheData {
 /*
  This can only handle neural networks whose input dimension is greater than the number of nodes in the first layer
 */
-struct ipCacheData * solve(float *A, MKL_INT outDim, MKL_INT inDim, float *b)
+struct ipCacheData * solve(float *A, MKL_INT outDim, MKL_INT inDim, float *b, ipMemory *mb)
 {	
 	#ifdef DEBUG
 		printf("------------------Solve--------------\n");
@@ -39,14 +91,16 @@ struct ipCacheData * solve(float *A, MKL_INT outDim, MKL_INT inDim, float *b)
 	#endif
 	MKL_INT info;
 	MKL_INT minMN = ((inDim)>(outDim)?(outDim):(inDim));
-	float *superb = calloc(minMN, sizeof(float)); 
 	/* Local arrays */
-	float *s = calloc(inDim,sizeof(float)); // Diagonal entries
-	float *u = calloc(outDim*outDim , sizeof(float));
-	float *vt = calloc(inDim*inDim, sizeof(float));
+	
 	struct ipCacheData *output = malloc(sizeof(struct ipCacheData));
-
-
+	if(outDim<inDim){
+		output->solution = malloc(inDim*(inDim+1)*sizeof(float));
+		output->projection = output->projection + inDim;
+	} else {
+		output->solution = malloc(inDim*sizeof(float));
+		output->projection = NULL;
+	}
 	/* Standard SVD, not the new type */
 	/*
 	info = LAPACKE_sgesvd( LAPACK_ROW_MAJOR, 'A', 'A',
@@ -56,9 +110,9 @@ struct ipCacheData * solve(float *A, MKL_INT outDim, MKL_INT inDim, float *b)
 		    			  superb);
 	*/
 	info = LAPACKE_sgesdd( LAPACK_ROW_MAJOR, 'A', outDim, inDim, A, inDim, 
-							s, 
-							u, outDim, 
-							vt, inDim );
+							mb->s, 
+							mb->u, outDim, 
+							mb->vt, inDim );
 	// Incase of memory leaks:
 	//mkl_thread_free_buffers();
 	if( info ) {
@@ -74,31 +128,30 @@ struct ipCacheData * solve(float *A, MKL_INT outDim, MKL_INT inDim, float *b)
 	// Multiplying Sigma+t with u
 	int i = 0;
 	for(i=0;i<outDim;i++){
-		cblas_sscal(outDim,(1/s[i]),u+i*outDim,1);
+		cblas_sscal(outDim,(1/mb->s[i]),u+i*outDim,1);
 	}
 		 
-	float *solution = calloc(inDim, sizeof(float));
-	float *c = calloc(inDim*outDim, sizeof(float));
+	
 	#ifdef DEBUG
 		if(inDim < 10 && outDim < 20){
 			printf("U:\n");
-			printMatrix(u,outDim,outDim);
+			printMatrix(mb->u,outDim,outDim);
 			printf("Diagonal entries of S:\n");
-			printFloatArr(s,minMN);
+			printFloatArr(mb->s,minMN);
 			printf("V^T:\n");
-			printMatrix(vt,inDim,inDim);
+			printMatrix(mb->vt,inDim,inDim);
 		}
 		printf("Multiplying u sigma+t with vt\n");
 	#endif
 	// Multiplying u sigma+t with vt
 	cblas_sgemm (CblasRowMajor, CblasNoTrans, CblasNoTrans,
-				outDim, inDim, outDim, 1, u,
-				outDim, vt, inDim,
-				0,c, inDim);
+				outDim, inDim, outDim, 1, mb->u,
+				outDim, mb->vt, inDim,
+				0,mb->c, inDim);
 	#ifdef DEBUG
 		if(inDim < 10 && outDim < 20){
 			printf("Result of the previous multiplication:\n");
-			printMatrix(c,inDim,outDim);
+			printMatrix(mb->c,inDim,outDim);
 			printf("b:");
 			printFloatArr(b,outDim);
 		}
@@ -106,17 +159,17 @@ struct ipCacheData * solve(float *A, MKL_INT outDim, MKL_INT inDim, float *b)
 		
 	#endif
 	// Multiplying v sigma+ u with b for the solution				\/ param 7
-	cblas_sgemv (CblasRowMajor, CblasTrans, outDim, inDim,1, c, inDim, b, 1, 0, solution, 1);
+	cblas_sgemv (CblasRowMajor, CblasTrans, outDim, inDim,1, mb->c, inDim, b, 1, 0, output->solution, 1);
 	#ifdef DEBUG
 		printf("Result of the previous multiplication:\n");
 		if(inDim < 10){
-			printFloatArr(solution,inDim);
+			printFloatArr(output->solution,inDim);
 		}
 		
 	#endif
 	// Saving the kernel basis from vt
+
 	if(outDim<inDim){
-		output->projection = calloc(inDim*inDim,sizeof(float));
 		#ifdef DEBUG
 			printf("Multiplying the first %lld rows of vt for the projection\n", outDim);
 		#endif
@@ -125,18 +178,9 @@ struct ipCacheData * solve(float *A, MKL_INT outDim, MKL_INT inDim, float *b)
 					outDim, outDim, (inDim-outDim), 1, vt+inDim*outDim,outDim, 
 					vt+inDim*outDim, inDim,
 					0, output->projection, outDim);
-	} else {
-		output->projection = NULL;
-	}
-	free(s);
-	free(u);
-	free(vt);
-	free(c);
-	free(superb);
+	} 
 	// Incase of memory leaks:
-	//mkl_thread_free_buffers();
-
-	output->solution = solution;
+	// mkl_thread_free_buffers();
 	#ifdef DEBUG
 		printf("-----------------/Solve--------------\n");
 	#endif
@@ -179,9 +223,6 @@ void ipCacheDataDestroy(void * data)
 	struct ipCacheData *myData;
 	myData = (struct ipCacheData *) data;
 	if(myData){
-		if(myData->projection){
-			free(myData->projection);
-		}
 		if(myData->solution){
 			free(myData->solution);
 		}
@@ -197,8 +238,8 @@ void createHPCache(ipCache *cache)
 	uint inDim = layer->inDim;
 	uint outDim = layer->outDim;
 
-	cache->hpNormals = calloc(outDim*inDim,sizeof(float));
-	cache->hpOffsetVecs = calloc(outDim*inDim,sizeof(float));
+	cache->hpNormals = malloc(outDim*inDim*2*sizeof(float));
+	cache->hpOffsetVecs =  cache->hpNormals+ outDim*inDim;
 
 	float scaling = 1;
 	#ifdef DEBUG
@@ -244,16 +285,19 @@ ipCache * allocateCache(nnLayer *layer, float threshhold, int depthRestriction, 
 {
 	ipCache *cache = malloc(sizeof(ipCache));
 	uint keyLen = calcKeyLen(layer->outDim);
-	cache->bases = createTree(16,keyLen, ipCacheDataCreator, NULL, ipCacheDataDestroy);
+	cache->bases = createTree(6,keyLen, ipCacheDataCreator, NULL, ipCacheDataDestroy);
 
-	int sizeOfAProjection =  layer->inDim*(layer->inDim+1)*sizeof(float);
-	cache->maxNodesBeforeTrim = (freeMemory)/(sizeOfAProjection);
-	cache->maxNodesAfterTrim = (4*cache->maxNodesBeforeTrim)/5;
+	int sizeOfAProjection =  layer->inDim*layer->inDim*sizeof(float);
+	cache->maxNodesBeforeTrim = 8*(freeMemory)/(sizeOfAProjection);
+	cache->maxNodesBeforeTrim = cache->maxNodesBeforeTrim/100;
+	cache->maxNodesAfterTrim = (4*cache->maxNodesBeforeTrim);
+	cache->maxNodesAfterTrim = cache->maxNodesAfterTrim/5;
 	int rc = pthread_mutex_init(&(cache->balanceLock), 0);
 	if (rc != 0) {
         printf("balanceLock Initialization failed at");
     }
 	printf("Creating cache of inDim %d and outDim %d with threshhold %f and depth restriction %d \n", layer->inDim, layer->outDim, threshhold,depthRestriction);
+	printf("Maximum number of nodes in the tree %lld, number of nodes after trim: %lld\n", cache->maxNodesBeforeTrim,cache->maxNodesAfterTrim );
 	#ifdef DEBUG
 		printf("-----------------allocateCache--------------------\n");
 		if(layer->inDim < 10 && layer->outDim <20){
@@ -281,21 +325,19 @@ void freeCache(ipCache * cache)
 	if(cache){
 		printf("Cache exists, deallocating\n");
 		freeTree(cache->bases);
-		if(cache->hpOffsetVecs){
-			free(cache->hpOffsetVecs);
-		}
 		if(cache->hpNormals){
 			free(cache->hpNormals);
 		}
+		pthread_mutex_destroy(&(cache->balanceLock));
 		free(cache);
 	}
 }
 
 
-float computeDist(float * p, kint *ipSignature, ipCache *cache, intersection *I)
+float computeDist(float * p, kint *ipSignature, ipCache *cache, ipMemory *mb)
 {
 	struct ipCacheData *myBasis;
-	ipCacheInput myInput = {.info = cache, .key = ipSignature, .I=I};
+	ipCacheInput myInput = {.info = cache, .key = ipSignature, .mb=mb};
 	char cacheUse =0;
 	if(1 || I->maxNumHps < I->numHps + cache->depthRestriction){
 		#ifdef DEBUG
@@ -313,13 +355,12 @@ float computeDist(float * p, kint *ipSignature, ipCache *cache, intersection *I)
 
 	if(myBasis){
 		MKL_INT inDim = cache->layer->inDim;
-		float * px = malloc(inDim * sizeof(float));
-		cblas_scopy (inDim, p, 1, px, 1);
+		cblas_scopy (inDim, p, 1, mb->px, 1);
 		cblas_saxpy (inDim,1,myBasis->solution,1,px,1);
 		if(myBasis->projection){
-			cblas_sgemv (CblasRowMajor, CblasNoTrans, inDim, inDim,-1,myBasis->projection, inDim, px, 1, 1, px, 1);
+			cblas_sgemv (CblasRowMajor, CblasNoTrans, inDim, inDim,-1,myBasis->projection, inDim, mb->px, 1, 1, mb->px, 1);
 		} 
-		float norm = cblas_snrm2 (inDim, px, 1);
+		float norm = cblas_snrm2 (inDim, mb->px, 1);
 		if(norm < 0){
 			norm = -norm;
 		}
@@ -335,12 +376,11 @@ float computeDist(float * p, kint *ipSignature, ipCache *cache, intersection *I)
 
 
 
-void computeDistToHPS(float *p, ipCache *cache, float *distances)
+void computeDistToHPS(float *p, ipCache *cache, float *distances, ipMemory *mb)
 {
 	uint outDim = cache->layer->outDim;
 	uint inDim = cache->layer->inDim;
-	float * localCopy = calloc(outDim*inDim,sizeof(float));
-	cblas_scopy (inDim*outDim, cache->hpOffsetVecs, 1, localCopy, 1);
+	cblas_scopy (inDim*outDim, cache->hpOffsetVecs, 1, mb->localCopy, 1);
 	
 	#ifdef DEBUG
 		printf("--------computeDistToHPS---------\n");
@@ -352,15 +392,15 @@ void computeDistToHPS(float *p, ipCache *cache, float *distances)
 				printf("Point were taking the distance to: ");
 				printFloatArr(p,inDim);
 				printf("Copied over the offset vectors: ");
-				printFloatArr(localCopy + i*inDim,inDim);
+				printFloatArr(mb->localCopy + i*inDim,inDim);
 				printf("Original offset vectors: ");
 				printFloatArr(cache->hpOffsetVecs+ i*inDim,inDim);
 				printf("Normal Vectors: ");
 				printFloatArr(cache->hpNormals + i*inDim,inDim);
 			}
 		#endif
-		cblas_saxpy (inDim,1,p,1,localCopy + i*inDim,1);
-		distances[i] = cblas_sdot (inDim, localCopy + i*inDim, 1, cache->hpNormals + i*inDim, 1);
+		cblas_saxpy (inDim,1,p,1,mb->localCopy + i*inDim,1);
+		distances[i] = cblas_sdot (inDim, mb->localCopy + i*inDim, 1, cache->hpNormals + i*inDim, 1);
 		if(distances[i] < 0){
 			distances[i] = -distances[i];
 		}
@@ -378,9 +418,9 @@ void computeDistToHPS(float *p, ipCache *cache, float *distances)
 		#ifdef DEBUG
 			printf("p + offset vector: ");
 			if(inDim < 10){
-				printFloatArr(localCopy+i*inDim,inDim);
+				printFloatArr(mb->localCopy+i*inDim,inDim);
 			}
-			if(distances[i] == FLT_MAX){
+			if(mb->distances[i] == FLT_MAX){
 				printf("Final distance is massive as the hp does not exist\n");
 			} else {
 				printf("Final distance (normal dotted with p+offset): %f \n",distances[i]);
@@ -394,30 +434,20 @@ void computeDistToHPS(float *p, ipCache *cache, float *distances)
 	free(localCopy);
 }
 
-intersection * fillIntersection(uint * hpIndexList, int numRelevantHP, nnLayer *layer)
+void fillIntersection(uint * hpIndexList, int numRelevantHP, nnLayer *layer, ipMemory *mb)
 {
 	uint inDim = layer->inDim;
-	struct intersection * I = malloc(sizeof(struct intersection)); 
-	I->subA = calloc((inDim+1)*numRelevantHP, sizeof(float));
-	I->subB = I->subA + inDim*numRelevantHP;
-	I->maxNumHps = numRelevantHP;
+	mb->maxNumHps = numRelevantHP;
 	int i = 0;
 	int numHps = 0;
 	for(i=0;i<numRelevantHP;i++){
-		cblas_scopy (inDim, layer->A +hpIndexList[i]*inDim, 1, I->subA + numHps*inDim, 1);
-		I->subB[numHps] = layer->b[i];
+		cblas_scopy (inDim, layer->A+hpIndexList[i]*inDim, 1, mb->subA + numHps*inDim, 1);
+		mb->subB[numHps] = layer->b[i];
 		numHps++;
 	}
-	return I;
 }
 
-void freeIntersection(intersection *I)
-{
-	free(I->subA);
-	free(I);
-}
-
-void getInterSig(ipCache * cache, float *p, kint * ipSignature)
+void getInterSig(ipCache * cache, float *p, kint * ipSignature, ipMemory *mb)
 {
 	int i = 0;
 	// Prepare all the internal values and place commonly referenced ones on the stack
@@ -438,49 +468,47 @@ void getInterSig(ipCache * cache, float *p, kint * ipSignature)
 		numRelevantHP = outDim;
 	}
 
-	float *posetDistToHP = malloc(outDim*sizeof(float));
-	uint *hpDistIndexList = malloc(numRelevantHP*sizeof(uint));
-	
-	float *distances = malloc(outDim*sizeof(float));
-	float *distancesForSorting = malloc(outDim*sizeof(float));
-	computeDistToHPS(p, cache, distances);
-	cblas_scopy (outDim, distances, 1, distancesForSorting, 1);
+	computeDistToHPS(p, cache, mb->distances);
+	cblas_scopy (outDim, mb->distances, 1, mb->distancesForSorting, 1);
 	for(i=0;i<numRelevantHP;i++){
-		hpDistIndexList[i] = cblas_isamin (outDim, distancesForSorting, 1);
+		hpDistIndexList[i] = cblas_isamin (outDim, mb->distancesForSorting, 1);
 		distancesForSorting[hpDistIndexList[i]] = FLT_MAX;
 		addIndexToKey(ipSignature,hpDistIndexList[i]);
 	}
-	free(distancesForSorting);
-	
-	intersection *I = fillIntersection(hpDistIndexList,numRelevantHP, cache->layer);
+	fillIntersection(hpDistIndexList,numRelevantHP, cache->layer,mb);
 
 	float posetDist;
 	float hpDist;
 	i = numRelevantHP-1;
 	do{
+		removeIndexFromKey(ipSignature,mb->hpDistIndexList[i]);
+		hpDist = mb->distances[mb->hpDistIndexList[i]];
 		#ifdef DEBUG
-			printKey(ipSignature,outDim);		
+			printf("Loop %d \n",i);
+			printf("Checking xu{i}(dist:%f) vs %f*{j}(dist:%f)",posetDist,cache->threshold,hpDist);
+			printf("xu{i}:");
+			printKey(ipSignature,outDim);
+			printf("i: %u \n", mb->hpDistIndexList[i-1]);
+			printf("j: %u \n", mb->hpDistIndexList[i]);
 		#endif
-		removeIndexFromKey(ipSignature,hpDistIndexList[i]);
 		I->numHps = i;
 		posetDist = computeDist(p, ipSignature, cache, I);
-		hpDist = distances[hpDistIndexList[i]];
 		i--;
 		#ifdef DEBUG
 			if(i > -1){
-				if(posetDistToHP[i] > 0){
-					printf("Passed, decrease while loop will run. Value of [%u]:%f\n",i,cache->threshold*posetDist - hpDist);
+				if(cache->threshold*posetDist - hpDist > 0){
+					printf("Passed, decrease while loop will run. Difference between poset and hp distance:%f\n",i,cache->threshold*posetDist - hpDist);
 				} else {
-					printf("Failed, decrease while loop will not run. Value of [%u]:%f\n",i,cache->threshold*posetDist - hpDist);
+					printf("Failed, decrease while loop will not run. Difference between poset and hp distance:%f\n",i,cache->threshold*posetDist - hpDist);
 				}
 			}			
 		#endif
 	} while(!(posetDist < 0) && cache->threshold*posetDist - hpDist > 0 && i > 0);
 	if(i == 0){
-		posetDist = distances[hpDistIndexList[0]];
-		hpDist = distances[hpDistIndexList[1]];
+		posetDist = mv->distances[mv->hpDistIndexList[0]];
+		hpDist = mv->distances[mv->hpDistIndexList[1]];
 		if(cache->threshold*posetDist - hpDist > 0){
-			removeIndexFromKey(ipSignature,hpDistIndexList[0]);;
+			removeIndexFromKey(ipSignature,mv->hpDistIndexList[0]);;
 		}
 	}
 	
@@ -492,10 +520,6 @@ void getInterSig(ipCache * cache, float *p, kint * ipSignature)
 		printKey(ipSignature,outDim);
 		printf("--------------------------/getInterSig-----------------------------------------------\n");;
 	#endif
-	free(distances);
-	free(posetDistToHP);
-	free(hpDistIndexList);
-	freeIntersection(I);
 }
 
 struct IPAddThreadArgs {
@@ -514,9 +538,13 @@ struct IPAddThreadArgs {
 int checkJoinCondition(int * joinConditionArr, int numThreads)
 {
 	int i = 0;
-	for(i=0;i<numThreads;i++){
-		if(joinConditionArr[i]==0){
-			return 0;
+	int j = 1;
+	while(j){
+		j = 0;
+		for(i=0;i<numThreads;i++){
+			if(joinConditionArr[i]==0){
+				j = 1;
+			}
 		}
 	}
 	return 1;
@@ -540,14 +568,16 @@ void * addIPBatch_thread(void *thread_args)
 
 	uint dim = cache->layer->inDim;
 	uint keySize = calcKeyLen(cache->layer->outDim);
-
+	ipMemory mb = allocateIPMemory(cache->layer->inDim,cache->layer->outDim);
 	uint i = 0;
 	for(i=tid;i<numData;i=i+numThreads){		
 		getInterSig(cache,data+i*dim, ipSignature+i*keySize);
 		joinCondition[tid] = 1;
+		printf("Thread %d at mutex with %u nodes \n",tid,cache->bases->numNodes);
 		pthread_mutex_lock(&(cache->balanceLock));
 			if(cache->bases->numNodes > cache->maxNodesBeforeTrim){
-				while(checkJoinCondition(joinCondition,numThreads)){}
+				printf("Balancing Tree.\n",tid,cache->bases->numNodes);
+				checkJoinCondition(joinCondition,numThreads);
 				balanceAndTrimTree(cache->bases, cache->maxNodesAfterTrim);
 			}
 		pthread_mutex_unlock(&(cache->balanceLock));

@@ -45,7 +45,7 @@ class nnMapper:
 	def __init__(self,matrix,offset,filename,tablename):
 		self.conn = sqlite3.connect(filename)
 		self.curs = self.conn.cursor()
-		depthRestriction = 7 #depthRestrictionCalc(64*1000*1000*1000,matrix.shape[0],matrix.shape[1])
+		depthRestriction =  7#depthRestrictionCalc(64*1000*1000*1000,matrix.shape[0],matrix.shape[1])
 		self.ipCalc = ipCalculator(matrix,offset,2,depthRestriction)
 		self.tablename = tablename
 		self.regCalc = neuralLayer(matrix,offset)
@@ -94,17 +94,15 @@ class nnMapper:
 					% {'tablename':self.tablename},			(j,sigIndex,0))
 		self.conn.commit()
 	
-	def checkPoint(self,point):
-		ipSigs = self.ipCalc.calculateUncompressed(point)
-		regSigs = self.regCalc.calculateUncompressed(point)
-		self.curs.execute('SELECT sigIndex FROM sig_%(tablename)s WHERE ipSig=(?) AND regSig=(?)' 
-				% {'tablename':self.tablename},
-				(ipSigs[i],regSigs[i]))
-		row = fetchone()
-		if(row):
-			return True
-		else:
-			return False
+	def checkPoints(self,points):
+		ipSigs = self.ipCalc.batchCalculateUncompressed(points)
+		regSigs = self.regCalc.batchCalculateUncompressed(points)
+		ret = np.zeros([points.shape[0]],dtype=np.int)
+		for i,point in enumerate(points):
+			for row in self.curs.execute('SELECT COUNT(sigIndex) FROM sig_%(tablename)s WHERE ipSig=(?) AND regSig=(?)' 
+					% {'tablename':self.tablename},	(ipSigs[i],regSigs[i])):
+				ret[i] = row[0]
+		return ret
 	
 	def getNeighboors(self,point):
 		ipSig = self.ipCalc.calculateUncompressed(point)

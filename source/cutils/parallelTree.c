@@ -31,17 +31,17 @@ TreeNode * allocateNodes(int treeDepth, uint keyLength)
 		if (rc != 0) {
 	        printf("spinlock Initialization failed at %p", (void *) tree + i);
 	    }
-		rc = pthread_spin_init(&(tree[i].smallspinlock), 0);
+		rc = pthread_mutex_init(&(tree[i].smallspinlock), 0);
 		if (rc != 0) {
-	        printf("spinlock Initialization failed at %p", (void *) tree + i);
+	        printf("mutex Initialization failed at %p", (void *) tree + i);
 	    }
-		rc = pthread_spin_init(&(tree[i].bigspinlock), 0);
+		rc = pthread_mutex_init(&(tree[i].bigspinlock), 0);
 		if (rc != 0) {
-	        printf("spinlock Initialization failed at %p", (void *) tree + i);
+	        printf("mutex Initialization failed at %p", (void *) tree + i);
 	    }
-		rc = pthread_spin_init(&(tree[i].dataspinlock), 0);
+		rc = pthread_mutex_init(&(tree[i].dataspinlock), 0);
 		if (rc != 0) {
-	        printf("spinlock Initialization failed at %p", (void *) tree + i);
+	        printf("mutex Initialization failed at %p", (void *) tree + i);
 	    }
 	}
 	tree = tree + (1 << treeDepth) - 1;
@@ -133,7 +133,7 @@ void * addData(Tree *tree, kint * key, void * datum){
 	pthread_spin_unlock(&(node->keyspinlock));
 	while(keyCompare){
 		if (keyCompare == 1) {
-			pthread_spin_lock(&(node->bigspinlock));
+			pthread_mutex_lock(&(node->bigspinlock));
 				if(node->bigNode == NULL){
 					node->bigNode = allocateNodes(treeDepth,tree->keyLength);
 					(node->bigNode)->createdKL = tree->keyLength;
@@ -151,10 +151,10 @@ void * addData(Tree *tree, kint * key, void * datum){
 						tree->numNodes++;
 					pthread_spin_unlock(&(tree->nodecountspinlock));
 				}
-			pthread_spin_unlock(&(node->bigspinlock));
+			pthread_mutex_lock(&(node->bigspinlock));
 			node = node->bigNode;
 		} else if (keyCompare == -1) {
-			pthread_spin_lock(&(node->smallspinlock));
+			pthread_mutex_lock(&(node->smallspinlock));
 				if(node->smallNode == NULL){
 					node->smallNode = allocateNodes(treeDepth,tree->keyLength);
 					(node->smallNode)->createdKL = tree->keyLength;
@@ -172,7 +172,7 @@ void * addData(Tree *tree, kint * key, void * datum){
 						tree->numNodes++;
 					pthread_spin_unlock(&(tree->nodecountspinlock));
 				}
-			pthread_spin_unlock(&(node->smallspinlock));
+			pthread_mutex_lock(&(node->smallspinlock));
 			node = node->smallNode;
 		}
 		pthread_spin_lock(&(node->keyspinlock));
@@ -180,12 +180,12 @@ void * addData(Tree *tree, kint * key, void * datum){
 		pthread_spin_unlock(&(node->keyspinlock));
 	}
 
-	pthread_spin_lock(&(node->dataspinlock));
+	pthread_mutex_lock(&(node->dataspinlock));
 		if(tree->dataModifier){
 			tree->dataModifier(datum,node->dataPointer);
 		}
 		node->dataModifiedCount++;
-	pthread_spin_unlock(&(node->dataspinlock));
+	pthread_mutex_lock(&(node->dataspinlock));
 	return (void *) node->dataPointer;
 }
 
@@ -239,9 +239,9 @@ void freeNodes(Tree *tree, TreeNode *node)
 		if(node[i].dataPointer){
 			tree->dataDestroy(node[i].dataPointer);
 		}
-		pthread_spin_destroy(&(node[i].bigspinlock));
-		pthread_spin_destroy(&(node[i].smallspinlock));
-		pthread_spin_destroy(&(node[i].dataspinlock));
+		pthread_mutex_destroy(&(node[i].bigspinlock));
+		pthread_mutex_destroy(&(node[i].smallspinlock));
+		pthread_mutex_destroy(&(node[i].dataspinlock));
 	}
 
 	free(node);
@@ -322,6 +322,7 @@ void recursiveAddNode(TreeNode ** nodeArr, Tree *tree, int recursionDepth)
 
 void balanceAndTrimTree(Tree *tree, int desiredNodeCount)
 {
+	printf("Balancing tree and trimming to %d\n", desiredNodeCount);
 	TreeNode ** nodeArr = getNodeArray(tree);
 	int oldNodeCount = tree->numNodes;
 	TreeNode * oldRoot = tree->root;

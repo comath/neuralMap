@@ -15,13 +15,13 @@ typedef struct TreeNode {
 	pthread_spinlock_t keyspinlock;
 	kint *key;
 
-	pthread_spinlock_t dataspinlock;
+	pthread_mutex_t dataspinlock;
 	int dataModifiedCount;
 	void * dataPointer;
 
-	pthread_spinlock_t smallspinlock;
+	pthread_mutex_t smallspinlock;
 	struct TreeNode *smallNode;
-	pthread_spinlock_t bigspinlock;
+	pthread_mutex_t bigspinlock;
 	struct TreeNode *bigNode;
 } TreeNode;
 
