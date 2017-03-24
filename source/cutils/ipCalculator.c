@@ -244,9 +244,9 @@ ipCache * allocateCache(nnLayer *layer, float threshhold, int depthRestriction, 
 {
 	ipCache *cache = malloc(sizeof(ipCache));
 	uint keyLen = calcKeyLen(layer->outDim);
-	cache->bases = createTree(8,keyLen , ipCacheDataCreator, NULL, ipCacheDataDestroy);
+	cache->bases = createTree(16,keyLen, ipCacheDataCreator, NULL, ipCacheDataDestroy);
 
-	int sizeOfAProjection =  cache->layer->inDim*(cache->layer->inDim+1)*sizeof(float);
+	int sizeOfAProjection =  layer->inDim*(layer->inDim+1)*sizeof(float);
 	cache->maxNodesBeforeTrim = (freeMemory)/(sizeOfAProjection);
 	cache->maxNodesAfterTrim = (4*cache->maxNodesBeforeTrim)/5;
 	int rc = pthread_mutex_init(&(cache->balanceLock), 0);
@@ -458,6 +458,9 @@ void getInterSig(ipCache * cache, float *p, kint * ipSignature)
 	float hpDist;
 	i = numRelevantHP-1;
 	do{
+		#ifdef DEBUG
+			printKey(ipSignature,outDim);		
+		#endif
 		removeIndexFromKey(ipSignature,hpDistIndexList[i]);
 		I->numHps = i;
 		posetDist = computeDist(p, ipSignature, cache, I);
