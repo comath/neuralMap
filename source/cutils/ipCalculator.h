@@ -25,12 +25,13 @@ typedef struct ipCache {
 	pthread_mutex_t balanceLock;
 	long long int maxNodesBeforeTrim;
 	long long int maxNodesAfterTrim;
+	int numRelevantHP;
+	int minOutIn;
 } ipCache;
 
 ipCache * allocateCache(nnLayer *layer0, float threshold, int depthRestriction, long long int freeMemory);
 void freeCache(ipCache *cache);
 
-void getInterSig(ipCache * cache, float *p, kint *ipSignature);
 void getInterSigBatch(ipCache *cache, float *data, kint *ipSignature, uint numData, uint numProc);
 
 

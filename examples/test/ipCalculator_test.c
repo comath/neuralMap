@@ -27,12 +27,12 @@ nnLayer *createDumbLayer(uint dim, uint numHP)
 	for(i=0;i<numHP;i++){
 		for(j=0;j<dim;j++){
 			if(i==j){
-				layer->A[i*dim + j] = 1;
+				layer->A[i*dim + j] = 2;
 			} else {
 				layer->A[i*dim + j] = 0;
 			}
 		}
-		layer->b[i] = 0;
+		layer->b[i] = 1;
 	}
 	layer->inDim = dim;
 	layer->outDim = numHP;

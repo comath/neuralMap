@@ -2,7 +2,7 @@ CC = gcc -Wall -Wextra -DMKL
 
 OPT = -O1
 DEBUG = -DDEBUG
-GDB = -pg
+GDB = -g
 PROFILE = -lprofiler
 
 MKLROOT = /opt/intel/compilers_and_libraries/linux/mkl

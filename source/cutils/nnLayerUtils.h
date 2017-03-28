@@ -12,13 +12,13 @@
 
 
 typedef struct nnLayer {
-	uint outDim;
-	uint inDim;
+	long long int outDim;
+	long long int inDim;
 	float *A;
 	float *b;
 } nnLayer;
 
-nnLayer * createLayer(float *A, float *b, uint outDim, uint inDim);
+nnLayer * createLayer(float *A, float *b, int outDim, int inDim);
 void freeLayer(nnLayer * layer);
 void evalLayer(nnLayer * layer, float *x, float *output);
 void printFloatArr(float * arr, uint length);

@@ -199,18 +199,18 @@ void * getData(Tree *tree, kint *key)
 	while((comparison = compareKey(key,node->key,tree->keyLength))){
 
 		if (comparison == 1) {
-			pthread_spin_lock(&(node->bigspinlock));
+			pthread_mutex_lock(&(node->bigspinlock));
 			if(node->bigNode == NULL || node->bigNode->createdKL == 0){
 				return NULL;
 			}
-			pthread_spin_unlock(&(node->bigspinlock));
+			pthread_mutex_unlock(&(node->bigspinlock));
 			node = node->bigNode;
 		} else if (comparison == -1) {
-			pthread_spin_lock(&(node->smallspinlock));
+			pthread_mutex_lock(&(node->smallspinlock));
 			if(node->smallNode == NULL || node->smallNode->createdKL == 0){
 				return NULL;
 			}
-			pthread_spin_unlock(&(node->smallspinlock));
+			pthread_mutex_unlock(&(node->smallspinlock));
 			node = node->smallNode;
 		}
 		

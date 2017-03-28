@@ -12,11 +12,9 @@
 #include <mkl_lapacke.h>
 #endif
 
-#ifndef MKL
-#define MKL_INT const int
-#endif
 
-nnLayer * createLayer(float * A, float *b, uint inDim, uint outDim)
+
+nnLayer * createLayer(float * A, float *b, int inDim, int outDim)
 {
 	//Allocating A and b together
 	nnLayer * layer = malloc(sizeof(nnLayer));
