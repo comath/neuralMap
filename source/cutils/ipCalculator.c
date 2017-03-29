@@ -1,5 +1,6 @@
 #include "ipCalculator.h"
 #include <float.h>
+#include <string.h>
 
 #include <mkl.h>
 #include <mkl_cblas.h>
@@ -7,7 +8,67 @@
 #include <mkl_lapack.h>
 #include <mkl_lapacke.h>
 
+typedef struct ipMemory {
+	float *s;  // Diagonal entries
+	float *u; 
+	float *vt; 
+	float *c; 
+	float *distances; 
+	float *distancesForSorting; 
+	float *localCopy;
+	float *superb; 
+	float *px; 
+	float *subA;
+	float * subB;
+	MKL_INT info;
+	MKL_INT minMN;
+	uint numHps;
+	uint maxNumHps;
+	uint *hpDistIndexList;
+	
+} ipMemory;
 
+ipMemory * allocateIPMemory(int inDim,int outDim)
+{
+	int m = inDim;
+	int n = outDim;
+	int numRelevantHP = 0;
+	int minMN = 0;
+	if(m < n){
+		/* 
+		If the spacial dim is less than the number of hyperplanes then we want to 
+		take the distance to the closest instersection (which will be of full rank).
+		*/
+		numRelevantHP = m + 1;
+		minMN = m;
+	} else {
+		numRelevantHP = n;
+		minMN = n;
+	}
+	ipMemory *mb = malloc(sizeof(ipMemory));
+	// Each pointer is followed by the number of floats it has all to itself.
+	float * mainBuffer = malloc((2*m+2*n+n*n+m*m+2*n*m+minMN+(m+1)*numRelevantHP)*sizeof(float));
+	mb->s = mainBuffer+0; //m
+	mb->px = mainBuffer+ m; //m
+	mb->distances = mainBuffer+ m; // n
+	mb->distancesForSorting = mainBuffer + n; //n
+	mb->u = mainBuffer+ n; //n^2
+	mb->vt = mainBuffer+ n*n; //m^2
+	mb->c = mainBuffer+ m*m; //m*n
+	mb->localCopy =  mainBuffer+ m*n; //m*n
+	mb->superb = mainBuffer+ m*n; // minMN
+	mb->subA = mainBuffer+ minMN; // m*numRelevantHP
+	mb->subB = mainBuffer+ m*numRelevantHP; // numRelevantHP
+	mb->hpDistIndexList = malloc(numRelevantHP*sizeof(uint));
+	return mb;
+}
+
+void freeIPMemory(ipMemory *mb)
+{
+	free(mb->s);
+	free(mb->hpDistIndexList);
+	free(mb);
+}
 
 typedef struct ipCacheInput {
 	//This should be a constant
@@ -158,7 +219,7 @@ void fillIntersection(kint *key, nnLayer *layer, struct intersection * I)
 			#ifdef DEBUG 
 				printf("Adding %u to submatrix\n",i);
 			#endif
-			cblas_scopy (inDim, layer->A +i*inDim, 1, I->subA + I->numHps*inDim, 1);
+			memcpy(I->subA + I->numHps*inDim, layer->A +i*inDim, inDim*sizeof(float));
 			I->subB[I->numHps] = layer->b[i];
 			I->numHps++;
 		}
@@ -262,7 +323,7 @@ void createHPCache(ipCache *cache)
 			#endif
 		} else {
 			// HP normals has length 0, thus it is 0. The offset vector should also be 0
-			cblas_scopy(inDim,cache->hpNormals+i*inDim,1,cache->hpOffsetVecs+i*inDim,1);
+			memcpy(cache->hpOffsetVecs+i*inDim, cache->hpNormals+i*inDim, inDim*sizeof(float));
 		}
 	}
 	#ifdef DEBUG
@@ -270,12 +331,19 @@ void createHPCache(ipCache *cache)
 	#endif
 }
 
-ipCache * allocateCache(nnLayer *layer, float threshhold)
+ipCache * allocateCache(nnLayer *layer, float threshhold, long long int freeMemory)
 {
 	ipCache *cache = malloc(sizeof(ipCache));
 	uint keyLen = calcKeyLen(layer->outDim);
-	cache->bases = createTree(8,keyLen , ipCacheDataCreator, NULL, ipCacheDataDestroy);
-
+	uint minMN = layer->outDim;
+	if(layer->inDim < layer->outDim){
+		minMN = layer->inDim;
+	} 
+	cache->bases = createTree(keyLen, minMN, ipCacheDataCreator, NULL, ipCacheDataDestroy);
+	int rc = pthread_mutex_init(&(cache->balanceLock), 0);
+	if (rc != 0) {
+        printf("balanceLock Initialization failed at");
+	}
 	printf("Creating cache of inDim %d and outDim %d with threshhold %f \n", layer->inDim, layer->outDim, threshhold);
 	#ifdef DEBUG
 		printf("-----------------allocateCache--------------------\n");
@@ -289,6 +357,13 @@ ipCache * allocateCache(nnLayer *layer, float threshhold)
 	cache->layer = layer;
 	createHPCache(cache);
 	cache->threshold = threshhold;
+
+	int sizeOfAProjection =  (layer->inDim)*(layer->inDim)*sizeof(float);
+	cache->maxNodesBeforeTrim = 4*(freeMemory)/(sizeOfAProjection);
+	cache->maxNodesBeforeTrim = cache->maxNodesBeforeTrim/5;
+	cache->maxNodesAfterTrim = (4*cache->maxNodesBeforeTrim);
+	cache->maxNodesAfterTrim = cache->maxNodesAfterTrim/5;
+
 	#ifdef DEBUG
 		printf("--------------------------------------------------\n");
 	#endif
@@ -311,18 +386,18 @@ void freeCache(ipCache * cache)
 }
 
 
-float computeDist(float * p, kint *ipSignature, ipCache *cache)
+float computeDist(float * p, kint *ipSignature, ipCache *cache, uint rank)
 {
 	
 	ipCacheInput myInput = {.info = cache, .key = ipSignature};
-	//struct ipCacheData *myBasis = addData(cache->bases, ipSignature, &myInput);
+	struct ipCacheData *myBasis = addData(cache->bases, ipSignature,rank, &myInput);
 	
-	struct ipCacheData *myBasis = ipCacheDataCreator(&myInput);
+	//struct ipCacheData *myBasis = ipCacheDataCreator(&myInput);
 
 	if(myBasis){
 		MKL_INT inDim = cache->layer->inDim;
 		float * px = malloc(inDim * sizeof(float));
-		cblas_scopy (inDim, p, 1, px, 1);
+		memcpy(px, p, inDim*sizeof(float));
 		cblas_saxpy (inDim,1,myBasis->solution,1,px,1);
 		if(myBasis->projection){
 			cblas_sgemv (CblasRowMajor, CblasNoTrans, inDim, inDim,-1,myBasis->projection, inDim, px, 1, 1, px, 1);
@@ -331,7 +406,6 @@ float computeDist(float * p, kint *ipSignature, ipCache *cache)
 		if(norm < 0){
 			norm = -norm;
 		}
-		ipCacheDataDestroy((void *) myBasis);
 		free(px);
 		return norm;
 	} else {
@@ -346,7 +420,7 @@ void computeDistToHPS(float *p, ipCache *cache, float *distances)
 	uint outDim = cache->layer->outDim;
 	uint inDim = cache->layer->inDim;
 	float * localCopy = calloc(outDim*inDim,sizeof(float));
-	cblas_scopy (inDim*outDim, cache->hpOffsetVecs, 1, localCopy, 1);
+	memcpy(localCopy, cache->hpOffsetVecs, inDim*outDim*sizeof(float));
 	
 	#ifdef DEBUG
 		printf("--------computeDistToHPS---------\n");
@@ -440,7 +514,7 @@ void getInterSig(ipCache * cache, float *p, kint * ipSignature)
 
 	do {
 		addIndexToKey(ipSignature,hpDistIndexList[i]);
-		posetDist = computeDist(p, ipSignature, cache);
+		posetDist = computeDist(p, ipSignature, cache, i-1);
 
 		hpDistIndexList[i+1] = cblas_isamin (outDim, distances, 1);
 		hpDist = distances[hpDistIndexList[i+1]];
@@ -510,8 +584,25 @@ struct IPAddThreadArgs {
 	float * data;
 	kint *ipSignature;
 
+	int * joinCondition;
+
 	ipCache *cache;
 };
+
+int checkJoinCondition(int * joinConditionArr, int numThreads)
+{
+	int i = 0;
+	int j = 1;
+	while(j){
+		j = 0;
+		for(i=0;i<numThreads;i++){
+			if(joinConditionArr[i]==0){
+				j = 1;
+			}
+		}
+	}
+	return 1;
+}
 
 void * addIPBatch_thread(void *thread_args)
 {
@@ -524,6 +615,7 @@ void * addIPBatch_thread(void *thread_args)
 	uint numData = myargs->numData;
 	float *data = myargs->data;
 	kint *ipSignature = myargs->ipSignature;
+	int * joinCondition = myargs->joinCondition;
 
 	ipCache *cache = myargs->cache;
 
@@ -533,6 +625,16 @@ void * addIPBatch_thread(void *thread_args)
 	uint i = 0;
 	for(i=tid;i<numData;i=i+numThreads){		
 		getInterSig(cache,data+i*dim, ipSignature+i*keySize);
+		joinCondition[tid] = 1;
+		printf("Thread %d at mutex with %u nodes \n",tid,cache->bases->numNodes);
+		pthread_mutex_lock(&(cache->balanceLock));
+			if(cache->bases->numNodes > cache->maxNodesBeforeTrim){
+				printf("Balancing Tree in thread %d. Current number of nodes: %d.\n",tid,cache->bases->numNodes);
+				checkJoinCondition(joinCondition,numThreads);
+				balanceAndTrimTree(cache->bases, cache->maxNodesAfterTrim);
+			}
+		pthread_mutex_unlock(&(cache->balanceLock));
+		joinCondition[tid] = 0;
 	}
 	pthread_exit(NULL);
 }
@@ -547,6 +649,7 @@ void getInterSigBatch(ipCache *cache, float *data, kint *ipSignature, uint numDa
 	
 
 	struct IPAddThreadArgs *thread_args = malloc(maxThreads*sizeof(struct IPAddThreadArgs));
+	int *joinCondition = malloc(maxThreads*sizeof(int));
 
 	pthread_t threads[maxThreads];
 	pthread_attr_t attr;
@@ -561,6 +664,8 @@ void getInterSigBatch(ipCache *cache, float *data, kint *ipSignature, uint numDa
 		thread_args[i].data = data;
 		thread_args[i].numThreads = maxThreads;
 		thread_args[i].tid = i;
+		thread_args[i].joinCondition = joinCondition;
+		joinCondition[i] = 0;
 		rc = pthread_create(&threads[i], NULL, addIPBatch_thread, (void *)&thread_args[i]);
 		if (rc){
 			printf("Error, unable to create thread\n");
