@@ -15,7 +15,7 @@ typedef struct TreeNode {
 	pthread_spinlock_t keyspinlock;
 	kint *key;
 
-	pthread_spinlock_t dataspinlock;
+	pthread_mutex_t datamutex;
 	int dataModifiedCount;
 	void * dataPointer;
 
@@ -35,6 +35,7 @@ typedef struct Tree {
 
 	// Tree properties
 	unsigned int keyLength;
+	pthread_spinlock_t nodeCountSpinLock;
 	int numNodes;
 	unsigned int depth;
 	TreeNode ** root;

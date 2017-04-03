@@ -27,12 +27,12 @@ nnLayer *createDumbLayer(uint dim, uint numHP)
 	for(i=0;i<numHP;i++){
 		for(j=0;j<dim;j++){
 			if(i==j){
-				layer->A[i*dim + j] = 1;
+				layer->A[i*dim + j] = 2;
 			} else {
 				layer->A[i*dim + j] = 0;
 			}
 		}
-		layer->b[i] = 0;
+		layer->b[i] = 1;
 	}
 	layer->inDim = dim;
 	layer->outDim = numHP;
@@ -60,8 +60,8 @@ float * randomData(uint dim, uint numData)
 
 int main(int argc, char* argv[])
 {
-	uint dim = 3;
-	uint numHP = 4;
+	uint dim = 4;
+	uint numHP = 5;
 	uint numData = 5;
 	uint keySize = calcKeyLen(numHP);
 	uint maxThreads = sysconf(_SC_NPROCESSORS_ONLN);
@@ -70,10 +70,10 @@ int main(int argc, char* argv[])
 	uint i = 0;
 	printf("If no faliures are printed then we are fine.\n");
 	nnLayer *layer = createDumbLayer(dim,numHP);
-	ipCache *cache = allocateCache(layer,2);
+	ipCache *cache = allocateCache(layer,2, 1000000000);
 	
 
-	uint *ipSignature = malloc(keySize*numData*sizeof(uint));
+	kint *ipSignature = malloc(keySize*numData*sizeof(kint));
 	float *data = randomData(dim,numData);
 
 	printf("Calculating the signature of Points\n");

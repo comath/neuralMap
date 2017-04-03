@@ -1,5 +1,4 @@
 import sqlite3
-import tensorflow as tf
 import numpy as np
 from scipy import io
 from rbm import RBM

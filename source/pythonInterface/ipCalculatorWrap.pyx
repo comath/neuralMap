@@ -24,7 +24,6 @@ cdef extern from "../cutils/ipCalculator.h":
 		pass
 	ipCache * allocateCache(nnLayer *layer0, float threshold, long long int free)
 	void freeCache(ipCache *cache)
-	void getInterSig(ipCache * cache, float *data, kint *ipSignature)
 	void getInterSigBatch(ipCache *cache, float *data, kint *ipSignature, unsigned int numData, unsigned int numProc)
 
 cdef class ipCalculator:
@@ -60,23 +59,7 @@ cdef class ipCalculator:
 		return ipSignature
 		
 
-	def calculate(self,np.ndarray[float,ndim=1,mode="c"] b not None):
-		cdef unsigned int dim
-		dim = b.shape[0]
-		keyLen = calcKeyLen(dim)
-		cdef kint *ipSignature_key = <kint *>malloc(keyLen * sizeof(kint))
-		if not ipSignature_key:
-			raise MemoryError()		
-		cdef int *ipSignature = <int *>malloc(dim * sizeof(int))
-		if not ipSignature:
-			raise MemoryError()
-		try:	        
-			getInterSig(self.cache,&b[0],ipSignature_key)
-			convertFromKey(ipSignature_key, ipSignature, dim)
-			return [ ipSignature[i] for i in range(dim) ]
-		finally:
-			free(ipSignature)
-			free(ipSignature_key)
+	
 
 	#Batch calculate, this is multithreaded and you can specify the number of threads you want to use.
 	#It defaults, and takes a maximum of 
@@ -106,23 +89,7 @@ cdef class ipCalculator:
 		finally:
 			free(ipSignature_key)
 
-	def chromaCalculate(self,np.ndarray[float,ndim=1,mode="c"] b not None):
-		cdef unsigned int dim
-		dim = b.shape[0]
-		keyLen = calcKeyLen(dim)
-		cdef kint *ipSignature_key = <kint *>malloc(keyLen * sizeof(kint))
-		if not ipSignature_key:
-			raise MemoryError()		
-		cdef float *ipSignature = <float *>malloc(dim * sizeof(float))
-		if not ipSignature:
-			raise MemoryError()
-		try:	        
-			getInterSig(self.cache,&b[0],ipSignature_key)
-			chromaticKey(ipSignature_key, ipSignature, dim)
-			return [ ipSignature[i] for i in range(dim) ]
-		finally:
-			free(ipSignature)
-			free(ipSignature_key)
+	
 
 	def batchChromaCalculate(self,np.ndarray[float,ndim=2,mode="c"] data not None, numProc=None):
 		if numProc == None:

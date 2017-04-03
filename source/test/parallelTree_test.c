@@ -225,6 +225,18 @@ int main(int argc, char* argv[])
 	printf("We have %d nodes. Removing half.\n", tree->numNodes);
 	balanceAndTrimTree(tree, tree->numNodes/2);
 
+	addBatch(tree, randArr, population);
+	printf("We have %d nodes. Removing half.\n", tree->numNodes);
+	balanceAndTrimTree(tree, tree->numNodes/2);
+
+	addBatch(tree, randArr, population);
+	printf("We have %d nodes. Removing half.\n", tree->numNodes);
+	balanceAndTrimTree(tree, tree->numNodes/2);
+
+	addBatch(tree, randArr, population);
+	printf("We have %d nodes. Removing half.\n", tree->numNodes);
+	balanceAndTrimTree(tree, tree->numNodes/2);
+
 	free(locArr);
 	free(randArr);
 	freeTree(tree);
