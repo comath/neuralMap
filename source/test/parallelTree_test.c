@@ -205,6 +205,7 @@ location * getLocationArray(Tree * myTree)
 
 int main(int argc, char* argv[])
 {
+	printf("Size of kint: %lu\n", sizeof(kint));
 	const int population = 30000;
 	const int max = 500;
 	printf("Creating an pseudo-random array with %d elements, max val: %d\n",population,max);
@@ -226,17 +227,7 @@ int main(int argc, char* argv[])
 	printf("We have %d nodes. Removing half.\n", tree->currentMemoryUseage);
 	balanceAndTrimTree(tree, tree->currentMemoryUseage/2);
 
-	addBatch(tree, randArr, population);
-	printf("We have %d nodes. Removing half.\n", tree->currentMemoryUseage);
-	balanceAndTrimTree(tree, tree->currentMemoryUseage/2);
-
-	addBatch(tree, randArr, population);
-	printf("We have %d nodes. Removing half.\n", tree->currentMemoryUseage);
-	balanceAndTrimTree(tree, tree->currentMemoryUseage/2);
-
-	addBatch(tree, randArr, population);
-	printf("We have %d nodes. Removing half.\n", tree->currentMemoryUseage);
-	balanceAndTrimTree(tree, tree->currentMemoryUseage/2);
+	
 
 	free(locArr);
 	free(randArr);

@@ -426,7 +426,7 @@ ipCache * allocateCache(nnLayer *layer, float threshhold, long long int freeMemo
 		maxProjection = (2*layer->inDim*layer->inDim)/3;
 	}
 
-	long int maxMemory = (9*(freeMemory))/(20*sizeof(float));
+	long int maxMemory = (7*(freeMemory))/(8*sizeof(float));
 
 	cache->bases = createTree(keyLen, minMN, maxProjection, maxMemory, ipCacheDataCreator, ipCacheDataModifier, ipCacheDataDestroy);
 	int rc = pthread_mutex_init(&(cache->balanceLock), 0);

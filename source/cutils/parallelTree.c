@@ -87,6 +87,7 @@ void * addData(Tree *tree, kint * key, int treeIndex, void * datum, int memoryUs
 		node->createdKL = 1;
 		copyKey(key, node->key, keyLen);
 		node->dataPointer = tree->dataCreator(datum);
+		node->memoryUsage = memoryUsage;
 		tree->numNodes++;
 	}
 	int keyCompare = compareKey(key,node->key,keyLen);
@@ -99,7 +100,7 @@ void * addData(Tree *tree, kint * key, int treeIndex, void * datum, int memoryUs
 				(node->bigNode)->createdKL = keyLen;
 				copyKey(key, (node->bigNode)->key, keyLen);
 				(node->bigNode)->dataPointer = tree->dataCreator(datum);
-				node->memoryUsage = memoryUsage;
+				(node->bigNode)->memoryUsage = memoryUsage;
 				pthread_spin_lock(&(tree->nodeCountSpinLock));
 					tree->numNodes++;
 					tree->currentMemoryUseage += memoryUsage;
@@ -109,7 +110,7 @@ void * addData(Tree *tree, kint * key, int treeIndex, void * datum, int memoryUs
 				(node->bigNode)->createdKL = 1;
 				copyKey(key, (node->bigNode)->key, keyLen);
 				(node->bigNode)->dataPointer = tree->dataCreator(datum);
-				node->memoryUsage = memoryUsage;
+				(node->bigNode)->memoryUsage = memoryUsage;
 				pthread_spin_lock(&(tree->nodeCountSpinLock));
 					tree->numNodes++;
 					tree->currentMemoryUseage += memoryUsage;
@@ -124,7 +125,7 @@ void * addData(Tree *tree, kint * key, int treeIndex, void * datum, int memoryUs
 				(node->smallNode)->createdKL = 1;
 				copyKey(key, (node->smallNode)->key, keyLen);
 				(node->smallNode)->dataPointer = tree->dataCreator(datum);
-				node->memoryUsage = memoryUsage;
+				(node->smallNode)->memoryUsage = memoryUsage;
 				pthread_spin_lock(&(tree->nodeCountSpinLock));
 					tree->numNodes++;
 					tree->currentMemoryUseage += memoryUsage;
@@ -134,7 +135,7 @@ void * addData(Tree *tree, kint * key, int treeIndex, void * datum, int memoryUs
 				(node->smallNode)->createdKL = 1;
 				copyKey(key, (node->smallNode)->key, keyLen);
 				(node->smallNode)->dataPointer = tree->dataCreator(datum);
-				node->memoryUsage = memoryUsage;
+				(node->smallNode)->memoryUsage = memoryUsage;
 				pthread_spin_lock(&(tree->nodeCountSpinLock));
 					tree->numNodes++;
 					tree->currentMemoryUseage += memoryUsage;
@@ -299,8 +300,12 @@ void traverseSubtree(TreeNode *(*(*traversePointer)), TreeNode *node, int minAcc
 			traverseSubtree(traversePointer, node[i].smallNode,minAccess,maxMemory);
 		}
 		if(node[i].dataPointer && node[i].createdKL && 
-			(minAccess<0 || node[i].dataModifiedCount*node[i].dataModifiedCount >= minAccess)){
-			printf("Node access: %p, dataPointer: %p, with access count %d, memory weight: %d. key[0]: %lu\n",node+i, node[i].dataPointer, (node+i)->dataModifiedCount, node[i].memoryUsage, node[i].key[0]);
+			(minAccess<0 || node[i].dataModifiedCount >= minAccess)){
+			printf("Node access: %p, ",node+i);
+			printf("dataPointer: %p, ", node[i].dataPointer);
+			printf("with access count %d, ", (node+i)->dataModifiedCount);
+			printf("memory weight: %d. ", node[i].memoryUsage);
+			printf("key[0]: %lu\n ", node[i].key[0]);
 			if(minAccess<0 || node[i].dataModifiedCount*node[i].dataModifiedCount > minAccess || maxMemory > node[i].memoryUsage){
 				*(*traversePointer) = node+i;
 				(*traversePointer)++;
@@ -391,7 +396,7 @@ void balanceAndTrimTree(Tree *tree, long int memMax)
 	int minAccess = nodeArr[lastNodeIndex-1]->dataModifiedCount;
 	int maxMemory = nodeArr[lastNodeIndex-1]->memoryUsage;
 	
-	printf("-----------Obtained the minAccess, maxMemory: %d-----------\n",minAccess, maxMemory);
+	printf("-----------Obtained the minAccess, maxMemory: %d,%d-----------\n",minAccess, maxMemory);
 
 	int i=0,j=0,k=0;
 	int batchConstant = (1 << (NODEDEPTH+1))-1;
@@ -438,4 +443,15 @@ int * getAccessCounts(Tree *tree)
 	}
 	free(nodeArr);
 	return accessCounts;
+}
+
+void printNodeArray(TreeNode ** nodeArr, int count)
+{
+	for(int i = 0;i<count;i++){
+		printf("Node access: %p, ",nodeArr[i]);
+		printf("dataPointer: %p, ", nodeArr[i]->dataPointer);
+		printf("with access count %d, ", nodeArr[i]->dataModifiedCount);
+		printf("memory weight: %d. ", nodeArr[i]->memoryUsage);
+		printf("key[0]: %lu\n ", nodeArr[i]->key[0]);
+	}
 }
