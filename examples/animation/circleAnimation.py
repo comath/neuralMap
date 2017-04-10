@@ -47,8 +47,9 @@ inputDim = 2
 hiddenDim1 = 3
 outDim = 1
 
-resolution = 210
-xy = np.mgrid[-1:1.1:0.01, -1:1.1:0.01].T
+res = 0.05
+xy = np.mgrid[-1:1.1:res, -1:1.1:res].T
+resolution = xy.shape[0]
 xy = np.ascontiguousarray(xy, dtype=np.float32)
 print xy.shape
 

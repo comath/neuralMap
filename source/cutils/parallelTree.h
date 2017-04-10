@@ -18,6 +18,7 @@ typedef struct TreeNode {
 	pthread_mutex_t datamutex;
 	int dataModifiedCount;
 	void * dataPointer;
+	long int memoryUsage;
 
 	pthread_spinlock_t smallspinlock;
 	struct TreeNode *smallNode;
@@ -32,21 +33,28 @@ typedef struct Tree {
 	void * (*dataCreator)(void * input);
 	void (*dataModifier)(void * input, void * data);
 	void (*dataDestroy)(void * data);
+	int maxDatumMemory;
+
+	long int maxTreeMemory;
 
 	// Tree properties
 	unsigned int keyLength;
 	pthread_spinlock_t nodeCountSpinLock;
 	int numNodes;
+	long int currentMemoryUseage;
 	unsigned int depth;
 	TreeNode ** root;
 	int numTrees;
 } Tree;
 
-Tree * createTree(uint keyLength, uint numTrees, void * (*dataCreator)(void * input),
-				void (*dataModifier)(void * input, void * data),void (*dataDestroy)(void * data));
-void * addData(Tree *tree, kint *key, int treeIndex, void * datum);
+Tree * createTree(uint keyLength, uint numTrees, 
+				int maxDatumMemory, long int maxTreeMemory, 
+				void * (*dataCreator)(void * input),
+				void (*dataModifier)(void * input, void * data),
+				void (*dataDestroy)(void * data));
+void * addData(Tree *tree, kint *key, int treeIndex, void * datum, int memoryUsage);
 void * getData(Tree *tree, kint *key, int treeIndex);
-void balanceAndTrimTree(Tree *tree, int desiredNodeCount);
+void balanceAndTrimTree(Tree *tree, long int memMax);
 void freeTree(Tree *tree);
 
 

@@ -144,4 +144,4 @@ cdef class ipCalculator:
 
 	def __dealloc__(self):
 		freeCache(self.cache)
-		freeLayer(self.layer)
+		free(self.layer)

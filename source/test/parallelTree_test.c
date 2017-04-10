@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../cutils/parallelTree.h"
 
+
+#include "../cutils/parallelTree.h"
 
 
 typedef struct dataStruct {
@@ -98,7 +99,7 @@ void * addBatch_thread(void *thread_args)
 
 	int i = 0;
 	for(i=tid;i<numkeys;i=i+numThreads){
-		addData(tree,data[i].key,0, data + i);
+		addData(tree,data[i].key,0, data + i, data[i].value % 10);
 	}
 	pthread_exit(NULL);
 }
@@ -204,15 +205,15 @@ location * getLocationArray(Tree * myTree)
 
 int main(int argc, char* argv[])
 {
-	const int population = 3000000;
-	const int max = 5000;
+	const int population = 30000;
+	const int max = 500;
 	printf("Creating an pseudo-random array with %d elements, max val: %d\n",population,max);
 	dataInput * randArr;
 	randArr = createRandomArray(population,max);
 	printf("Success!\n");
 	uint keyLength = calcKeyLen(1);
-	printf("Creating the tree and allocating the first node.\n");
-	Tree *tree = createTree(keyLength, 1, dataCreator,dataModifier,dataDestroy);
+	printf("Creating the tree and allocating the first node. keyLength: %u\n", keyLength);
+	Tree *tree = createTree(keyLength, 1, 10,250,dataCreator,dataModifier,dataDestroy);
 	printf("Success!\n");
 	
 	printf("Adding %d nodes with addVector\n", population);
@@ -222,20 +223,20 @@ int main(int argc, char* argv[])
 	location *locArr = getLocationArray(tree);
 	printf("Location 2 is %d\n", locArr[2].totalValue);
 	
-	printf("We have %d nodes. Removing half.\n", tree->numNodes);
-	balanceAndTrimTree(tree, tree->numNodes/2);
+	printf("We have %d nodes. Removing half.\n", tree->currentMemoryUseage);
+	balanceAndTrimTree(tree, tree->currentMemoryUseage/2);
 
 	addBatch(tree, randArr, population);
-	printf("We have %d nodes. Removing half.\n", tree->numNodes);
-	balanceAndTrimTree(tree, tree->numNodes/2);
+	printf("We have %d nodes. Removing half.\n", tree->currentMemoryUseage);
+	balanceAndTrimTree(tree, tree->currentMemoryUseage/2);
 
 	addBatch(tree, randArr, population);
-	printf("We have %d nodes. Removing half.\n", tree->numNodes);
-	balanceAndTrimTree(tree, tree->numNodes/2);
+	printf("We have %d nodes. Removing half.\n", tree->currentMemoryUseage);
+	balanceAndTrimTree(tree, tree->currentMemoryUseage/2);
 
 	addBatch(tree, randArr, population);
-	printf("We have %d nodes. Removing half.\n", tree->numNodes);
-	balanceAndTrimTree(tree, tree->numNodes/2);
+	printf("We have %d nodes. Removing half.\n", tree->currentMemoryUseage);
+	balanceAndTrimTree(tree, tree->currentMemoryUseage/2);
 
 	free(locArr);
 	free(randArr);

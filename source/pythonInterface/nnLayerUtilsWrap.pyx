@@ -31,7 +31,7 @@ cdef class neuralLayer:
 		return output
 
 	def __dealloc__(self):
-		freeLayer(self._c_layer)
+		free(self._c_layer)
 
 	def batchCalculateUncompressed(self,np.ndarray[float,ndim=2,mode="c"] data not None, numProc=None):
 		if numProc == None:

@@ -1,7 +1,7 @@
 #include "key.h"
 #include <stdint.h>
 
-#define DATASIZE 64
+#define DATASIZE 32
 
 
 uint calcKeyLen(uint dataLen)
@@ -15,7 +15,10 @@ uint calcKeyLen(uint dataLen)
 
 char compareKey(kint *x, kint *y, uint keyLen)
 {
+	//return memcmp ( x,y, keyLen*sizeof(kint) );
+	
 	uint i = 0;
+	
 	for(i = 0; i < keyLen; i++){
 		if(x[i] > y[i]){
 			return -1;
@@ -25,6 +28,7 @@ char compareKey(kint *x, kint *y, uint keyLen)
 		}
 	}
 	return 0;
+	
 }
 
 char checkEmptyKey(kint *key,uint keyLength)
@@ -81,7 +85,11 @@ void removeIndexFromKey(kint *key, uint index)
 
 uint checkIndex(kint *key, uint index)
 {
-	return key[index/DATASIZE] & (1 << (DATASIZE-1-(index % DATASIZE)));
+	if(key[index/DATASIZE] & (1 << (DATASIZE-1-((kint)index % DATASIZE)))){
+		return 1;
+	} else {
+		return 0;
+	}
 }
 
 void clearKey(kint *key, uint keyLen)

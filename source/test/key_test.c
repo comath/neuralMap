@@ -57,13 +57,13 @@ void testKeyLen()
 void testCompareKey()
 {
 	
-	uint arrLength = 30;
+	uint arrLength = 1000;
 	int *arr = createRandomBinaryArray(arrLength);
 	int *arr2 = createRandomBinaryArray(arrLength);
 	uint keyLen = calcKeyLen(arrLength);
 
-	uint *testKey = malloc(keyLen*sizeof(uint));
-	uint *testKey2 = malloc(keyLen*sizeof(uint));
+	kint *testKey = malloc(keyLen*sizeof(kint));
+	kint *testKey2 = malloc(keyLen*sizeof(kint));
 	convertToKey(arr,testKey,arrLength);
 	convertToKey(arr2,testKey2,arrLength);
 	if(compareKey( testKey, testKey2,keyLen) != compareArr(arr,arr2,arrLength)){
@@ -78,12 +78,12 @@ void testCompareKey()
 void testRebuildKey()
 {
 	
-	int arrLength = 30;
+	int arrLength = 1000;
 	int *arr = createRandomBinaryArray(arrLength);
 	int *RecreateArr = malloc(arrLength*sizeof(int));
 	
 	uint keyLen = calcKeyLen(arrLength);
-	uint *testKey = malloc(keyLen*sizeof(uint));
+	kint *testKey = malloc(keyLen*sizeof(kint));
 
 	convertToKey(arr,testKey,arrLength);
 	convertFromKey(testKey,RecreateArr,arrLength);
@@ -100,34 +100,6 @@ void testRebuildKey()
 	free(testKey);
 }
 
-void testChromaticKey()
-{
-	int arrLength = 30;
-	int *arr = createRandomBinaryArray(arrLength);
-	uint keyLen = calcKeyLen(arrLength);
-	uint *testKey = malloc(keyLen*sizeof(uint));
-	convertToKey(arr,testKey,arrLength);
-
-	float rgb[3];
-	chromaticKey(testKey, rgb, arrLength);
-	float curthreshold = ;1
-	int i = 0;
-	for(i=0;i<arrLength;i++){
-		curthreshold = 1.0f / (1 << (i/3 + 1));
-		if( (rgb[i%3] >= curthreshold) ){
-			rgb[i%3] = rgb[i%3] - curthreshold;
-		}
-	}
-	if( rgb[0] ){
-		printf("Red Faliure\n");
-	}
-	if( rgb[1] ){
-		printf("Green Faliure\n");
-	} 
-	if( rgb[2] ){
-		printf("Blue Faliure\n");
-	} 
-}
 
 int main(int argc, char* argv[])
 {
@@ -142,6 +114,5 @@ int main(int argc, char* argv[])
 	printf("testRebuildKey:\n");
 	for(i=0;i<100;i++){	testRebuildKey(); }
 	printf("testChromaticKey:\n");
-	for(i=0;i<100;i++){ testChromaticKey(); }
 	return 0;
 }

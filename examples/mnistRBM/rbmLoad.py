@@ -10,6 +10,7 @@ mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 trX, trY, teX, teY = mnist.train.images, mnist.train.labels,\
 mnist.test.images, mnist.test.labels
 
+
 visibleDim = 28*28
 batchSize = 1000
 stepSize = 0.005
@@ -27,7 +28,7 @@ currentNumPoints = 0
 
 print trX.shape
 
-for hiddenDim in range(60,61,20):
+for hiddenDim in range(100,101,20):
 	matDic = {}
 	io.loadmat("mnist%(visibleDim)dx%(hiddenDim)03dstepsize%(stepSize)f.mat" 
 													% {'visibleDim': visibleDim, 'hiddenDim': hiddenDim, 'stepSize':stepSize},

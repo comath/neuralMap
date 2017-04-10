@@ -47,8 +47,6 @@ typedef struct ipCache {
 	float *hpNormals;
 	float threshold;
 	pthread_mutex_t balanceLock;
-	long long int maxNodesBeforeTrim;
-	long long int maxNodesAfterTrim;
 } ipCache;
 
 
