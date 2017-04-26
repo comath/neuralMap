@@ -46,7 +46,7 @@ void evalLayer(nnLayer *layer, float * input, float * output)
 		}
 	#endif
 	cblas_scopy (outDim, layer->b, 1, output, 1);
-	cblas_sgemv (CblasRowMajor, CblasTrans, inDim,outDim,1, layer->A, inDim, input, 1, 1, output, 1);
+	cblas_sgemv (CblasRowMajor, CblasNoTrans, outDim,inDim,1, layer->A, inDim, input, 1, 1, output, 1);
 }
 
 void printFloatArr(float *arr, uint length){
@@ -86,6 +86,7 @@ void getRegSig(nnLayer *layer, float *p, kint * regSig)
 	clearKey(regSig, keyLength);
 	float *output = malloc(outDim*sizeof(float));
 	evalLayer(layer, p,output);
+
 	convertFloatToKey(output,regSig,outDim);
 }
 

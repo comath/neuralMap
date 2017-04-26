@@ -1,7 +1,8 @@
 #include "key.h"
 #include <stdint.h>
+#include <string.h>
 
-#define DATASIZE 32
+#define DATASIZE 64
 
 
 uint calcKeyLen(uint dataLen)
@@ -13,10 +14,45 @@ uint calcKeyLen(uint dataLen)
 	return keyLen;
 }
 
+uint checkIndex(kint *key, uint i)
+{
+	if(key[i/DATASIZE] & (1 << (DATASIZE-1-(i % DATASIZE)))){
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+void convertFromKey(kint *key, int * raw, uint dataLen)
+{
+	uint i = 0;
+	for(i=0;i<dataLen;i++){
+		if(checkIndex(key,i)){
+			raw[i] = 1;
+		} else {
+			raw[i] = 0;
+		}
+	}
+}
+
+void convertToKey(int * raw, kint *key,uint dataLen)
+{
+
+	uint keyLen = calcKeyLen(dataLen);
+	clearKey(key, keyLen);
+	uint i = 0,j=0;
+	for(i=0;i<dataLen;i++){
+		j = i % DATASIZE;
+		if(raw[i]){
+			key[i/DATASIZE] += (1 << (DATASIZE - j -1))	;
+		}	
+	}
+}
+
 char compareKey(kint *x, kint *y, uint keyLen)
 {
-	//return memcmp ( x,y, keyLen*sizeof(kint) );
-	
+	//return memcmp (x,y, keyLen*sizeof(kint));
+
 	uint i = 0;
 	
 	for(i = 0; i < keyLen; i++){
@@ -28,7 +64,7 @@ char compareKey(kint *x, kint *y, uint keyLen)
 		}
 	}
 	return 0;
-	
+
 }
 
 char checkEmptyKey(kint *key,uint keyLength)
@@ -41,21 +77,6 @@ char checkEmptyKey(kint *key,uint keyLength)
 	}
 	return 0;
 }
-
-void convertToKey(int * raw, kint *key,uint dataLen)
-{
-
-	uint keyLen = calcKeyLen(dataLen);
-	clearKey(key, keyLen);
-	uint i = 0,j=0;
-	for(i=0;i<dataLen;i++){
-		j = i % DATASIZE;
-		if(raw[i]){
-			key[i/DATASIZE] += (1 << (DATASIZE -j -1))	;
-		}	
-	}
-}
-
 
 
 void batchConvertToKey(int * raw, kint *key,uint dataLen, uint numData){
@@ -83,14 +104,7 @@ void removeIndexFromKey(kint *key, uint index)
 	}
 }
 
-uint checkIndex(kint *key, uint index)
-{
-	if(key[index/DATASIZE] & (1 << (DATASIZE-1-((kint)index % DATASIZE)))){
-		return 1;
-	} else {
-		return 0;
-	}
-}
+
 
 void clearKey(kint *key, uint keyLen)
 {
@@ -131,24 +145,11 @@ void printKey(kint *key, uint dataLen){
 	printf("]\n");
 }
 
-void convertFromKey(kint *key, int * raw, uint dataLen)
-{
-	uint i = 0;
-	for(i=0;i<dataLen;i++){
-		if(checkIndex(key,i)){
-			raw[i] = 1;
-		} else {
-			raw[i] = 0;
-		}
-	}
-}
+
 
 void copyKey(kint *key1, kint *key2, uint keyLen)
 {
-	uint i = 0;
-	for(i=0;i<keyLen;i++){
-		key2[i] = key1[i];
-	}
+	memcpy(key2, key1, keyLen*sizeof(kint));
 }
 
 void batchConvertFromKey(kint *key, int * raw, uint dataLen,uint numData){

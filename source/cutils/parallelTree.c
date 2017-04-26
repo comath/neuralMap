@@ -1,56 +1,57 @@
 #include "parallelTree.h"
 #include <stdint.h>
+#include <string.h>
 
-#ifndef NODEDEPTH
-#define NODEDEPTH 6 
-#endif
 
-void fillTreeNodesPointers(TreeNode *node, int nodeDepth)
+SubTree * allocateNodes(uint keyLength)
 {
-	if(nodeDepth > -1) {
-		node->smallNode = node - (1 << nodeDepth);
-		node->bigNode = node + (1 << nodeDepth);
-		fillTreeNodesPointers(node->smallNode,nodeDepth-1);
-		fillTreeNodesPointers(node->bigNode,nodeDepth-1);
-	} else {
-		node->smallNode = NULL;
-		node->bigNode = NULL;
-	}
-}
-
-TreeNode * allocateNodes(uint keyLength)
-{
-	const int maxTreeSize = (1 << (NODEDEPTH+1)) - 1;
-	struct TreeNode * tree = malloc(maxTreeSize * sizeof(TreeNode));
-	kint * keys = malloc(maxTreeSize * keyLength * sizeof(kint));
+	
+	SubTree * tree = malloc(sizeof(SubTree));
+	kint * keys = malloc(SUBTREESIZE * keyLength * sizeof(kint));
 	int rc = 0;
-	for (int i = 0; i < maxTreeSize; i++)
+	rc = pthread_spin_init(&(tree->traverseSpinLock), 0);
+	if (rc != 0) {
+        printf("spinlock Initialization failed at %p", (void *) tree);
+    }
+	for (int i = 0; i < SUBTREESIZE; i++)
 	{
-		tree[i].dataModifiedCount = 0;
-		tree[i].createdKL = 0;
-		tree[i].key = keys + i*keyLength;
-		tree[i].dataPointer = NULL;
+		tree->nodes[i].accessCount = 0;
+		tree->nodes[i].createdKL = 0;
+		tree->nodes[i].key = keys + i*keyLength;
+		tree->nodes[i].dataPointer = NULL;
 
-		rc = pthread_spin_init(&(tree[i].keyspinlock), 0);
-		if (rc != 0) {
-	        printf("spinlock Initialization failed at %p", (void *) tree + i);
-	    }
-		rc = pthread_spin_init(&(tree[i].smallspinlock), 0);
-		if (rc != 0) {
-	        printf("spinlock Initialization failed at %p", (void *) tree + i);
-	    }
-		rc = pthread_spin_init(&(tree[i].bigspinlock), 0);
-		if (rc != 0) {
-	        printf("spinlock Initialization failed at %p", (void *) tree + i);
-	    }
-		rc = pthread_mutex_init(&(tree[i].datamutex), 0);
+		rc = pthread_mutex_init(&(tree->nodes[i].datamutex), 0);
 		if (rc != 0) {
 	        printf("mutex Initialization failed at %p", (void *) tree + i);
 	    }
 	}
-	tree = tree + (1 << NODEDEPTH) - 1;
-	fillTreeNodesPointers(tree,NODEDEPTH-1);
+	memset(tree->nextSubTrees,0, (SUBTREESIZE+1)*sizeof(SubTree *));
 	return tree;
+}
+
+void freeNodes(Tree *tree, SubTree *st)
+{
+	int i = 0;
+	// Free the keyspace.
+	free(st->nodes[0].key);
+	int n = (1 << (NODEDEPTH+1)) - 1;
+
+	for(i=0;i<n;i=i+2){
+		if(st->nextSubTrees[i]){
+			freeNodes(tree,st->nextSubTrees[i]);
+		}
+		if(st->nextSubTrees[i+1]){
+			freeNodes(tree,st->nextSubTrees[i+1]);
+		}
+	}
+	for(i=0;i<n;i++){
+		if(st->nodes[i].dataPointer){
+			tree->dataDestroy(st->nodes[i].dataPointer);
+		}
+		pthread_mutex_destroy(&(st->nodes[i].datamutex));
+	}
+
+	free(st);
 }
 
 Tree * createTree(uint keyLength, uint numTrees, int maxDatumMemory, long int maxTreeMemory, void * (*dataCreator)(void * input),
@@ -58,7 +59,7 @@ Tree * createTree(uint keyLength, uint numTrees, int maxDatumMemory, long int ma
 {
 	Tree * tree = malloc(sizeof(Tree));
 	tree->numTrees = numTrees;
-	tree->root = malloc(numTrees*sizeof(TreeNode *));
+	tree->root = malloc(numTrees*sizeof(SubTree *));
 	for(uint i=0;i<numTrees;i++){
 		tree->root[i] = allocateNodes(keyLength);
 	}
@@ -78,145 +79,6 @@ Tree * createTree(uint keyLength, uint numTrees, int maxDatumMemory, long int ma
 	return tree;	
 }
 
-
-void * addData(Tree *tree, kint * key, int treeIndex, void * datum, int memoryUsage){
-	TreeNode * node = tree->root[treeIndex];
-	int keyLen = tree->keyLength;
-	pthread_spin_lock(&(node->keyspinlock));
-	if (node->createdKL == 0){
-		node->createdKL = 1;
-		copyKey(key, node->key, keyLen);
-		node->dataPointer = tree->dataCreator(datum);
-		node->memoryUsage = memoryUsage;
-		tree->numNodes++;
-	}
-	int keyCompare = compareKey(key,node->key,keyLen);
-	pthread_spin_unlock(&(node->keyspinlock));
-	while(keyCompare){
-		if (keyCompare == 1) {
-			pthread_spin_lock(&(node->bigspinlock));
-			if(node->bigNode == NULL){
-				node->bigNode = allocateNodes(keyLen);
-				(node->bigNode)->createdKL = keyLen;
-				copyKey(key, (node->bigNode)->key, keyLen);
-				(node->bigNode)->dataPointer = tree->dataCreator(datum);
-				(node->bigNode)->memoryUsage = memoryUsage;
-				pthread_spin_lock(&(tree->nodeCountSpinLock));
-					tree->numNodes++;
-					tree->currentMemoryUseage += memoryUsage;
-				pthread_spin_unlock(&(tree->nodeCountSpinLock));
-			} 
-			if ((node->bigNode)->createdKL == 0){
-				(node->bigNode)->createdKL = 1;
-				copyKey(key, (node->bigNode)->key, keyLen);
-				(node->bigNode)->dataPointer = tree->dataCreator(datum);
-				(node->bigNode)->memoryUsage = memoryUsage;
-				pthread_spin_lock(&(tree->nodeCountSpinLock));
-					tree->numNodes++;
-					tree->currentMemoryUseage += memoryUsage;
-				pthread_spin_unlock(&(tree->nodeCountSpinLock));
-			}
-			pthread_spin_unlock(&(node->bigspinlock));
-			node = node->bigNode;
-		} else if (keyCompare == -1) {
-			pthread_spin_lock(&(node->smallspinlock));
-			if(node->smallNode == NULL){
-				node->smallNode = allocateNodes(keyLen);
-				(node->smallNode)->createdKL = 1;
-				copyKey(key, (node->smallNode)->key, keyLen);
-				(node->smallNode)->dataPointer = tree->dataCreator(datum);
-				(node->smallNode)->memoryUsage = memoryUsage;
-				pthread_spin_lock(&(tree->nodeCountSpinLock));
-					tree->numNodes++;
-					tree->currentMemoryUseage += memoryUsage;
-				pthread_spin_unlock(&(tree->nodeCountSpinLock));
-			} 
-			if ((node->smallNode)->createdKL == 0){
-				(node->smallNode)->createdKL = 1;
-				copyKey(key, (node->smallNode)->key, keyLen);
-				(node->smallNode)->dataPointer = tree->dataCreator(datum);
-				(node->smallNode)->memoryUsage = memoryUsage;
-				pthread_spin_lock(&(tree->nodeCountSpinLock));
-					tree->numNodes++;
-					tree->currentMemoryUseage += memoryUsage;
-				pthread_spin_unlock(&(tree->nodeCountSpinLock));
-			}
-			pthread_spin_unlock(&(node->smallspinlock));
-			node = node->smallNode;
-		}
-		pthread_spin_lock(&(node->keyspinlock));
-		keyCompare = compareKey(key,node->key,keyLen);
-		pthread_spin_unlock(&(node->keyspinlock));
-	}
-
-	pthread_mutex_lock(&(node->datamutex));
-		if(tree->dataModifier){
-			tree->dataModifier(datum,node->dataPointer);
-		}
-		node->dataModifiedCount++;
-	pthread_mutex_unlock(&(node->datamutex));
-	return (void *) node->dataPointer;
-}
-
-void * getData(Tree *tree, kint *key, int treeIndex)
-{
-	int keyLen = tree->keyLength;
-	TreeNode * node = tree->root[treeIndex];
-	if (node->createdKL == 0){
-		return NULL;
-	}
-	char comparison;
-	while((comparison = compareKey(key,node->key,keyLen))){
-
-		if (comparison == 1) {
-			pthread_spin_lock(&(node->bigspinlock));
-			if(node->bigNode == NULL || node->bigNode->createdKL == 0){
-				return NULL;
-			}
-			pthread_spin_unlock(&(node->bigspinlock));
-			node = node->bigNode;
-		} else if (comparison == -1) {
-			pthread_spin_lock(&(node->smallspinlock));
-			if(node->smallNode == NULL || node->smallNode->createdKL == 0){
-				return NULL;
-			}
-			pthread_spin_unlock(&(node->smallspinlock));
-			node = node->smallNode;
-		}
-		
-	}
-	return (void *) node->dataPointer;
-}
-
-
-void freeNodes(Tree *tree, TreeNode *node)
-{
-	int i = 0;
-	node = node - (1 << NODEDEPTH) + 1;
-	// Free the keyspace.
-	free(node->key);
-	int n = (1 << (NODEDEPTH+1)) - 1;
-
-	for(i=0;i<n;i=i+2){
-		if(node[i].bigNode){
-			freeNodes(tree,node[i].bigNode);
-		}
-		if(node[i].smallNode){
-			freeNodes(tree,node[i].smallNode);
-		}
-	}
-	for(i=0;i<n;i++){
-		if(node[i].dataPointer){
-			tree->dataDestroy(node[i].dataPointer);
-		}
-		pthread_spin_destroy(&(node[i].bigspinlock));
-		pthread_spin_destroy(&(node[i].smallspinlock));
-		pthread_mutex_destroy(&(node[i].datamutex));
-	}
-
-	free(node);
-}
-
 void freeTree(Tree *tree)
 {
 	if(tree){
@@ -229,94 +91,186 @@ void freeTree(Tree *tree)
 	}
 }
 
-void moveNode(Tree *tree, TreeNode * oldNode, int treeIndex){
-	TreeNode * newNode = tree->root[treeIndex];
+
+void * addData(Tree *tree, kint * key, int treeIndex, void * datum, int memoryUsage){
+	SubTree * st =	 tree->root[treeIndex];
+	int keyLen = tree->keyLength;
+	int i = SUBCENTER;
+	int d = NODEDEPTH;
 	
-	if (newNode->createdKL == 0){
-		newNode->createdKL = tree->keyLength;
-		copyKey(oldNode->key, newNode->key, tree->keyLength);
-		newNode->dataPointer = oldNode->dataPointer;
-		oldNode->dataPointer = NULL;
+	pthread_spinlock_t *currentTSL = &(st->traverseSpinLock);
+	pthread_spin_lock(currentTSL);
+
+	if (st->nodes[i].createdKL == 0){
+		st->nodes[i].createdKL = keyLen;
+		copyKey(key, st->nodes[i].key, keyLen);
+		st->nodes[i].dataPointer = tree->dataCreator(datum);
+		st->nodes[i].memoryUsage = memoryUsage;
 		tree->numNodes++;
 	}
-	int keyCompare = compareKey(oldNode->key,newNode->key,tree->keyLength);
 
-	while(keyCompare){
-		if (keyCompare == 1) {
-			if(newNode->bigNode == NULL){
-				newNode->bigNode = allocateNodes(tree->keyLength);
-				(newNode->bigNode)->createdKL = tree->keyLength;
-				copyKey(oldNode->key, (newNode->bigNode)->key, tree->keyLength);
-				(newNode->bigNode)->dataPointer = oldNode->dataPointer;
-				oldNode->dataPointer = NULL;
-				tree->numNodes++;
-				tree->currentMemoryUseage += oldNode->memoryUsage;
-			} 
-			if ((newNode->bigNode)->createdKL == 0){
-				(newNode->bigNode)->createdKL = tree->keyLength;
-				copyKey(oldNode->key, (newNode->bigNode)->key, tree->keyLength);
-				(newNode->bigNode)->dataPointer = oldNode->dataPointer;
-				oldNode->dataPointer = NULL;
-				tree->numNodes++;
-				tree->currentMemoryUseage += oldNode->memoryUsage;
+	int keyCompare;
+	while((keyCompare = compareKey(key,st->nodes[i].key,keyLen))){
+		if(d == 0){
+			if(keyCompare == 1){
+				i = i + 1;
+			} else {
+				i = i;
 			}
-			newNode = newNode->bigNode;
-		} else if (keyCompare == -1) {
-			if(newNode->smallNode == NULL){
-				newNode->smallNode = allocateNodes(tree->keyLength);
-				(newNode->smallNode)->createdKL = tree->keyLength;
-				copyKey(oldNode->key, (newNode->smallNode)->key, tree->keyLength);
-				(newNode->smallNode)->dataPointer = oldNode->dataPointer;
-				oldNode->dataPointer = NULL;
-				tree->numNodes++;
-				tree->currentMemoryUseage += oldNode->memoryUsage;
-			} 
-			if ((newNode->smallNode)->createdKL == 0){
-				(newNode->smallNode)->createdKL = tree->keyLength;
-				copyKey(oldNode->key, (newNode->smallNode)->key, tree->keyLength);
-				(newNode->smallNode)->dataPointer = oldNode->dataPointer;
-				oldNode->dataPointer = NULL;
-				tree->numNodes++;
-				tree->currentMemoryUseage += oldNode->memoryUsage;
+			if(st->nextSubTrees[i] == NULL){
+				st->nextSubTrees[i] = allocateNodes(keyLen);
+				st = st->nextSubTrees[i];
+
+				pthread_spin_unlock(currentTSL);
+				currentTSL = &(st->traverseSpinLock);
+				pthread_spin_lock(currentTSL);
+
+				i = SUBCENTER;
+				d = NODEDEPTH;
+				(st->nodes[i]).createdKL = keyLen;
+				copyKey(key, (st->nodes[i]).key, keyLen);
+				(st->nodes[i]).dataPointer = tree->dataCreator(datum);
+				(st->nodes[i]).memoryUsage = memoryUsage;
+				pthread_spin_lock(&(tree->nodeCountSpinLock));
+					tree->numNodes++;
+					tree->currentMemoryUseage += memoryUsage;
+				pthread_spin_unlock(&(tree->nodeCountSpinLock));
+			} else {
+				st = st->nextSubTrees[i];
+
+				pthread_spin_unlock(currentTSL);
+				currentTSL = &(st->traverseSpinLock);
+				pthread_spin_lock(currentTSL);
+
+				i = SUBCENTER;
+				d = NODEDEPTH;
 			}
-			newNode = newNode->smallNode;
+			
+		} else {
+			d--;
+			if(keyCompare == 1){
+				i = i + (1 << d);
+			} else {
+				i = i - (1 << d);
+			}
+			if((st->nodes[i]).createdKL == 0){
+				(st->nodes[i]).createdKL = keyLen;
+				copyKey(key, (st->nodes[i]).key, keyLen);
+				(st->nodes[i]).dataPointer = tree->dataCreator(datum);
+				(st->nodes[i]).memoryUsage = memoryUsage;
+				pthread_spin_lock(&(tree->nodeCountSpinLock));
+					tree->numNodes++;
+					tree->currentMemoryUseage += memoryUsage;
+				pthread_spin_unlock(&(tree->nodeCountSpinLock));
+			} 
 		}
-		keyCompare = compareKey(oldNode->key,newNode->key,tree->keyLength);
 	}
-	newNode->dataModifiedCount = oldNode->dataModifiedCount;
-	newNode->memoryUsage = oldNode->memoryUsage;
+	pthread_spin_unlock(currentTSL);
+	pthread_mutex_lock(&(st->nodes[i].datamutex));
+		if(tree->dataModifier){
+			tree->dataModifier(datum,st->nodes[i].dataPointer);
+		}
+		st->nodes[i].accessCount++;
+	pthread_mutex_unlock(&(st->nodes[i].datamutex));
+	return (void *) st->nodes[i].dataPointer;
 }
 
-void traverseSubtree(TreeNode *(*(*traversePointer)), TreeNode *node, int minAccess, int maxMemory)
+
+void moveNode(Tree *tree, TreeNode * oldNode, int treeIndex){
+	SubTree * st = tree->root[treeIndex];
+	int keyLen = tree->keyLength;
+	int i = SUBCENTER;
+	int d = NODEDEPTH;
+	if (st->nodes[i].createdKL == 0){
+		st->nodes[i].createdKL = keyLen;
+		copyKey(oldNode->key, st->nodes[i].key, keyLen);
+		st->nodes[i].dataPointer = oldNode->dataPointer;
+		st->nodes[i].memoryUsage = oldNode->memoryUsage;
+		st->nodes[i].accessCount = oldNode->accessCount;
+		tree->numNodes++;
+	}
+	int keyCompare;
+	while((keyCompare = compareKey(oldNode->key,st->nodes[i].key,keyLen))){
+		if(d == 0){
+			if(keyCompare == 1){
+				i = i + 1;
+			} else {
+				i = i;
+			}
+			if(st->nextSubTrees[i] == NULL){
+				st->nextSubTrees[i] = allocateNodes(keyLen);
+				st = st->nextSubTrees[i];
+
+				i = SUBCENTER;
+				d = NODEDEPTH;
+
+				(st->nodes[i]).createdKL = keyLen;
+				copyKey(oldNode->key, (st->nodes[i]).key, keyLen);
+				(st->nodes[i]).dataPointer = oldNode->dataPointer;
+				(st->nodes[i]).memoryUsage = oldNode->memoryUsage;
+				(st->nodes[i]).accessCount = oldNode->accessCount;
+				tree->numNodes++;
+				tree->currentMemoryUseage += oldNode->memoryUsage;
+			} else {
+				st = st->nextSubTrees[i];
+
+
+				i = SUBCENTER;
+				d = NODEDEPTH;
+			}
+			
+		} else {
+			d--;
+			if(keyCompare == 1){
+				i = i + (1 << d);
+			} else {
+				i = i - (1 << d);
+			}
+			if((st->nodes[i]).createdKL == 0){
+				(st->nodes[i]).createdKL = keyLen;
+				copyKey(oldNode->key, (st->nodes[i]).key, keyLen);
+				(st->nodes[i]).dataPointer = oldNode->dataPointer;
+				(st->nodes[i]).memoryUsage = oldNode->memoryUsage;
+				(st->nodes[i]).accessCount = oldNode->accessCount;
+				tree->numNodes++;
+				tree->currentMemoryUseage += oldNode->memoryUsage;
+			}
+		}
+	}
+	oldNode->dataPointer = NULL;
+	
+}
+
+void traverseSubtree(TreeNode *(*(*traversePointer)), SubTree *st, int minAccess, int maxMemory)
 {
 	int i = 0;
-	node = node - (1 << NODEDEPTH) + 1;
-	int n = (1 << (NODEDEPTH+1)) - 1;
-	printf("-----traverseSubtree-----\n");
-	for(i=0;i<n;i++){
+	//printf("-----traverseSubtree-----\n");
+	for(i=0;i<SUBTREESIZE;i++){
 		
-		if(i%2==0 && node[i].smallNode){
-			printf("---callingsmall--\n");
-			traverseSubtree(traversePointer, node[i].smallNode,minAccess,maxMemory);
+		if(i%2==0 && st->nextSubTrees[i]){
+			//printf("---callingsmall--\n");
+			traverseSubtree(traversePointer, st->nextSubTrees[i],minAccess,maxMemory);
 		}
-		if(node[i].dataPointer && node[i].createdKL && 
-			(minAccess<0 || node[i].dataModifiedCount >= minAccess)){
-			printf("Node access: %p, ",node+i);
-			printf("dataPointer: %p, ", node[i].dataPointer);
-			printf("with access count %d, ", (node+i)->dataModifiedCount);
-			printf("memory weight: %d. ", node[i].memoryUsage);
-			printf("key[0]: %lu\n ", node[i].key[0]);
-			if(minAccess<0 || node[i].dataModifiedCount*node[i].dataModifiedCount > minAccess || maxMemory > node[i].memoryUsage){
-				*(*traversePointer) = node+i;
+		if(st->nodes[i].dataPointer && st->nodes[i].createdKL && 
+			(minAccess<0 || st->nodes[i].accessCount >= minAccess)){
+			/*
+			printf("Node access: %p, ",st->nodes+i);
+			printf("dataPointer: %p, ", st->nodes[i].dataPointer);
+			printf("with access count %d, ", st->nodes[i].accessCount);
+			printf("memory weight: %d. ", st->nodes[i].memoryUsage);
+			printf("key[0]: %lu\n ", st->nodes[i].key[0]);
+			*/
+			if(minAccess<0 || st->nodes[i].accessCount*st->nodes[i].accessCount > minAccess || maxMemory > st->nodes[i].memoryUsage){
+				*(*traversePointer) = st->nodes + i;
 				(*traversePointer)++;
 			} 
 		}
-		if(i%2==0 && node[i].bigNode){
-			printf("---callingBig--\n");
-			traverseSubtree(traversePointer, node[i].bigNode,minAccess,maxMemory);
+		if(i%2==0 && st->nextSubTrees[i+1]){
+			//printf("---callingBig--\n");
+			traverseSubtree(traversePointer, st->nextSubTrees[i+1],minAccess,maxMemory);
 		}
 	}
-	printf("---//traverseSubtree//--\n");
+	//printf("---//traverseSubtree//--\n");
 }
 
 int intergrateMemoryUseageTilMax(TreeNode ** nodes, int nodeCount, long int memMax)
@@ -336,7 +290,7 @@ TreeNode ** getAllNodes(Tree * tree)
 	printf("%p %lu %d %lu\n", nodePointerArr,tree->numNodes*sizeof(TreeNode *),tree->numNodes, sizeof(TreeNode *));
 	TreeNode *(*traversePointer) = nodePointerArr;
 	for(int i = 0;i<tree->numTrees;i++){
-		printf("===============================On Rank %d=====================================\n", i);
+		//printf("===============================On Rank %d=====================================\n", i);
 		traverseSubtree(&traversePointer,tree->root[i],-1,0);
 	}
 	if(traversePointer - nodePointerArr != tree->numNodes){
@@ -350,7 +304,7 @@ int accessMemoryOrderingCmp (const void * a, const void * b)
 {
 	struct TreeNode *myA = *(TreeNode * const *)a;
 	struct TreeNode *myB = *(TreeNode * const *)b;
-	int comp = ((myB)->dataModifiedCount - (myA)->dataModifiedCount);
+	int comp = ((myB)->accessCount - (myA)->accessCount);
 	if(comp == 0){
 		return (myA)->memoryUsage-(myB)->memoryUsage;
 	} 
@@ -370,7 +324,7 @@ void recursiveMoveNode(TreeNode ** nodeArr, Tree *tree, int recursionDepth, int 
 	moveNode(tree, nodeArr[k],treeIndex);
 	if(recursionDepth > 0){
 		recursiveMoveNode(nodeArr, tree, recursionDepth-1, treeIndex);
-		recursiveMoveNode(nodeArr + k, tree, recursionDepth-1, treeIndex);
+		recursiveMoveNode(nodeArr + k+1, tree, recursionDepth-1, treeIndex);
 	}
 }
 
@@ -393,7 +347,7 @@ void balanceAndTrimTree(Tree *tree, long int memMax)
 	tree->currentMemoryUseage = 0;
 	qsort(nodeArr, oldNodeCount, sizeof(TreeNode *), accessMemoryOrderingCmp);
 	int lastNodeIndex = intergrateMemoryUseageTilMax(nodeArr, oldNodeCount, memMax);
-	int minAccess = nodeArr[lastNodeIndex-1]->dataModifiedCount;
+	int minAccess = nodeArr[lastNodeIndex-1]->accessCount;
 	int maxMemory = nodeArr[lastNodeIndex-1]->memoryUsage;
 	
 	printf("-----------Obtained the minAccess, maxMemory: %d,%d-----------\n",minAccess, maxMemory);
@@ -402,13 +356,13 @@ void balanceAndTrimTree(Tree *tree, long int memMax)
 	int batchConstant = (1 << (NODEDEPTH+1))-1;
 
 	for(i = 0;i<tree->numTrees;i++){
-		TreeNode * oldRoot = tree->root[i];
-		TreeNode * newRoot = allocateNodes(tree->keyLength);
+		SubTree * oldRoot = tree->root[i];
+		SubTree * newRoot = allocateNodes(tree->keyLength);
 		tree->root[i] = newRoot;
 		traversePointer = nodeArr;
 		traverseSubtree(&traversePointer,oldRoot,minAccess,maxMemory);
 		int currentNodeCount = (int)(traversePointer-nodeArr);
-		printf("currentNodeCount %d\n", currentNodeCount);
+		//printf("currentNodeCount %d\n", currentNodeCount);
 		finalNodeCount -= currentNodeCount;
 
 		qsort(nodeArr, currentNodeCount, sizeof(TreeNode *), accessMemoryOrderingCmp);
@@ -426,10 +380,10 @@ void balanceAndTrimTree(Tree *tree, long int memMax)
 			}
 		}
 		freeNodes(tree,oldRoot);
-
 	}
 	
 	free(nodeArr);
+
 }
 
 int * getAccessCounts(Tree *tree)
@@ -439,7 +393,7 @@ int * getAccessCounts(Tree *tree)
 	TreeNode ** nodeArr = getAllNodes(tree);
 	int * accessCounts = malloc(nodeCount*sizeof(int));
 	for(i=0;i<nodeCount;i++){
-		accessCounts[i] = nodeArr[i]->dataModifiedCount;
+		accessCounts[i] = nodeArr[i]->accessCount;
 	}
 	free(nodeArr);
 	return accessCounts;
@@ -450,8 +404,8 @@ void printNodeArray(TreeNode ** nodeArr, int count)
 	for(int i = 0;i<count;i++){
 		printf("Node access: %p, ",nodeArr[i]);
 		printf("dataPointer: %p, ", nodeArr[i]->dataPointer);
-		printf("with access count %d, ", nodeArr[i]->dataModifiedCount);
-		printf("memory weight: %d. ", nodeArr[i]->memoryUsage);
+		printf("with access count %d, ", nodeArr[i]->accessCount);
+		printf("memory weight: %ld. ", nodeArr[i]->memoryUsage);
 		printf("key[0]: %lu\n ", nodeArr[i]->key[0]);
 	}
 }

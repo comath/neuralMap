@@ -9,23 +9,34 @@
 
 #include "key.h"
 
-typedef struct TreeNode {
-	int createdKL;
 
-	pthread_spinlock_t keyspinlock;
+#ifndef NODEDEPTH
+#define NODEDEPTH 6
+#define SUBTREESIZE ((1 << (NODEDEPTH+1)) - 1)
+#define SUBCENTER ((1 << NODEDEPTH) - 1)
+#endif
+
+
+typedef struct TreeNode {
+
+	int createdKL;
 	kint *key;
 
 	pthread_mutex_t datamutex;
 	int dataModifiedCount;
 	void * dataPointer;
 	long int memoryUsage;
-
-	pthread_spinlock_t smallspinlock;
-	struct TreeNode *smallNode;
-	pthread_spinlock_t bigspinlock;
-	struct TreeNode *bigNode;
+	int accessCount;
 } TreeNode;
 
+typedef struct SubTree {
+	pthread_spinlock_t traverseSpinLock;
+
+	TreeNode nodes[SUBTREESIZE];
+	int nodeCount;
+
+	struct SubTree *nextSubTrees[SUBTREESIZE+1];
+} SubTree;
 
 
 typedef struct Tree {
@@ -42,8 +53,8 @@ typedef struct Tree {
 	pthread_spinlock_t nodeCountSpinLock;
 	int numNodes;
 	long int currentMemoryUseage;
-	unsigned int depth;
-	TreeNode ** root;
+	
+	SubTree ** root;
 	int numTrees;
 } Tree;
 

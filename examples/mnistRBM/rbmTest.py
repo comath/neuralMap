@@ -15,39 +15,34 @@ leaveInLabel = []
 removeData = []
 removeLabel = []
 
-for i,label in enumerate(trY):
+for i,label in enumerate(teY):
 	if(label[9]==1 or label[8] == 1):
-		removeData.append(trX[i])
+		removeData.append(teX[i])
 		removeLabel.append(label)
 	else:
-		leaveInData.append(trX[i])
+		leaveInData.append(teX[i])
 		leaveInLabel.append(label)
 leaveInData = np.stack(leaveInData,axis=0)
 leaveInLabel = np.stack(leaveInLabel,axis=0)
 removeData = np.stack(removeData,axis=0)
 removeLabel = np.stack(removeLabel,axis=0)
 
+testCount = 400
+
+indicies = range(0,testCount)
+leaveInData = leaveInData[0:testCount,]
+removeData = removeData[0:testCount,]
+
 visibleDim = 28*28
 batchSize = 1000
 stepSize = 0.005
 itte = 10000
 
-errorMargins = np.zeros([batchSize],dtype=np.float32)
-
-def convertToString(ndarr):
-	retString = ''
-	for i in range(ndarr.shape[0]):
-		retString = retString + "%(k)d" % {'k':ndarr[i]}
-	return retString
-currentNumLocations = 0
-currentNumPoints = 0
-
-
-for hiddenDim in range(100,401,20):
+for hiddenDim in range(20,101,20):
 	matDic = {}
 	io.loadmat("mnist%(visibleDim)dx%(hiddenDim)03dstepsize%(stepSize)f.mat" 
-													% {'visibleDim': visibleDim, 'hiddenDim': hiddenDim, 'stepSize':stepSize},
-													matDic)
+						% {'visibleDim': visibleDim, 'hiddenDim': hiddenDim, 'stepSize':stepSize},
+						matDic)
 	
 	matrix = matDic["matrix%(round)04d"% {'round': itte}]
 	offset = matDic["offsetVis%(round)04d"% {'round': itte}]
@@ -56,7 +51,16 @@ for hiddenDim in range(100,401,20):
 	offset = np.ascontiguousarray(offset, dtype=np.float32)
 	offset.shape = offset.shape[1]
 	map1 = nnMap(matrix,offset,'mnistRBM.db','hidden%(hid)03d' % {'hid':hiddenDim})
-	indicies = range(leaveInData.shape[0])
-	map1.addPoints(indicies,leaveInData)
-
-
+	
+	leaveCount = 0.0
+	removeCount = 0.0
+	pointTest1 = map1.checkPoints(indicies,leaveInData)
+	pointTest2 = map1.checkPoints(indicies,removeData)
+	for check in pointTest1:
+		if(check[1]):
+			leaveCount +=1
+	for check in pointTest2:
+		if(check[1]):
+			removeCount +=1
+	print("The success rate of the leaveIn classes is: %(suc)f" % {'suc':leaveCount/leaveInData.shape[0]})
+	print("The success rate of the remove classes is: %(suc)f" % {'suc':removeCount/removeData.shape[0]})

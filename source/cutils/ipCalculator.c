@@ -11,7 +11,6 @@ ipMemory * allocateIPMemory(int inDim,int outDim)
 {
 	int m = inDim;
 	int n = outDim;
-	int numRelevantHP = 0;
 	
 	ipMemory *mb = malloc(sizeof(ipMemory));
 	mb->I = malloc(sizeof(intersection));
@@ -20,10 +19,8 @@ ipMemory * allocateIPMemory(int inDim,int outDim)
 		If the spacial dim is less than the number of hyperplanes then we want to 
 		take the distance to the closest instersection (which will be of full rank).
 		*/
-		numRelevantHP = m + 1;
 		mb->minMN = m;
 	} else {
-		numRelevantHP = n;
 		mb->minMN = n;
 	}
 	// Each pointer is followed by the number of floats it has all to itself.
@@ -83,14 +80,13 @@ typedef struct ipCacheData {
 */
 void solve(float *A, MKL_INT outDim, MKL_INT inDim, float *b, struct ipCacheData * myBasis, const ipMemory *mb)
 {	
-
-	const long long int inout = (inDim-outDim);
+	const MKL_INT inout = (inDim-outDim);
 	const float oneF = 1.0;
 	const float zeroF = 0.0;
 	const char N = 'N';
 	#ifdef DEBUG
 		printf("------------------Solve--------------\n");
-		printf("The dimensions are inDim: %lld, outDim: %lld \n", inDim, outDim);
+		printf("The dimensions are inDim: %d, outDim: %d \n", inDim, outDim);
 		if(inDim < 20 && outDim < 20){	
 			printf("A: \n");
 			printMatrix(A,inDim,outDim);
@@ -266,12 +262,7 @@ void fillIntersectionOrdered(distanceWithIndex *distances, int distCount, nnLaye
 {
 	uint inDim = layer->inDim;
 	
-	uint i = 0;
-	#ifdef DEBUG 
-		printf("Processing Key\n");
-		printKey(key,outDim);
-	#endif
-	for(i=0;i<distCount;i++){
+	for(int i=0;i<distCount;i++){
 		memcpy(I->subA + i*inDim, layer->A+(distances[i].index)*inDim, inDim*sizeof(float));
 		I->subB[i] = layer->b[distances[i].index];
 	}
@@ -497,8 +488,8 @@ float computeDist(float * p, kint *ipSignature, ipCache *cache, const int rank, 
 	
 	//struct ipCacheData *myBasis = ipCacheDataCreator(&myInput);
 	
-	const long long int oneI = 1;
-	const long long int inout = (inDim-rank);
+	const MKL_INT oneI = 1;
+	const MKL_INT inout = (inDim-rank);
 	const float oneF = 1.0;
 	const float negoneF = -1.0;
 	const char N = 'N';
@@ -634,7 +625,7 @@ void computeDistToHPS(float *p, ipCache *cache, distanceWithIndex *distances, ip
 	qsort(distances, outDim, sizeof(distanceWithIndex), distOrderingCmp);
 	
 	#ifdef DEBUG
-		for(int i = 0; i< outDim; i++){
+		for(uint i = 0; i< outDim; i++){
 			printf("Distance: %f, index: %d\n", distances[i].dist, distances[i].index);
 		}
 		printf("---------------------------------\n");
@@ -659,9 +650,8 @@ void getInterSig(ipCache * cache, float *p, kint * ipSignature, ipMemory *mb)
 		/* 
 		If the spacial dim is less than the number of hyperplanes then we want to 
 		take the distance to the closest instersection (which will be of full rank).
-		
-		*/numRelevantHP = inDim + 1;
-		
+		*/
+		numRelevantHP = inDim + 1;
 	} else {
 		numRelevantHP = outDim;
 	}
@@ -792,10 +782,10 @@ void * addIPBatch_thread(void *thread_args)
 	for(i=tid;i<numData;i=i+numThreads){		
 		getInterSig(cache,data+i*dim, ipSignature+i*keySize, mb);
 		joinCondition[tid] = 1;
-		printf("Thread %d at mutex with %u nodes \n",tid,cache->bases->numNodes);
+		//printf("Thread %d at mutex with %u nodes \n",tid,cache->bases->numNodes);
 		pthread_mutex_lock(&(cache->balanceLock));
 			if(cache->bases->currentMemoryUseage > cache->bases->maxTreeMemory){
-				printf("Balancing Tree in thread %d. Current number of nodes: %d.\n",tid,cache->bases->numNodes);
+				//printf("Balancing Tree in thread %d. Current number of nodes: %d.\n",tid,cache->bases->numNodes);
 				checkJoinCondition(joinCondition,numThreads);
 				balanceAndTrimTree(cache->bases, 4*cache->bases->maxTreeMemory/5);
 			}
@@ -811,7 +801,7 @@ void getInterSigBatch(ipCache *cache, float *data, kint *ipSignature, uint numDa
 	int maxThreads = numProc;
 	int rc =0;
 	int i =0;
-	//printf("Number of processors: %d\n",maxThreads);
+	printf("ipCalc working on %u data points, with %u threads\n",numData,maxThreads);
 	//Add one data to the first node so that we can avoid the race condition.
 	
 

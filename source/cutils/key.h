@@ -8,7 +8,7 @@
 
 #include <stdint.h>
 
-#define kint unsigned int
+#define kint uint64_t
 
 char compareKey(kint *x, kint *y, uint keyLength);
 char checkEmptyKey(kint *key, uint keyLength);

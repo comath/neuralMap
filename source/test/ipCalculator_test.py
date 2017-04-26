@@ -37,7 +37,7 @@ cov = idMat
 data = np.random.uniform(low=-2.0, high=2.0, size=[numData,3])
 data = data.astype(np.float32, copy=False)
 
-signatures = ipCalc.batchCalculate(data,1)
+signatures = ipCalc.batchCalculate(data)
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')

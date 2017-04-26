@@ -2,15 +2,15 @@
 #include <stdlib.h>
 #include "../cutils/parallelTree.h"
 
-char compareArr(int * x, int * y, int length)
+int compareArr(int * x, int * y, int length)
 {
 	int i = 0;
 	for(i = 0; i < length; i++){
-		if(x[i]<y[i]){
-			return 1;
-		} 
-		if (x[i]>y[i]){
+		if(x[i]>y[i]){
 			return -1;
+		} 
+		if (x[i]<y[i]){
+			return 1;
 		}
 	}
 	return 0;
@@ -41,34 +41,24 @@ void printCharArr(char * arr, int numElements){
 	printf("]\n");
 }
 
-void testKeyLen()
-{
-	uint arrLen = 600;
-	uint keyLen = calcKeyLen(arrLen);
-	uint keyLen2 = (arrLen/32);
-	if(arrLen % 32){
-		keyLen2++;
-	}
-	if(keyLen != keyLen2){
-		printf("Faliure\n");
-	}
-}
+
 
 void testCompareKey()
 {
 	
-	uint arrLength = 1000;
+	uint arrLength = 8;
 	int *arr = createRandomBinaryArray(arrLength);
 	int *arr2 = createRandomBinaryArray(arrLength);
 	uint keyLen = calcKeyLen(arrLength);
+	//printf("Key length: %u\n", keyLen);
 
 	kint *testKey = malloc(keyLen*sizeof(kint));
 	kint *testKey2 = malloc(keyLen*sizeof(kint));
 	convertToKey(arr,testKey,arrLength);
 	convertToKey(arr2,testKey2,arrLength);
-	if(compareKey( testKey, testKey2,keyLen) != compareArr(arr,arr2,arrLength)){
-		printf("Faliure\n");
-	}
+	if( (compareKey( testKey, testKey2,keyLen)  != compareArr(arr,arr2,arrLength)) ) {
+		printf("Failure, Test Func: %d Actual Val: %d\n",compareArr(arr,arr2,arrLength),compareKey( testKey, testKey2,keyLen));
+	} 
 	free(arr);
 	free(arr2);
 	free(testKey);
@@ -78,7 +68,7 @@ void testCompareKey()
 void testRebuildKey()
 {
 	
-	int arrLength = 1000;
+	int arrLength = 10;
 	int *arr = createRandomBinaryArray(arrLength);
 	int *RecreateArr = malloc(arrLength*sizeof(int));
 	
@@ -106,13 +96,11 @@ int main(int argc, char* argv[])
 	srand(time(NULL));
 	int i = 0;
 	printf("If no faliures are printed then we are fine.\n");
-	printf("test keyLen\n");
-	void testKeyLen();
 	printf("testCompareKey:\n");
 	testCompareKey();
-	for(i=0;i<100;i++){	testCompareKey(); }
+	for(i=0;i<10;i++){	testCompareKey(); }
 	printf("testRebuildKey:\n");
-	for(i=0;i<100;i++){	testRebuildKey(); }
+	for(i=0;i<10;i++){	testRebuildKey(); }
 	printf("testChromaticKey:\n");
 	return 0;
 }

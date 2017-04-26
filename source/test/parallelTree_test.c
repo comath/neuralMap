@@ -145,63 +145,9 @@ void addBatch(Tree * tree, struct dataInput *data, int numKeys)
 	free(thread_args);
 }
 
-typedef struct location {
-	kint *key;
-	double totalValue;
-	int totalCount;
-	double errorValue;
-	int errorCount;
-} location;
-
-void traverseLocationSubtreeTEST(Tree * myTree, location * locArr, TreeNode *node)
-{
-	#ifdef DEBUG
-		printf("Working on node %p node\n",node);
-	#endif
-	int i = 0;
-	int nodeDepth = 2;
-	node = node - (1 << nodeDepth) + 1;
-	struct dataStruct *myData = NULL;
-	int n = (1 << (nodeDepth+1)) - 1;
 
 
 
-	for(i=0;i<n;i++){
-		#ifdef DEBUG
-			printf("smallNode:%p dataPointer: %p bigNode: %p\n",node[i].smallNode,node[i].dataPointer,node[i].bigNode);
-		#endif
-		if(i%2==0 && node[i].smallNode){
-			traverseLocationSubtreeTEST(myTree, locArr, node[i].smallNode);
-		}		
-		if(node[i].dataPointer){
-			printf("Node access: %d\n", node[i].dataModifiedCount);
-			locArr[i].key = node[i].key;
-			myData = (struct dataStruct *) node[i].dataPointer;
-			locArr[i].totalValue = myData->totalValue;
-			locArr[i].totalCount = myData->totalCount;
-		}
-		if(i%2==0 && node[i].bigNode){
-			traverseLocationSubtreeTEST(myTree, locArr, node[i].bigNode);
-		}
-	}	
-}
-
-location * getLocationArray(Tree * myTree)
-{	
-	uint numLoc = myTree->numNodes;
-	location * locArr = malloc(numLoc * sizeof(location));
-	#ifdef DEBUG
-		printf("Root node is %p, numNodes is %u\n",myTree->root, numLoc);
-	#endif
-	traverseLocationSubtreeTEST(myTree, locArr, myTree->root[0]);
-	return locArr;
-}
-
-
-
-
-
-#undef DEBUG
 
 int main(int argc, char* argv[])
 {
@@ -221,15 +167,44 @@ int main(int argc, char* argv[])
 	addBatch(tree, randArr, population);
 	printf("Success!\n");
 
-	location *locArr = getLocationArray(tree);
-	printf("Location 2 is %d\n", locArr[2].totalValue);
 	
-	printf("We have %d nodes. Removing half.\n", tree->currentMemoryUseage);
+	
+	printf("We are using %d memory. Removing half.\n", tree->currentMemoryUseage);
 	balanceAndTrimTree(tree, tree->currentMemoryUseage/2);
+	printf("We are using %d memory, after trim.\n", tree->currentMemoryUseage);
+
+	printf("Adding %d nodes with addVector\n", population);
+	addBatch(tree, randArr, population);
+	printf("Success!\n");
 
 	
+	
+	printf("We are using %d memory. Removing half.\n", tree->currentMemoryUseage);
+	balanceAndTrimTree(tree, tree->currentMemoryUseage/2);
+	printf("We are using %d memory, after trim.\n", tree->currentMemoryUseage);
 
-	free(locArr);
+	printf("Adding %d nodes with addVector\n", population);
+	addBatch(tree, randArr, population);
+	printf("Success!\n");
+
+	
+	
+	printf("We are using %d memory. Removing half.\n", tree->currentMemoryUseage);
+	balanceAndTrimTree(tree, tree->currentMemoryUseage/2);
+	printf("We are using %d memory, after trim.\n", tree->currentMemoryUseage);
+
+	printf("Adding %d nodes with addVector\n", population);
+	addBatch(tree, randArr, population);
+	printf("Success!\n");
+
+	
+	
+	printf("We are using %d memory. Removing half.\n", tree->currentMemoryUseage);
+	balanceAndTrimTree(tree, tree->currentMemoryUseage/2);
+	printf("We are using %d memory, after trim.\n", tree->currentMemoryUseage);
+	
+	
+
 	free(randArr);
 	freeTree(tree);
 	return 0;

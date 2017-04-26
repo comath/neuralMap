@@ -5,7 +5,7 @@ import multiprocessing
 from libc.stdlib cimport malloc, free
 from libc cimport stdint
 
-ctypedef stdint.uint32_t kint
+ctypedef stdint.uint64_t kint
 
 #to print to stderr to warn the user of usage errors
 

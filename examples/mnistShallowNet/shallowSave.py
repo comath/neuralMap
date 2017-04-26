@@ -38,7 +38,7 @@ def loss(logits, labels):
 num_gpus = 2
 
 inputDim = 28*28
-hiddenDim1 = 400
+hiddenDim1 = 100
 outDim = 10
 batchSize = 100
 

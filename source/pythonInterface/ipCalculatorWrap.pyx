@@ -16,8 +16,6 @@ def eprint(*args, **kwargs):
 	print(*args, file=sys.stderr, **kwargs)
 
 include "nnLayerUtilsWrap.pyx"
-
-
 	
 cdef extern from "../cutils/ipCalculator.h":
 	ctypedef struct ipCache:
@@ -35,12 +33,19 @@ cdef class ipCalculator:
 	def __cinit__(self,np.ndarray[float,ndim=2,mode="c"] A not None, np.ndarray[float,ndim=1,mode="c"] b not None, float threshold):
 		self.outDim = A.shape[1]
 		self.inDim  = A.shape[0]
+		self.keyLen = calcKeyLen(self.inDim)
+		print(self.keyLen)
 		self.layer = createLayer(&A[0,0],&b[0],self.outDim,self.inDim)
 		freeMemory = psutil.virtual_memory().free
 		self.cache = allocateCache(self.layer,threshold,freeMemory)
 
 		if not self.cache:
 			raise MemoryError()
+
+	def calculateUncompressed(self,np.ndarray[float,ndim=1,mode="c"] data not None):
+		cdef np.ndarray[np.uint32_t,ndim=1] ipSignature = np.zeros([self.keyLen], dtype=np.uint32)        
+		getInterSigBatch(self.cache,<float *> data.data,<kint * >ipSignature.data, 1, 1)
+		return ipSignature
 
 	def batchCalculateUncompressed(self,np.ndarray[float,ndim=2,mode="c"] data not None, numProc=None):
 		if numProc == None:
@@ -49,12 +54,10 @@ cdef class ipCalculator:
 			eprint("WARNING: Specified too many cores. Reducing to the number you actually have.")
 			numProc = multiprocessing.cpu_count()
 
-		cdef unsigned int dim
-		dim = data.shape[1]
-		numData = data.shape[0]
 
-		keyLen = calcKeyLen(dim)
-		cdef np.ndarray[np.uint64_t,ndim=2] ipSignature = np.zeros([numData,keyLen], dtype=np.uint64)        
+
+		numData = data.shape[0]
+		cdef np.ndarray[np.uint32_t,ndim=2] ipSignature = np.zeros([numData,self.keyLen], dtype=np.uint32)        
 		getInterSigBatch(self.cache,<float *> data.data,<kint * >ipSignature.data, numData, numProc)
 		return ipSignature
 		
@@ -70,21 +73,18 @@ cdef class ipCalculator:
 			eprint("WARNING: Specified too many cores. Reducing to the number you actually have.")
 			numProc = multiprocessing.cpu_count()
 
-		cdef unsigned int dim
-		dim = data.shape[1]
 		numData = data.shape[0]
 
-		keyLen = calcKeyLen(dim)
-		cdef kint *ipSignature_key = <kint *>malloc(numData * keyLen * sizeof(kint))
+		cdef kint *ipSignature_key = <kint *>malloc(numData * self.keyLen * sizeof(kint))
 		if not ipSignature_key:
 			raise MemoryError()
 
-		cdef np.ndarray[np.int32_t,ndim=2] ipSignature = np.zeros([numData,dim], dtype=np.int32)
+		cdef np.ndarray[np.int32_t,ndim=2] ipSignature = np.zeros([numData,self.outDim], dtype=np.int32)
 		
 
 		try:	        
 			getInterSigBatch(self.cache,&data[0,0],ipSignature_key, numData, numProc)
-			batchConvertFromKey(ipSignature_key, <int *> ipSignature.data, dim,numData)
+			batchConvertFromKey(ipSignature_key, <int *> ipSignature.data, self.outDim,numData)
 			return ipSignature
 		finally:
 			free(ipSignature_key)
@@ -98,11 +98,8 @@ cdef class ipCalculator:
 			eprint("WARNING: Specified too many cores. Reducing to the number you actually have.")
 			numProc = multiprocessing.cpu_count()
 
-		cdef unsigned int dim
-		dim = data.shape[1]
 		numData = data.shape[0]
-		keyLen = calcKeyLen(dim)
-		cdef kint *ipSignature_key = <kint *>malloc(numData * keyLen * sizeof(kint))
+		cdef kint *ipSignature_key = <kint *>malloc(numData * self.keyLen * sizeof(kint))
 		if not ipSignature_key:
 			raise MemoryError()
 
@@ -111,7 +108,7 @@ cdef class ipCalculator:
 
 		try:	        
 			getInterSigBatch(self.cache,&data[0,0],ipSignature_key, numData, numProc)
-			batchChromaticKey(ipSignature_key, <float *> chromaipSignature.data, dim,numData)
+			batchChromaticKey(ipSignature_key, <float *> chromaipSignature.data, self.outDim,numData)
 			return chromaipSignature
 		finally:
 			free(ipSignature_key)

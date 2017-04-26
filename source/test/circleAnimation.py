@@ -47,7 +47,7 @@ inputDim = 2
 hiddenDim1 = 3
 outDim = 1
 
-res = 0.07
+res = 0.001
 xy = np.mgrid[-1:1.1:res, -1:1.1:res].T
 resolution = xy.shape[0]
 xy = np.ascontiguousarray(xy, dtype=np.float32)

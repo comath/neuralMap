@@ -26,6 +26,8 @@ sqlite3.register_adapter(np.ndarray, adapt_array)
 # Converts TEXT to np.array when selecting
 sqlite3.register_converter("array", convert_array)
 
+
+
 class nnMapper:
 	"""docstring for ClassName"""
 	def __init__(self,matrix,offset,filename,tablename):
@@ -38,70 +40,122 @@ class nnMapper:
 		self.curs.execute('''
 			CREATE TABLE IF NOT EXISTS sig_%(tablename)s
 				(sigIndex INTEGER PRIMARY KEY ASC, 
-				ipSig array, 
-				regSig array, 
-				CONSTRAINT uniqueLocation UNIQUE (ipSig,regSig))''' 
+				sig array NOT NULL)''' 
 			% {'tablename':tablename})
 		self.curs.execute('''
-			CREATE TABLE IF NOT EXISTS join_%(tablename)s
+			CREATE TABLE IF NOT EXISTS locJoin_%(tablename)s
+				(locIndex INTEGER PRIMARY KEY ASC, 
+				ipSigIndex INTEGER, 
+				regSigIndex INTEGER, 
+				CONSTRAINT uniqueLocation UNIQUE (ipSigIndex,regSigIndex),
+				FOREIGN KEY (ipSigIndex) REFERENCES sig_%(tablename)s(sig),
+				FOREIGN KEY (regSigIndex) REFERENCES sig_%(tablename)s(sig))''' 
+			% {'tablename':tablename})
+		self.curs.execute('''
+			CREATE TABLE IF NOT EXISTS dataMap_%(tablename)s
 				(dataIndex INTEGER PRIMARY KEY ASC, 
-				sigIndex INTEGER NOT NULL,
+				locIndex INTEGER NOT NULL,
 				errorVal float,
-				FOREIGN KEY (sigIndex) REFERENCES sig_%(tablename)s(sigIndex))''' % {'tablename':tablename})
+				FOREIGN KEY (locIndex) REFERENCES locJoin_%(tablename)s(locIndex))''' % {'tablename':tablename})
+
+	def insertOrGetSig(self,sig):
+		self.curs.execute('SELECT sigIndex FROM sig_%(tablename)s WHERE sig=(?)' 
+			% {'tablename':self.tablename},	(sig,))
+		row = self.curs.fetchone()
+		if row == None:
+			self.curs.execute("INSERT INTO sig_%(tablename)s(sig) VALUES ((?)) "
+			% {'tablename':self.tablename},
+				(sig,))
+			self.curs.execute('SELECT sigIndex FROM sig_%(tablename)s WHERE sig=(?)' 
+				% {'tablename':self.tablename},
+				(sig,))
+			row = self.curs.fetchone()
+		return row[0]
+
+	def getSigIndex(self,sig):
+		self.curs.execute('SELECT sigIndex FROM sig_%(tablename)s WHERE sig=(?)' 
+			% {'tablename':self.tablename},	(sig,))
+		row = self.curs.fetchone()
+		if row == None:
+			return None
+		else:
+			return row[0]
+	
+	def insertOrGetPointLocationIndex(self,ipSigIndex,regSigIndex):
+		self.curs.execute('SELECT locIndex FROM locJoin_%(tablename)s WHERE ipSigIndex=(?) AND regSigIndex=(?)' 
+			% {'tablename':self.tablename},
+			(ipSigIndex,regSigIndex))
+		row = self.curs.fetchone()
+		if row == None:
+			self.curs.execute("INSERT INTO locJoin_%(tablename)s(ipSigIndex,regSigIndex) VALUES ((?),(?)) "
+			% {'tablename':self.tablename},
+				(ipSigIndex,regSigIndex))
+			self.curs.execute('SELECT locIndex FROM locJoin_%(tablename)s WHERE ipSigIndex=(?) AND regSigIndex=(?)' 
+				% {'tablename':self.tablename},
+				(ipSigIndex,regSigIndex))
+			row = self.curs.fetchone()
+		return row[0]
 
 	def addPoints(self,indicies,points,errors = 0):
 		ipSigs = self.ipCalc.batchCalculateUncompressed(points)
 		regSigs = self.regCalc.batchCalculateUncompressed(points)
-
 		for i,j in enumerate(indicies):
-			self.curs.execute('SELECT sigIndex FROM sig_%(tablename)s WHERE ipSig=(?) AND regSig=(?)' 
-				% {'tablename':self.tablename},
-				(ipSigs[i],regSigs[i]))
-			row = self.curs.fetchone()
-			if row == None:
-				self.curs.execute("INSERT INTO sig_%(tablename)s(ipSig,regSig) VALUES ((?),(?)) "
-				% {'tablename':self.tablename},
-					(ipSigs[i],regSigs[i]))
-				self.curs.execute('SELECT sigIndex FROM sig_%(tablename)s WHERE ipSig=(?) AND regSig=(?)' 
-					% {'tablename':self.tablename},
-					(ipSigs[i],regSigs[i]))
-				row = self.curs.fetchone()
 
-			sigIndex = row[0]
-			
+			ipSigIndex = self.insertOrGetSig(ipSigs[i])
+			regSigIndex = self.insertOrGetSig(regSigs[i])
+			jointSigIndex = self.insertOrGetPointLocationIndex(ipSigIndex,regSigIndex)
 			
 			if errors != 0:
-				self.curs.execute("INSERT INTO join_%(tablename)s(dataIndex,sigIndex,errorVal) VALUES ((?),(?),(?)) "
+				self.curs.execute("INSERT INTO dataMap_%(tablename)s(dataIndex,locIndex,errorVal) VALUES ((?),(?),(?)) "
 					% {'tablename':self.tablename},
-					(j,sigIndex,errors[i]))
+					(j,jointSigIndex,errors[i]))
 			else:
-				self.curs.execute("INSERT INTO join_%(tablename)s(dataIndex,sigIndex,errorVal) VALUES ((?),(?),(?)) "
-					% {'tablename':self.tablename},			(j,sigIndex,0))
+				self.curs.execute("INSERT INTO dataMap_%(tablename)s(dataIndex,locIndex,errorVal) VALUES ((?),(?),(?)) "
+					% {'tablename':self.tablename},			
+					(j,jointSigIndex,0))
 		self.conn.commit()
 	
-	def checkPoint(self,point):
-		ipSigs = self.ipCalc.calculateUncompressed(point)
-		regSigs = self.regCalc.calculateUncompressed(point)
-		self.curs.execute('SELECT sigIndex FROM sig_%(tablename)s WHERE ipSig=(?) AND regSig=(?)' 
-				% {'tablename':self.tablename},
-				(ipSigs[i],regSigs[i]))
-		row = fetchone()
-		if(row):
-			return True
-		else:
-			return False
-	
-	def getNeighboors(self,point):
+	def getPointLocationIndex(self,point):
 		ipSig = self.ipCalc.calculateUncompressed(point)
 		regSig = self.regCalc.calculateUncompressed(point)
-		self.curs.execute('SELECT sigIndex FROM sig_%(tablename)s WHERE ipSig=(?) AND regSig=(?)' 
-				% {'tablename':self.tablename},
-				(ipSig,regSig))
-		row = fetchone()
-		if(row):
-			sigIndex = row[0]
+		ipSigIndex = self.getSigIndex(ipSig)
+		regSigIndex = self.getSigIndex(regSig)
+		
+		if(ipSigIndex != None and regSigIndex != None):
+			self.curs.execute('SELECT locIndex FROM locJoin_%(tablename)s WHERE ipSigIndex=(?) AND regSigIndex=(?)' 
+					% {'tablename':self.tablename},
+					(ipSigIndex,regSigIndex))
+			row = self.curs.fetchone()
+			if(row):
+				return row[0]
+		return None
+
+	def getPointsLocationIndices(self,indices,points):
+		ipSigs = self.ipCalc.batchCalculateUncompressed(points)
+		regSigs = self.regCalc.batchCalculateUncompressed(points)
+		locIndices = []
+		for i,j in enumerate(indices):
+			ipSigIndex = self.getSigIndex(ipSigs[i])
+			regSigIndex = self.getSigIndex(regSigs[i])
+			if(ipSigIndex != None and regSigIndex != None):
+				self.curs.execute('SELECT locIndex FROM locJoin_%(tablename)s WHERE ipSigIndex=(?) AND regSigIndex=(?)' 
+						% {'tablename':self.tablename},
+						(ipSigIndex,regSigIndex))
+				row = self.curs.fetchone()
+				if(row):
+					locIndices.append(row[0])
+				else:
+					locIndices.append(None)
+			else:
+				locIndices.append(None)
+		return locIndices
+
+	
+	def getNeighboors(self,point):
+		locIndex =self.getPointLocationIndex(point)
+		if(locIndex):
 			dataIndices = []
-			for row in self.curs.execute('SELECT dataIndex, FROM join_%(tablename)s WHERE sigIndex=(?)' 
+			for row in self.curs.execute('SELECT dataIndex, FROM dataMap_%(tablename)s WHERE sigIndex=(?)' 
 				% {'tablename':self.tablename},
 				(sigIndex)):
 				dataIndices.append(row[0])
@@ -109,5 +163,19 @@ class nnMapper:
 		else:
 			return []
 
-	def getLocationsData():
-		print "noting"
+	def checkPoint(self, point):
+		locIndex =self.getPointLocationIndex(point)
+		if(locIndex):
+			return True
+		else:
+			return False
+
+	def checkPoints(self,indices,points):
+		locIndices = self.getPointsLocationIndices(indices,points)
+		boolLoc = []
+		for i,j in enumerate(indices):
+			if(locIndices[i]):
+				boolLoc.append((j,True))
+			else:
+				boolLoc.append((j,False))
+		return boolLoc
