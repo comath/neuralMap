@@ -2,6 +2,8 @@ venv/*
 *_test
 cython_debug/
 log.txt
+log1.txt
+*log.txt
 *Log.txt
 *.so
 MNIST_data/*
@@ -11,3 +13,6 @@ nnMapper.sublime-workspace
 *.mat
 *.out
 *.prof
+*.png
+*.svg
+*.db
