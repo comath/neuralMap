@@ -99,17 +99,18 @@ void solve(float *A, MKL_INT outDim, MKL_INT inDim, float *b, struct ipCacheData
 	
 
 	/* Standard SVD, not the new type */
-	/*
+	
 	info = LAPACKE_sgesvd( LAPACK_ROW_MAJOR, 'A', 'A',
 						  outDim, inDim, A, inDim,
-		    			  s, u, outDim,
-		    			  vt, inDim,
-		    			  superb);
-	*/
+		    			  mb->s, mb->u, outDim,
+		    			  mb->vt, inDim,
+		    			  mb->superb);
+	/*
 	info = LAPACKE_sgesdd( LAPACK_ROW_MAJOR, 'A', outDim, inDim, A, inDim, 
 							mb->s, 
 							mb->u, outDim, 
 							mb->vt, inDim );
+	*/
 	// Incase of memory leaks:
 	//mkl_thread_free_buffers();
 	if( info ) {
@@ -801,10 +802,7 @@ void getInterSigBatch(ipCache *cache, float *data, kint *ipSignature, uint numDa
 	int maxThreads = numProc;
 	int rc =0;
 	int i =0;
-	printf("ipCalc working on %u data points, with %u threads\n",numData,maxThreads);
-	//Add one data to the first node so that we can avoid the race condition.
-	
-
+	printf("ipCalc working on %u data points, with %u threads and %ld free memory\n",numData,maxThreads,cache->bases->maxTreeMemory);
 	struct IPAddThreadArgs *thread_args = malloc(maxThreads*sizeof(struct IPAddThreadArgs));
 	int *joinCondition = malloc(maxThreads*sizeof(int));
 
