@@ -9,7 +9,7 @@ SubTree * allocateNodes(uint keyLength)
 	SubTree * tree = malloc(sizeof(SubTree));
 	kint * keys = malloc(SUBTREESIZE * keyLength * sizeof(kint));
 	int rc = 0;
-	rc = pthread_spin_init(&(tree->traverseSpinLock), 0);
+	rc = pthread_mutex_init(&(tree->traverseMutexLock), 0);
 	if (rc != 0) {
         printf("spinlock Initialization failed at %p", (void *) tree);
     }
@@ -98,8 +98,7 @@ void * addData(Tree *tree, kint * key, int treeIndex, void * datum, int memoryUs
 	int i = SUBCENTER;
 	int d = NODEDEPTH;
 	
-	pthread_spinlock_t *currentTSL = &(st->traverseSpinLock);
-	pthread_spin_lock(currentTSL);
+	pthread_mutex_lock(&(st->traverseMutexLock));
 
 	if (st->nodes[i].createdKL == 0){
 		st->nodes[i].createdKL = keyLen;
@@ -119,11 +118,9 @@ void * addData(Tree *tree, kint * key, int treeIndex, void * datum, int memoryUs
 			}
 			if(st->nextSubTrees[i] == NULL){
 				st->nextSubTrees[i] = allocateNodes(keyLen);
+				pthread_mutex_unlock(&(st->traverseMutexLock));
 				st = st->nextSubTrees[i];
-
-				pthread_spin_unlock(currentTSL);
-				currentTSL = &(st->traverseSpinLock);
-				pthread_spin_lock(currentTSL);
+				pthread_mutex_lock(&(st->traverseMutexLock));
 
 				i = SUBCENTER;
 				d = NODEDEPTH;
@@ -136,11 +133,9 @@ void * addData(Tree *tree, kint * key, int treeIndex, void * datum, int memoryUs
 					tree->currentMemoryUseage += memoryUsage;
 				pthread_spin_unlock(&(tree->nodeCountSpinLock));
 			} else {
+				pthread_mutex_unlock(&(st->traverseMutexLock));
 				st = st->nextSubTrees[i];
-
-				pthread_spin_unlock(currentTSL);
-				currentTSL = &(st->traverseSpinLock);
-				pthread_spin_lock(currentTSL);
+				pthread_mutex_lock(&(st->traverseMutexLock));
 
 				i = SUBCENTER;
 				d = NODEDEPTH;
@@ -165,7 +160,7 @@ void * addData(Tree *tree, kint * key, int treeIndex, void * datum, int memoryUs
 			} 
 		}
 	}
-	pthread_spin_unlock(currentTSL);
+	pthread_mutex_unlock(&(st->traverseMutexLock));
 	pthread_mutex_lock(&(st->nodes[i].datamutex));
 		if(tree->dataModifier){
 			tree->dataModifier(datum,st->nodes[i].dataPointer);

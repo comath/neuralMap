@@ -23,6 +23,8 @@ cdef extern from "../cutils/ipCalculator.h":
 	ipCache * allocateCache(nnLayer *layer0, float threshold, long long int free)
 	void freeCache(ipCache *cache)
 	void getInterSigBatch(ipCache *cache, float *data, kint *ipSignature, unsigned int numData, unsigned int numProc)
+	void traceDistsSigBatch(ipCache *cache, float *data, kint *ipSigTraces, float * dists, unsigned int numData, unsigned int numProc);
+
 
 cdef class ipCalculator:
 	cdef ipCache * cache
@@ -60,8 +62,27 @@ cdef class ipCalculator:
 		cdef np.ndarray[np.uint32_t,ndim=2] ipSignature = np.zeros([numData,self.keyLen], dtype=np.uint32)        
 		getInterSigBatch(self.cache,<float *> data.data,<kint * >ipSignature.data, numData, numProc)
 		return ipSignature
-		
+	
+	def traceCalculateUncompressed(self,np.ndarray[float,ndim=1,mode="c"] data not None):
+		cdef np.ndarray[np.uint32_t,ndim=1] ipSigTrace = np.zeros([self.outDim,self.keyLen], dtype=np.uint32)        
+		cdef np.ndarray[np.float32_t,ndim=1] dists = np.zeros([self.outDim], dtype=np.float32)
+		traceDistsSigBatch(self.cache,<float *> data.data,<kint * >ipSigTrace.data,<float *>dists.data, 1, 1)
+		return ipSigTrace, dists
 
+	def batchTraceCalculateUncompressed(self,np.ndarray[float,ndim=2,mode="c"] data not None, numProc=None):
+		if numProc == None:
+			numProc = multiprocessing.cpu_count()
+		if numProc > multiprocessing.cpu_count():
+			eprint("WARNING: Specified too many cores. Reducing to the number you actually have.")
+			numProc = multiprocessing.cpu_count()
+
+
+
+		numData = data.shape[0]
+		cdef np.ndarray[np.uint32_t,ndim=2] ipSigTraces = np.zeros([numData,self.outDim,self.keyLen], dtype=np.uint32)        
+		cdef np.ndarray[np.float32_t,ndim=2] dists = np.zeros([numData,self.outDim], dtype=np.float32)
+		traceDistsSigBatch(self.cache,<float *> data.data,<kint * >ipSigTraces.data, <float *>dists.data, numData, numProc)
+		return ipSigTraces, dists
 	
 
 	#Batch calculate, this is multithreaded and you can specify the number of threads you want to use.

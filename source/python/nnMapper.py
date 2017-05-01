@@ -36,6 +36,7 @@ class nnMapper:
 		self.ipCalc = ipCalculator(matrix,offset,2)
 		self.tablename = tablename
 		self.regCalc = neuralLayer(matrix,offset)
+		self.outDim = offset.shape[0]
 		self.keyLength = pyCalcKeyLen(offset.shape[0])
 		self.curs.execute('''
 			CREATE TABLE IF NOT EXISTS sig_%(tablename)s
@@ -57,6 +58,14 @@ class nnMapper:
 				locIndex INTEGER NOT NULL,
 				errorVal float,
 				FOREIGN KEY (locIndex) REFERENCES locJoin_%(tablename)s(locIndex))''' % {'tablename':tablename})
+		self.curs.execute('''
+			CREATE TABLE IF NOT EXISTS fullTrace_%(tablename)s
+				(dataIndex INTEGER NOT NULL, 
+				rank INTEGER NOT NULL,
+				ipSigIndex INTEGER NOT NULL,
+				dist float NOT NULL,
+				FOREIGN KEY (dataIndex) REFERENCES dataMap_%(tablename)s(dataIndex),
+				FOREIGN KEY (ipSigIndex) REFERENCES sig_%(tablename)s(sigIndex))''' % {'tablename':tablename})
 
 	def insertOrGetSig(self,sig):
 		self.curs.execute('SELECT sigIndex FROM sig_%(tablename)s WHERE sig=(?)' 
@@ -152,7 +161,7 @@ class nnMapper:
 
 	
 	def getNeighboors(self,point):
-		locIndex =self.getPointLocationIndex(point)
+		locIndex = self.getPointLocationIndex(point)
 		if(locIndex):
 			dataIndices = []
 			for row in self.curs.execute('SELECT dataIndex FROM dataMap_%(tablename)s WHERE locIndex=(?)' 
@@ -164,7 +173,7 @@ class nnMapper:
 			return []
 
 	def checkPoint(self, point):
-		locIndex =self.getPointLocationIndex(point)
+		locIndex = self.getPointLocationIndex(point)
 		if(locIndex):
 			return True
 		else:
@@ -197,3 +206,20 @@ class nnMapper:
 			else:
 				locIndices.append((j,False))
 		return locIndices
+
+	def addFullTraces(self,indices,points):
+		regSigs = self.regCalc.batchCalculateUncompressed(points)
+		fullTrace, dists = self.ipCalc.batchTraceCalculateUncompressed(points)
+		for i, j in enumerate(indices):
+			regIndex = self.getSigIndex(regSigs[i])
+			jointSigIndex = self.insertOrGetPointLocationIndex(None,regSigIndex)
+			self.curs.execute("INSERT INTO dataMap_%(tablename)s(dataIndex,locIndex,errorVal) VALUES ((?),(?),(?)) "
+					% {'tablename':self.tablename},			
+					(j,jointSigIndex,0))
+			for k in range(self.outDim):
+				rankKIPIndex = self.getSigIndex(fullTrace[i,k])
+				rankKDist = dists[i,k]
+				self.curs.execute("INSERT INTO fullTrace_%(tablename)s(dataIndex,rank,ipSigIndex,dist) VALUES ((?),(?),(?),(?)) "
+						% {'tablename':self.tablename},
+							(j,k,rankKIPIndex,rankKDist))
+		
