@@ -30,7 +30,7 @@ typedef struct TreeNode {
 } TreeNode;
 
 typedef struct SubTree {
-	pthread_spinlock_t traverseSpinLock;
+	pthread_mutex_t traverseMutexLock;
 
 	TreeNode nodes[SUBTREESIZE];
 	int nodeCount;

@@ -49,13 +49,13 @@ typedef struct ipCache {
 	pthread_mutex_t balanceLock;
 } ipCache;
 
-
+// Types should be: kernel projection or perp kernel projection
 
 ipCache * allocateCache(nnLayer *layer0, float threshold, long long freeMemory);
 void freeCache(ipCache *cache);
 
-void getInterSig(ipCache * cache, float *p, kint *ipSignature, ipMemory *mb);
 void getInterSigBatch(ipCache *cache, float *data, kint *ipSignature, uint numData, uint numProc);
+void traceDistsSigBatch(ipCache *cache, float *data, kint *ipSigTraces, float * dists, uint numData, uint numProc);
 
 
 
