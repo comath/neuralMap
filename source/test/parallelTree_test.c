@@ -74,7 +74,7 @@ dataInput  *createRandomArray(int numElements,  int max)
 	for(i=0;i<numElements;i++){
 		randArr[i].value = (rand() % max);
 		randArr[i].error = (rand() % 2);
-		randArr[i].key[0] = randArr[i].value % 50;
+		randArr[i].key[0] = randArr[i].value % 5000;
 	}
 	return randArr;
 }
@@ -152,8 +152,8 @@ void addBatch(Tree * tree, struct dataInput *data, int numKeys)
 int main(int argc, char* argv[])
 {
 	printf("Size of kint: %lu\n", sizeof(kint));
-	const int population = 30000;
-	const int max = 500;
+	const int population = 3000000;
+	const int max = 50000;
 	printf("Creating an pseudo-random array with %d elements, max val: %d\n",population,max);
 	dataInput * randArr;
 	randArr = createRandomArray(population,max);
