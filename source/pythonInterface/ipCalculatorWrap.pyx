@@ -45,7 +45,7 @@ cdef class ipCalculator:
 			raise MemoryError()
 
 	def calculateUncompressed(self,np.ndarray[float,ndim=1,mode="c"] data not None):
-		cdef np.ndarray[np.uint32_t,ndim=1] ipSignature = np.zeros([self.keyLen], dtype=np.uint32)        
+		cdef np.ndarray[np.uint64_t,ndim=1] ipSignature = np.zeros([self.keyLen], dtype=np.uint64)        
 		getInterSigBatch(self.cache,<float *> data.data,<kint * >ipSignature.data, 1, 1)
 		return ipSignature
 
@@ -59,12 +59,12 @@ cdef class ipCalculator:
 
 
 		numData = data.shape[0]
-		cdef np.ndarray[np.uint32_t,ndim=2] ipSignature = np.zeros([numData,self.keyLen], dtype=np.uint32)        
+		cdef np.ndarray[np.uint64_t,ndim=2] ipSignature = np.zeros([numData,self.keyLen], dtype=np.uint64)        
 		getInterSigBatch(self.cache,<float *> data.data,<kint * >ipSignature.data, numData, numProc)
 		return ipSignature
 	
 	def traceCalculateUncompressed(self,np.ndarray[float,ndim=1,mode="c"] data not None):
-		cdef np.ndarray[np.uint32_t,ndim=1] ipSigTrace = np.zeros([self.outDim,self.keyLen], dtype=np.uint32)
+		cdef np.ndarray[np.uint64_t,ndim=1] ipSigTrace = np.zeros([self.outDim,self.keyLen], dtype=np.uint64)
 		cdef np.ndarray[np.float32_t,ndim=1] dists = np.zeros([self.outDim], dtype=np.float32)
 		traceDistsSigBatch(self.cache,<float *> data.data,<kint * >ipSigTrace.data,<float *>dists.data, 1, 1)
 		return ipSigTrace, dists
@@ -79,7 +79,7 @@ cdef class ipCalculator:
 
 
 		numData = data.shape[0]
-		cdef np.ndarray[np.uint32_t,ndim=2] ipSigTraces = np.zeros([numData,self.outDim,self.keyLen], dtype=np.uint32)        
+		cdef np.ndarray[np.uint64_t,ndim=2] ipSigTraces = np.zeros([numData,self.outDim,self.keyLen], dtype=np.uint64)        
 		cdef np.ndarray[np.float32_t,ndim=2] dists = np.zeros([numData,self.outDim], dtype=np.float32)
 		traceDistsSigBatch(self.cache,<float *> data.data,<kint * >ipSigTraces.data, <float *>dists.data, numData, numProc)
 		return ipSigTraces, dists

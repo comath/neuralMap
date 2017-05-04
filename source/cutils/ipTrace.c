@@ -400,7 +400,7 @@ void * ipCalcBatch_thread(void *thread_args)
 	pthread_exit(NULL);
 }
 
-void batchIpCalc(traceCache * tc, float * data, float * dists, kint * ipSigs, float threshold, int numData, int numProc){
+void batchIpCalc(traceCache * tc, float * data, kint * ipSigs, float threshold, int numData, int numProc){
 
 	int maxThreads = numProc;
 	int rc =0;

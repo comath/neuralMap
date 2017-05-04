@@ -49,6 +49,6 @@ void fullTrace(traceCache * tc, traceMemory * tm, float * point, float * dists, 
 void batchFullTrace(traceCache * tc, float * point, float * dists, kint * intersections, int numData, int numProc);
 
 void ipCalc(traceCache * tc, traceMemory * tm, float * point, kint *ipSig, float threshold);
-void batchIpCalc(traceCache * tc, float * data, float * dists, kint * ipSigs, float threshold, int numData, int numProc);
+void batchIpCalc(traceCache * tc, float * data, kint * ipSigs, float threshold, int numData, int numProc);
 
 #endif

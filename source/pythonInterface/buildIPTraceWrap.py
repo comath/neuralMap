@@ -41,4 +41,4 @@ traceExt = Extension(name='ipTrace',
 setup(ext_modules = cythonize(traceExt,gdb_debug=True))
 
 
-os.rename("fullTrace.so","nnMapper/fullTrace.so")
+os.rename("ipTrace.so","nnMapper/ipTrace.so")

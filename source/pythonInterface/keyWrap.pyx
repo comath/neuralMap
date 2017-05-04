@@ -21,6 +21,7 @@ cdef extern from "../cutils/key.h":
 
 	cdef void batchConvertToKey(int * raw, kint *key,unsigned int dataLen, unsigned int numData)
 	cdef void batchConvertFromKey(kint *key, int * output, unsigned int dataLen,unsigned int numData)
+	cdef void batchConvertFromKeyChar(kint *key, char * output, unsigned int dataLen,unsigned int numData)
 	cdef void batchChromaticKey(kint *key, float *rgb, unsigned int dataLen, unsigned int numData)
 
 	cdef unsigned int calcKeyLen(unsigned int dataLen)

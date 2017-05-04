@@ -17,7 +17,7 @@ def eprint(*args, **kwargs):
 
 include "nnLayerUtilsWrap.pyx"
 	
-cdef extern from "../cutils/ipCalculator.h":
+cdef extern from "../cutils/ipTrace.h":
 	ctypedef struct traceMemory:
 		pass
 	ctypedef struct traceCache:
@@ -35,11 +35,12 @@ cdef extern from "../cutils/ipCalculator.h":
 	void batchFullTrace(traceCache * tc, float * point, float * dists, kint * intersections, int numData, int numProc)
 
 	void ipCalc(traceCache * tc, traceMemory * tm, float * point, kint *ipSig, float threshold)
-	void batchIpCalc(traceCache * tc, float * data, float * dists, kint * ipSigs, float threshold, int numData, int numProc)
+	void batchIpCalc(traceCache * tc, float * data, kint * ipSigs, float threshold, int numData, int numProc)
 
 cdef class traceCalc:
 	cdef traceCache * tc
 	cdef traceMemory * tm
+	cdef nnLayer * layer
 	cdef unsigned int keyLen
 	cdef unsigned int m
 	cdef unsigned int n
@@ -48,95 +49,101 @@ cdef class traceCalc:
 		self.n  = A.shape[0]
 		self.keyLen = calcKeyLen(self.n)
 		print(self.keyLen)
-		layer = createLayer(&A[0,0],&b[0],self.m,self.n)
+		self.layer = createLayer(&A[0,0],&b[0],self.m,self.n)
 		freeMemory = psutil.virtual_memory().free
-		self.tc = allocateTraceCache(layer)
-		self.tm = allocateTraceMB(m,n)
+		self.tc = allocateTraceCache(self.layer)
+		self.tm = allocateTraceMB(self.m,self.n)
 
 		if not (self.tc and self.tm):
 			raise MemoryError()
 
-	def getTrace(self,np.ndarray[float,mode="c"] data not None, **kwarg):
-		if(len(data.shape)==1):
+	def getFullTrace(self,np.ndarray[float,mode="c"] data not None, **kwarg):
+		cdef np.ndarray[np.uint64_t] ipSigTraces
+		cdef np.ndarray[np.float32_t] dists
+		cdef np.ndarray[np.float32_t] chromaipSignatures
+		cdef np.ndarray[np.int8_t] ipSignaturesUncompressed
+
+		if(data.ndim==1):
 			if(data.shape[0] != self.n):
 				raise ValueError('The data is an incorrect dimension')
-			cdef np.ndarray[np.uint32_t,ndim=2] ipSigTrace = np.zeros([self.outDim,self.keyLen], dtype=np.uint32)
-			cdef np.ndarray[np.float32_t,ndim=1] dists = np.zeros([self.outDim], dtype=np.float32)        
-			fullTrace(self.tc,self.tm,<float *> data.data,<float *> dists.data,<kint * >ipSigTrace.data)
+			ipSigTraces = np.zeros([self.outDim,self.keyLen], dtype=np.uint32)
+			dists = np.zeros([self.outDim], dtype=np.float32)        
+			fullTrace(self.tc,self.tm,<float *> data.data,<float *> dists.data,<kint * >ipSigTraces.data)
 			if(kwarg):
 				if(kwarg['output_type']=='color'):
-					cdef np.ndarray[np.float32_t,ndim=2] chromaipSignature = np.zeros([self.outDim,3], dtype=np.float32)
-					batchChromaticKey(<kint * >ipSigTrace.data, <float *> chromaipSignature.data, self.outDim,self.outDim)
-					return dists,chromaipSignature
+					chromaipSignatures = np.zeros([self.outDim,3], dtype=np.float32)
+					batchChromaticKey(<kint * >ipSigTraces.data, <float *> chromaipSignatures.data, self.outDim,self.outDim)
+					return dists,chromaipSignatures
 				if(kwarg['output_type']=='uncompressed'):
-					cdef np.ndarray[np.char_t,ndim=2] ipSignatureUncompressed = np.zeros([self.outDim,self.outDim], dtype=np.char)
-					batchConvertFromKey(<kint * >ipSigTrace.data, <char *> ipSignatureUncompressed.data, self.outDim,self.outDim)
-					return dists,ipSignatureUncompressed
-			return dists,ipSigTrace
-		elif (len(data.shape)==2):
+					ipSignaturesUncompressed = np.zeros([self.outDim,self.outDim], dtype=np.char)
+					batchConvertFromKeyChar(<kint * >ipSigTraces.data, <char *> ipSignaturesUncompressed.data, self.outDim,self.outDim)
+					return dists,ipSignaturesUncompressed
+			return dists,ipSigTraces
+		elif (data.ndim==2):
 			if(data.shape[1] != self.n):
-				raise ValueError('The data is an incorrect dimension')
-			if numProc == None:
-				numProc = multiprocessing.cpu_count()
-			if numProc > multiprocessing.cpu_count():
-				eprint("WARNING: Specified too many cores. Reducing to the number you actually have.")
+				raise ValueError('The data is of an incorrect dimension')
+			if(kwarg and kwarg['numProc'] != None):
+				numProc = kwarg['numProc']
+			else:
 				numProc = multiprocessing.cpu_count()
 
 			numData = data.shape[0]
-			cdef np.ndarray[np.uint32_t,ndim=3] ipSigTraces = np.zeros([numData,self.outDim,self.keyLen], dtype=np.uint32)        
-			cdef np.ndarray[np.float32_t,ndim=2] dists = np.zeros([numData,self.outDim], dtype=np.float32)
+			ipSigTraces = np.zeros([numData,self.outDim,self.keyLen], dtype=np.uint32)        
+			dists = np.zeros([numData,self.outDim], dtype=np.float32)
 			batchFullTrace(self.tc, <float *> data.data, <float *> dists.data, <kint * >ipSigTraces.data, numData, numProc)
 			if(kwarg):
 				if(kwarg['output_type']=='color'):
-					cdef np.ndarray[np.float32_t,ndim=3] chromaipSignature = np.zeros([numData,self.outDim,3], dtype=np.float32)
-					batchChromaticKey(<kint * >ipSigTrace.data, <float *> chromaipSignature.data, self.outDim,numData*self.outDim)
-					return dists,chromaipSignature
+					chromaipSignatures = np.zeros([numData,self.outDim,3], dtype=np.float32)
+					batchChromaticKey(<kint * >ipSigTraces.data, <float *> chromaipSignatures.data, self.outDim,numData*self.outDim)
+					return dists,chromaipSignatures
 				if(kwarg['output_type']=='uncompressed'):
-					cdef np.ndarray[np.char_t,ndim=3] ipSignatureUncompressed = np.zeros([numData,self.outDim,self.outDim], dtype=np.char)
-					batchConvertFromKey(<kint * >ipSigTrace.data, <char *> ipSignatureUncompressed.data, self.outDim,numData*self.outDim)
-					return dists,ipSignatureUncompressed
+					ipSignaturesUncompressed = np.zeros([numData,self.outDim,self.outDim], dtype=np.char)
+					batchConvertFromKeyChar(<kint * >ipSigTraces.data, <char *> ipSignaturesUncompressed.data, self.outDim,numData*self.outDim)
+					return dists,ipSignaturesUncompressed
 			return dists,ipSigTraces
 		else:
 			raise ValueError('The data must be either a rank 2 batch, or a single data vector')
 
-	def getIntersection(self,np.ndarray[float,mode="c"] data not None,float threshold):
-		if(len(data.shape)==1):
+	def getIntersection(self,np.ndarray[float,mode="c"] data not None,float threshold, **kwarg):
+		cdef np.ndarray[np.uint64_t] ipSig
+		cdef np.ndarray[np.float32_t] chromaipSignatures
+		cdef np.ndarray[np.int8_t] ipSignaturesUncompressed
+		if(data.ndim==1):
 			if(data.shape[0] != self.n):
 				raise ValueError('The data is an incorrect dimension')
-			cdef np.ndarray[np.uint32_t,ndim=1] ipSig = np.zeros([self.keyLen], dtype=np.uint32)
-			fullTrace(self.tc,self.tm,<float *> data.data,<float *> dists.data,<kint * >ipSigTrace.data)
+			ipSig = np.zeros([self.keyLen], dtype=np.uint32)
+			ipCalc(self.tc,self.tm,<float *> data.data,<kint * >ipSig.data, threshold)
 			if(kwarg):
 				if(kwarg['output_type']=='color'):
-					cdef np.ndarray[np.float32_t,ndim=3] chromaipSignature = np.zeros([3], dtype=np.float32)
-					batchChromaticKey(<kint * >ipSigTrace.data, <float *> chromaipSignature.data, self.outDim,1)
-					return dists,chromaipSignature
+					chromaipSignatures = np.zeros([3], dtype=np.float32)
+					batchChromaticKey(<kint * >ipSig.data, <float *> chromaipSignatures.data, self.outDim,1)
+					return chromaipSignatures
 				if(kwarg['output_type']=='uncompressed'):
-					cdef np.ndarray[np.char_t,ndim=3] ipSignatureUncompressed = np.zeros([numData,self.outDim,self.outDim], dtype=np.char)
-					batchConvertFromKey(<kint * >ipSigTrace.data, <char *> ipSignatureUncompressed.data, self.outDim,1)
-					return dists,ipSignatureUncompressed
-			return dists,ipSigTrace
-		elif (len(data.shape)==2):
+					ipSignaturesUncompressed = np.zeros([self.outDim], dtype=np.char)
+					batchConvertFromKeyChar(<kint * >ipSig.data, <char *> ipSignaturesUncompressed.data, self.outDim,1)
+					return ipSignaturesUncompressed
+			return ipSig
+		elif (data.ndim==2):
 			if(data.shape[1] != self.n):
 				raise ValueError('The data is an incorrect dimension')
-			if numProc == None:
-				numProc = multiprocessing.cpu_count()
-			if numProc > multiprocessing.cpu_count():
-				eprint("WARNING: Specified too many cores. Reducing to the number you actually have.")
+			if(kwarg and kwarg['numProc'] != None):
+				numProc = kwarg['numProc']
+			else:
 				numProc = multiprocessing.cpu_count()
 
 			numData = data.shape[0]
-			cdef np.ndarray[np.uint32_t,ndim=2] ipSig = np.zeros([numData,self.keyLen], dtype=np.uint32)        
-			batchFullTrace(self.tc, <float *> data.data, <float *> dists.data, <kint * >ipSigTraces.data, numData, numProc)
+			ipSig = np.zeros([numData,self.keyLen], dtype=np.uint32)        
+			batchIpCalc(self.tc, <float *> data.data, <kint * >ipSig.data, threshold, numData, numProc)
 			if(kwarg):
 				if(kwarg['output_type']=='color'):
-					cdef np.ndarray[np.float32_t,ndim=3] chromaipSignature = np.zeros([numData,3], dtype=np.float32)
-					batchChromaticKey(<kint * >ipSigTrace.data, <float *> chromaipSignature.data, self.outDim,numData*self.outDim)
-					return dists,chromaipSignature
+					chromaipSignatures = np.zeros([numData,3], dtype=np.float32)
+					batchChromaticKey(<kint * >ipSig.data, <float *> chromaipSignatures.data, self.outDim,numData*self.outDim)
+					return chromaipSignatures
 				if(kwarg['output_type']=='uncompressed'):
-					cdef np.ndarray[np.char_t,ndim=3] ipSignatureUncompressed = np.zeros([numData,self.outDim], dtype=np.char)
-					batchConvertFromKey(<kint * >ipSigTrace.data, <char *> ipSignatureUncompressed.data, self.outDim,numData)
-					return dists,ipSignatureUncompressed
-			return dists,ipSigTraces
+					ipSignaturesUncompressed = np.zeros([numData,self.outDim], dtype=np.char)
+					batchConvertFromKeyChar(<kint * >ipSig.data, <char *> ipSignaturesUncompressed.data, self.outDim,numData)
+					return ipSignaturesUncompressed
+			return ipSig
 		else:
 			raise ValueError('The data must be either a rank 2 batch, or a single data vector')
 
