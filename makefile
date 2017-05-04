@@ -37,6 +37,8 @@ nnLayerUtils.o: $(UTILS)nnLayerUtils.c
 # Main Utilities
 ipCalculator.o: $(UTILS)ipCalculator.c  $(UTILS)nnLayerUtils.c $(UTILS)parallelTree.c
 	$(CC) $(CCFLAGS) $(MKLINC) -c $< -o $(BIN)$@
+ipTrace.o: $(UTILS)ipTrace.c  $(UTILS)nnLayerUtils.c $(UTILS)key.c
+	$(CC) $(CCFLAGS) $(MKLINC) -c $< -o $(BIN)$@
 mapper.o: $(UTILS)mapper.c $(UTILS)ipCalculator.c  $(UTILS)nnLayerUtils.c $(UTILS)parallelTree.c
 	$(CC) $(CCFLAGS) $(MKLINC) -c $< -o $(BIN)$@
 
@@ -46,16 +48,24 @@ mapperWrap:
 #Python Interface
 ipCalculatorWrap:
 	python $(WRAP)buildipCalculatorWrap.py build_ext -i
+ipTraceWrap:
+	python $(WRAP)buildIPTraceWrap.py build_ext -i
 
 #Testing
 ipCalculator_test.o: $(TEST)ipCalculator_test.c $(UTILS)ipCalculator.c $(UTILS)parallelTree.c
+	$(CC) $(CXXFLAGS) $(MKLINC) -c $< -o $(BIN)$@
+
+ipTrace_test.o: $(TEST)ipTrace_test.c $(UTILS)ipTrace.c $(UTILS)key.c
 	$(CC) $(CXXFLAGS) $(MKLINC) -c $< -o $(BIN)$@
 
 mapper_test.o: $(TEST)mapper_test.c $(UTILS)mapper.c $(UTILS)ipCalculator.c $(UTILS)parallelTree.c
 	$(CC) $(CXXFLAGS) $(MKLINC) -c $< -o $(BIN)$@
 
 ipCalculator_test: ipCalculator_test.o ipCalculator.o parallelTree.o key.o nnLayerUtils.o
-	$(CC) $(CCFLAGS) -DDEBUG $(BIN)$< $(BIN)ipCalculator.o $(BIN)nnLayerUtils.o $(BIN)parallelTree.o $(BIN)key.o -o $@ $(MKLONEDYNAMICLIB) $(LIB_FLAGS) 
+	$(CC) $(CCFLAGS) -DDEBUG $(BIN)$< $(BIN)ipCalculator.o $(BIN)nnLayerUtils.o $(BIN)parallelTree.o $(BIN)key.o -o $@ $(MKLONEDYNAMICLIB) $(LIB_FLAGS)
+
+ipTrace_test: ipTrace_test.o ipTrace.o key.o nnLayerUtils.o
+	$(CC) $(CCFLAGS) -DDEBUG $(BIN)$< $(BIN)ipTrace.o $(BIN)nnLayerUtils.o $(BIN)key.o -o $@ $(MKLONEDYNAMICLIB) $(LIB_FLAGS) 
 
 mapper_test: mapper_test.o mapper.o ipCalculator.o parallelTree.o key.o nnLayerUtils.o
 	$(CC) $(CCFLAGS) $(BIN)$< $(BIN)mapper.o $(BIN)ipCalculator.o $(BIN)nnLayerUtils.o $(BIN)parallelTree.o $(BIN)key.o -o $@ $(MKLONEDYNAMICLIB) $(LIB_FLAGS) 
