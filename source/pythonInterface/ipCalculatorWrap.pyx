@@ -64,7 +64,7 @@ cdef class ipCalculator:
 		return ipSignature
 	
 	def traceCalculateUncompressed(self,np.ndarray[float,ndim=1,mode="c"] data not None):
-		cdef np.ndarray[np.uint32_t,ndim=1] ipSigTrace = np.zeros([self.outDim,self.keyLen], dtype=np.uint32)        
+		cdef np.ndarray[np.uint32_t,ndim=1] ipSigTrace = np.zeros([self.outDim,self.keyLen], dtype=np.uint32)
 		cdef np.ndarray[np.float32_t,ndim=1] dists = np.zeros([self.outDim], dtype=np.float32)
 		traceDistsSigBatch(self.cache,<float *> data.data,<kint * >ipSigTrace.data,<float *>dists.data, 1, 1)
 		return ipSigTrace, dists

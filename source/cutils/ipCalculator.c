@@ -726,8 +726,8 @@ void * traceDistBatch_thread(void *thread_args)
 	pthread_exit(NULL);
 }
 
-void traceDistsSigBatch(ipCache *cache, float *data, kint *ipSigTraces, float * dists, uint numData, uint numProc)
-{
+void traceDistsSigBatch(ipCache *cache, float *data, kint *ipSigTraces, float * dists, uint numData, uint numProc){
+
 	int maxThreads = numProc;
 	int rc =0;
 	int i =0;
