@@ -145,7 +145,7 @@ cdef class traceCalc:
 					return ipSignaturesUncompressed
 			return ipSig
 		else:
-			raise ValueError('The data must be either a rank 2 batch, or a single data vector')
+			raise ValueError('The data must be either a batch of data vectors, or a single data vector')
 
 
 	def __dealloc__(self):
