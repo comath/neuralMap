@@ -6,7 +6,9 @@ void fillHPCache(nnLayer *layer, float * hpNormals, float * hpOffsetVals)
 	int n = layer->inDim;
 	int m = layer->outDim;
 
-	printMatrix(layer->A,layer->inDim,layer->outDim);
+	#ifdef DEBUG
+		printf("Filling HPs\n");
+	#endif
 	float scaling = 1;
 	for(i=0;i<m;i++){
 		scaling = cblas_snrm2 (n, layer->A + n*i, 1);
@@ -36,6 +38,9 @@ void computeDistToHPS(float *p,
 						float * hpNormals, float * hpOffsetVals, int m, int n, 
 						distanceWithIndex *distances)
 {	
+	#ifdef DEBUG
+		printf("Getting distances to local HPs\n");
+	#endif
 	float curDist = 0;
 	for(int i = 0; i<m;i++){
 		distances[i].index = i;
@@ -65,7 +70,9 @@ traceCache * allocateTraceCache(nnLayer * layer)
 	int m = layer->outDim;
 	int n = layer->inDim;
 	int i = 0;
-
+	#ifdef DEBUG
+		printf("Allocating traceCache, inDim: %d, rank: %d\n", n,m);
+	#endif
 	if(m>n){
 		printf("Can Only handle layers with the number of HP is less than or equal to the dim\n");
 		exit(-1);
@@ -149,7 +156,9 @@ traceCache * allocateTraceCache(nnLayer * layer)
 	
 
 	tc->keyLen = calcKeyLen(n);
-	
+	#ifdef DEBUG
+		printf("Trace Cache Allocated\n");
+	#endif
 	return tc;
 }
 
@@ -224,7 +233,12 @@ void fillPermMatrix(distanceWithIndex *distances, nnLayer *layer, float *permA)
 	}
 }
 
-void fullTraceWithDist(traceCache * tc, traceMemory * tm, float * point, distanceWithIndex * distances, float * interDists){
+void fullTraceWithDist(traceCache * tc, traceMemory * tm, float * point, distanceWithIndex * distances, float * interDists)
+{
+	#ifdef DEBUG
+		printf("Taking distace to point with pointer %p\n", point);
+	#endif
+
 	int m = tc->layer->outDim;
 	int n = tc->layer->inDim;
 	

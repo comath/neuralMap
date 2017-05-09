@@ -4,7 +4,7 @@ from scipy import io
 from rbm import RBM
 from PIL import Image
 
-from nnMapper import nnMapper as nnMap
+from nnMap import nnMap
 from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 trX, trY, teX, teY = mnist.train.images, mnist.train.labels,\
