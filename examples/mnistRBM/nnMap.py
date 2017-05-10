@@ -115,10 +115,12 @@ class nnMap:
 			ipSigIndex = self.insertOrGetSig(ipSigs[i])
 			regSigIndex = self.insertOrGetSig(regSigs[i])
 			jointSigIndex = self.insertOrGetPointLocationIndex(ipSigIndex,regSigIndex)
-			
-			self.curs.execute("INSERT INTO dataMap_%(tablename)s(dataIndex,locIndex,errorVal) VALUES ((?),(?),(?)) "
+			try:
+				self.curs.execute("INSERT INTO dataMap_%(tablename)s(dataIndex,locIndex,errorVal) VALUES ((?),(?),(?)) "
 					% {'tablename':self.tablename},			
 					(j,jointSigIndex,0))
+			except Exception:
+				print('Point %(j)d already in database' %{'j':j})
 		self.conn.commit()
 	
 	def getPointLocationIndex(self,point):

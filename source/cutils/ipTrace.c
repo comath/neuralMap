@@ -1,4 +1,5 @@
 #include "ipTrace.h"
+#include <math.h>
 
 void fillHPCache(nnLayer *layer, float * hpNormals, float * hpOffsetVals)
 {
@@ -235,15 +236,32 @@ void fillPermMatrix(distanceWithIndex *distances, nnLayer *layer, float *permA)
 
 void fullTraceWithDist(traceCache * tc, traceMemory * tm, float * point, distanceWithIndex * distances, float * interDists)
 {
-	#ifdef DEBUG
-		printf("Taking distace to point with pointer %p\n", point);
-	#endif
-
+	int i;
 	int m = tc->layer->outDim;
 	int n = tc->layer->inDim;
 	
+	#ifdef DEBUG
+		printf("--------------------------------------------------\n");
+		printf("Taking distace to point with pointer %p\n", point);
+		if(n<10){
+			printf("Point:");
+			printFloatArr(point,n);
+		}
+	#endif
+
 	computeDistToHPS(point,tc->hpNormals,tc->hpOffsetVals,m,n,distances);
 	fillPermMatrix(distances,tc->layer,tm->permA);
+	#ifdef DEBUG
+		if(n<10 && m<10){
+			printf("Distances to HPs: [");
+			for(i=0;i<m-1;i++){
+				printf("%d:%f, ", distances[i].index,distances[i].dist);
+			}
+			printf("%d:%f]\n", distances[i].index,distances[m-1].dist);
+			printf("HPs rearranged:\n");
+			printMatrix(tm->permA,n,m);
+		}
+	#endif
 	int rc = LAPACKE_sgeqrf (LAPACK_COL_MAJOR, m, m, tm->permA, n, tm->tau);
 	if(rc){
 		printf("QR failed\n");
@@ -254,17 +272,42 @@ void fullTraceWithDist(traceCache * tc, traceMemory * tm, float * point, distanc
 		printf("Getting Q failed\n");
 		exit(-1);
 	}
+	#ifdef DEBUG
+		if(n<10 && m<10){
+			printf("Orthogonalized HPs (for the flag):\n");
+			printMatrix(tm->permA,n,m);
+		}
+	#endif
 	memcpy(tm->pointBuff,point,n*sizeof(float));
 	cblas_saxpy (n,-1,tc->solution,1,tm->pointBuff,1);
-	float curProj = 0;
-	for(int i = 0; i< m;i++){
-		curProj += cblas_sdot (n, tm->permA + i*n, 1, tm->pointBuff, 1);
-		if(curProj < 0){
-			interDists[i] = -curProj;
-		} else {
-			interDists[i] = curProj;
+	#ifdef DEBUG
+		if(n<10){
+			printf("Point minus solution:");
+			printFloatArr(tm->pointBuff,n);
+			printf("Norm:%f\n",cblas_snrm2(n,tm->pointBuff,1));
 		}
+	#endif
+
+	// We have Q from Gram Schmidt, which is orthogonal, so we can do this sequential projection onto Q
+	// This will produce the projection onto each subspace in the flag of the rearanged matrix
+	// The flag of that rearanged matrix is the trace of the point through the intersection poset
+	// Thus we get the distances for the trace in ~ O(mn^2-(1/3)m^3)
+	float curProj = 0;
+	float dot = 0;
+	for(int i = 0; i< m;i++){
+		dot = cblas_sdot (n, tm->permA + i*n, 1, tm->pointBuff, 1);
+		curProj += dot*dot;
+		interDists[i] = sqrtf(curProj);
+		
+		#ifdef DEBUG
+			if(n<10){
+				printf("Distance to the closest rank %d intersection: %f\n",i+1,interDists[i]);
+			}
+		#endif
 	}
+	#ifdef DEBUG
+		printf("------------------------------------------------\n");
+	#endif
 }
 
 void fullTrace(traceCache * tc, traceMemory * tm, float * point, float * dists, kint * ipSigTrace){
@@ -272,11 +315,25 @@ void fullTrace(traceCache * tc, traceMemory * tm, float * point, float * dists, 
 	uint keyLen = tc->keyLen;
 	fullTraceWithDist(tc, tm, point, tm->distances, dists);
 	memset(ipSigTrace,0,m*keyLen*sizeof(kint));
+	#ifdef DEBUG
+		printf("====================================\n");
+	#endif
 	for(int i = 0; i< m-1;i++){
 		addIndexToKey(ipSigTrace + i*keyLen, tm->distances[i].index);
 		memcpy(ipSigTrace+i*keyLen,ipSigTrace+(i+1)*keyLen,keyLen);
+		#ifdef DEBUG
+			printf("=======%d=======\n",i);
+			printf("Current ip");
+			printKey(ipSigTrace + i*keyLen,m);
+		#endif
 	}
 	addIndexToKey(ipSigTrace + (m-1)*keyLen,tm->distances[m-1].index);
+	#ifdef DEBUG
+		printf("=======%d=======\n",m-1);
+		printf("Current ip");
+		printKey(ipSigTrace + (m-1)*keyLen,m);
+		printf("====================================\n");
+	#endif
 }
 
 void ipCalc(traceCache * tc, traceMemory * tm, float * point, kint *ipSig, float threshold)
@@ -290,10 +347,37 @@ void ipCalc(traceCache * tc, traceMemory * tm, float * point, kint *ipSig, float
 		addIndexToKey(ipSig, tm->distances[i].index);
 	}
 	i = m-1;
-	while(threshold*tm->interDists[i-1] - tm->distances[i].dist > 0 && i > 1){
+	#ifdef DEBUG
+		printf("====================================\n");
+		printf("Current ip");
+		printKey(ipSig,m);
+		printf("Distance to closest rank %d intersection %f\n",i, tm->interDists[i-1]);
+		printf("Distance to %d closest hyperplane: %d:%f\n",i,tm->distances[i].index, tm->distances[i].dist);
+		if(threshold*tm->interDists[i-1] - tm->distances[i].dist > 0){
+			printf("Removing %d from key\n",tm->distances[i-1].index);
+		} 
+	#endif
+	
+	while(threshold*tm->interDists[i-1] - tm->distances[i].dist > 0 && i > 0){
 		i--;
 		removeIndexFromKey(ipSig,tm->distances[i].index);
+		#ifdef DEBUG
+			printf("=======%d=======\n",i);
+			printf("Current ip");
+			printKey(ipSig,m);
+			printf("Distance to closest rank %d intersection %f\n",i, tm->interDists[i-1]);
+			printf("Distance to %d closest hyperplane: %f\n",i, tm->distances[i].dist);
+			if(threshold*tm->interDists[i-1] - tm->distances[i].dist > 0){
+				printf("Removing %d from key\n",tm->distances[i-1].index);
+			} 
+		#endif
 	}
+	#ifdef DEBUG
+		printf("=======%d=======\n",i);
+		printf("Final ip");
+		printKey(ipSig,m);
+		printf("====================================\n");
+	#endif
 }
 
 struct traceThreadArgs {

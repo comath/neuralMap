@@ -5,21 +5,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.widgets import CheckButtons
 from mpl_toolkits.mplot3d import Axes3D
-from ipCalculatorWrap import ipCalculator
-from ipCalculatorWrap import convertToRGB
+from ipTrace import traceCalc,convertToRGB
 
-numData = 3000
+
+numData = 10000
 dim = 3
 threshhold = 2
 
 
 
-idMat = np.identity(dim,dtype=np.float32)
+idMat = np.random.rand(3,3)
+idMat = np.ndarray.astype(idMat,dtype=np.float32)
 originVec = np.zeros([dim],dtype=np.float32)
 originVec[0] = 0
 originVec[1] = 0
 originVec[2] = 0
-ipCalc = ipCalculator(idMat,originVec,threshhold)
+ipCalc = traceCalc(idMat,originVec)
 
 
 possibleSigs = np.zeros([9,3],dtype=np.int32)
@@ -37,7 +38,9 @@ cov = idMat
 data = np.random.uniform(low=-2.0, high=2.0, size=[numData,3])
 data = data.astype(np.float32, copy=False)
 
-signatures = ipCalc.batchCalculate(data)
+signatures = ipCalc.getIntersections(data,threshhold,returnType='uncompressed',numProc=1)
+print signatures
+
 
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
