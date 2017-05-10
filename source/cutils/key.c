@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#define DATASIZE 64
+#define DATASIZE 32
 
 
 uint calcKeyLen(uint dataLen)

@@ -4,6 +4,7 @@ import re
 import numpy as np
 import io
 import sqlite3
+import progressbar
 from ipTrace import traceCalc, neuralLayer,readKey, pyCalcKeyLen
 
 def adapt_array(arr):
@@ -106,20 +107,16 @@ class nnMap:
 		return row[0]
 
 	def addPoints(self,indicies,points):
-		ipSigs = self.traceCalc.getIntersections(points,2, numProc=1)
+		ipSigs = self.traceCalc.getIntersections(points,2, returnType='d', numProc=1)
 		regSigs = self.regCalc.batchCalculateUncompressed(points)
-		for i,j in enumerate(indicies):
+		bar = progressbar.ProgressBar(max_value=points.shape[0])
+		for i,j in bar(enumerate(indicies)):
 
 			ipSigIndex = self.insertOrGetSig(ipSigs[i])
 			regSigIndex = self.insertOrGetSig(regSigs[i])
 			jointSigIndex = self.insertOrGetPointLocationIndex(ipSigIndex,regSigIndex)
 			
-			if errors != 0:
-				self.curs.execute("INSERT INTO dataMap_%(tablename)s(dataIndex,locIndex,errorVal) VALUES ((?),(?),(?)) "
-					% {'tablename':self.tablename},
-					(j,jointSigIndex,errors[i]))
-			else:
-				self.curs.execute("INSERT INTO dataMap_%(tablename)s(dataIndex,locIndex,errorVal) VALUES ((?),(?),(?)) "
+			self.curs.execute("INSERT INTO dataMap_%(tablename)s(dataIndex,locIndex,errorVal) VALUES ((?),(?),(?)) "
 					% {'tablename':self.tablename},			
 					(j,jointSigIndex,0))
 		self.conn.commit()

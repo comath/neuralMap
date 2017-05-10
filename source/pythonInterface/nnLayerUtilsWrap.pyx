@@ -19,12 +19,15 @@ cdef extern from "../cutils/nnLayerUtils.h":
 cdef class neuralLayer:
 	cdef nnLayer * _c_layer
 	cdef unsigned int keyLen
-	
+	cdef unsigned int m
+	cdef unsigned int n
+
 	def __cinit__(self,np.ndarray[float,ndim=2,mode="c"] A not None, np.ndarray[float,ndim=1,mode="c"] b not None):
 		cdef unsigned int inDim, outDim
-		outDim,inDim = A.shape[1], A.shape[0]
-		self.keyLen = calcKeyLen(inDim)
-		self._c_layer = <nnLayer *>createLayer( <float *> A.data,<float *>  b.data,outDim,inDim)
+		self.m = A.shape[1]
+		self.n  = A.shape[0]
+		self.keyLen = calcKeyLen(self.m)
+		self._c_layer = <nnLayer *>createLayer( <float *> A.data,<float *>  b.data,self.m,self.n)
 
 	def eval(self, np.ndarray[float,ndim=2,mode="c"] x not None):
 		cdef np.ndarray output = np.zeros([self.layer.outDim], dtype=np.float32)
@@ -42,14 +45,15 @@ cdef class neuralLayer:
 		return regSignature
 
 	def batchCalculateUncompressed(self,np.ndarray[float,ndim=2,mode="c"] data not None, numProc=None):
+		cdef int numProcInt = 1
 		if numProc == None:
-			numProc = multiprocessing.cpu_count()
+			numProcInt = multiprocessing.cpu_count()
 		if numProc > multiprocessing.cpu_count():
 			eprint("WARNING: Specified too many cores. Reducing to the number you actually have.")
-			numProc = multiprocessing.cpu_count()
+			numProcInt = multiprocessing.cpu_count()
 
-		numData = data.shape[0]
+		cdef int numData = data.shape[0]
 
 		cdef np.ndarray[np.uint32_t,ndim=2] regSignature = np.zeros([numData,self.keyLen], dtype=np.uint32)
-		getRegSigBatch(self._c_layer,<float *>data.data,<kint *>regSignature.data, numData, numProc)
+		getRegSigBatch(self._c_layer,<float *>data.data,<kint *>regSignature.data, numData, numProcInt)
 		return regSignature

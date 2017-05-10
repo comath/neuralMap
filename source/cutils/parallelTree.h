@@ -11,7 +11,7 @@
 
 
 #ifndef NODEDEPTH
-#define NODEDEPTH 6
+#define NODEDEPTH 8
 #define SUBTREESIZE ((1 << (NODEDEPTH+1)) - 1)
 #define SUBCENTER ((1 << NODEDEPTH) - 1)
 #endif
