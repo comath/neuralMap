@@ -11,6 +11,23 @@ mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 trX, trY, teX, teY = mnist.train.images, mnist.train.labels,\
 mnist.test.images, mnist.test.labels
 
+leaveInData = []
+leaveInLabel = []
+removeData = []
+removeLabel = []
+
+for i,label in enumerate(trY):
+	if(label[9]==1 or label[8] == 1):
+		removeData.append(trX[i])
+		removeLabel.append(label)
+	else:
+		leaveInData.append(trX[i])
+		leaveInLabel.append(label)
+leaveInData = np.stack(leaveInData,axis=0)
+leaveInLabel = np.stack(leaveInLabel,axis=0)
+removeData = np.stack(removeData,axis=0)
+removeLabel = np.stack(removeLabel,axis=0)
+
 visibleDim = 28*28
 batchSize = 100
 stepSize = 0.005

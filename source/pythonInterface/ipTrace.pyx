@@ -66,21 +66,21 @@ cdef class traceCalc:
 		
 		if(data.shape[0] != self.m):
 			raise ValueError('The data is an incorrect dimension')
-		ipSigTraces = np.zeros([self.outDim,self.keyLen], dtype=np.uint32)
-		dists = np.zeros([self.outDim], dtype=np.float32)        
+		ipSigTraces = np.zeros([self.m,self.keyLen], dtype=np.uint32)
+		dists = np.zeros([self.m], dtype=np.float32)        
 		fullTrace(self.tc,self.tm,<float *> data.data,<float *> dists.data,<kint * >ipSigTraces.data)
-		if(kwarg):
-			if(kwarg['output_type']=='color'):
-				chromaipSignatures = np.zeros([self.outDim,3], dtype=np.float32)
-				batchChromaticKey(<kint * >ipSigTraces.data, <float *> chromaipSignatures.data, self.outDim,self.outDim)
+		if(kwarg and kwarg['returnType'] != None):
+			if(kwarg['returnType'] =='color'):
+				chromaipSignatures = np.zeros([self.m,3], dtype=np.float32)
+				batchChromaticKey(<kint * >ipSigTraces.data, <float *> chromaipSignatures.data, self.m,self.m)
 				return dists,chromaipSignatures
-			if(kwarg['output_type']=='uncompressed'):
-				ipSignaturesUncompressed = np.zeros([self.outDim,self.outDim], dtype=np.char)
-				batchConvertFromKeyChar(<kint * >ipSigTraces.data, <char *> ipSignaturesUncompressed.data, self.outDim,self.outDim)
+			if(kwarg['returnType'] =='uncompressed'):
+				ipSignaturesUncompressed = np.zeros([self.m,self.m], dtype=np.int8)
+				batchConvertFromKeyChar(<kint * >ipSigTraces.data, <char *> ipSignaturesUncompressed.data, self.m,self.m)
 				return dists,ipSignaturesUncompressed
 		return dists,ipSigTraces
 
-	def getFullTrace(self,np.ndarray[float,ndim=2,mode="c"] data not None, **kwarg):
+	def getFullTraces(self,np.ndarray[float,ndim=2,mode="c"] data not None, **kwarg):
 		cdef np.ndarray[np.uint32_t,ndim=3] ipSigTraces
 		cdef np.ndarray[np.float32_t,ndim=3] dists
 		cdef np.ndarray[np.float32_t,ndim=3] chromaipSignatures
@@ -95,17 +95,17 @@ cdef class traceCalc:
 			numProc = multiprocessing.cpu_count()
 
 		numData = data.shape[0]
-		ipSigTraces = np.zeros([numData,self.outDim,self.keyLen], dtype=np.uint32)        
-		dists = np.zeros([numData,self.outDim], dtype=np.float32)
+		ipSigTraces = np.zeros([numData,self.m,self.keyLen], dtype=np.uint32)        
+		dists = np.zeros([numData,self.m], dtype=np.float32)
 		batchFullTrace(self.tc, <float *> data.data, <float *> dists.data, <kint * >ipSigTraces.data, numData, numProc)
-		if(kwarg):
-			if(kwarg['output_type']=='color'):
-				chromaipSignatures = np.zeros([numData,self.outDim,3], dtype=np.float32)
-				batchChromaticKey(<kint * >ipSigTraces.data, <float *> chromaipSignatures.data, self.outDim,numData*self.outDim)
+		if(kwarg and kwarg['returnType'] != None):
+			if(kwarg['returnType'] =='color'):
+				chromaipSignatures = np.zeros([numData,self.m,3], dtype=np.float32)
+				batchChromaticKey(<kint * >ipSigTraces.data, <float *> chromaipSignatures.data, self.m,numData*self.m)
 				return dists,chromaipSignatures
-			if(kwarg['output_type']=='uncompressed'):
-				ipSignaturesUncompressed = np.zeros([numData,self.outDim,self.outDim], dtype=np.char)
-				batchConvertFromKeyChar(<kint * >ipSigTraces.data, <char *> ipSignaturesUncompressed.data, self.outDim,numData*self.outDim)
+			if(kwarg['returnType'] =='uncompressed'):
+				ipSignaturesUncompressed = np.zeros([numData,self.m,self.m], dtype=np.int8)
+				batchConvertFromKeyChar(<kint * >ipSigTraces.data, <char *> ipSignaturesUncompressed.data, self.m,numData*self.m)
 				return dists,ipSignaturesUncompressed
 		return dists,ipSigTraces
 		
@@ -121,11 +121,11 @@ cdef class traceCalc:
 		if(kwarg):
 			if(kwarg['output_type']=='color'):
 				chromaipSignatures = np.zeros([3], dtype=np.float32)
-				batchChromaticKey(<kint * >ipSig.data, <float *> chromaipSignatures.data, self.outDim,1)
+				batchChromaticKey(<kint * >ipSig.data, <float *> chromaipSignatures.data, self.m,1)
 				return chromaipSignatures
 			if(kwarg['output_type']=='uncompressed'):
-				ipSignaturesUncompressed = np.zeros([self.outDim], dtype=np.char)
-				batchConvertFromKeyChar(<kint * >ipSig.data, <char *> ipSignaturesUncompressed.data, self.outDim,1)
+				ipSignaturesUncompressed = np.zeros([self.m], dtype=np.int8)
+				batchConvertFromKeyChar(<kint * >ipSig.data, <char *> ipSignaturesUncompressed.data, self.m,1)
 				return ipSignaturesUncompressed
 		return ipSig
 
@@ -152,7 +152,7 @@ cdef class traceCalc:
 			if(kwarg['returnType'] =='color'):
 				print('Color Coding')
 				chromaipSignatures = np.zeros([numData,3], dtype=np.float32)
-				batchChromaticKey(<kint * >ipSig.data, <float *> chromaipSignatures.data, self.outDim,numData*self.outDim)
+				batchChromaticKey(<kint * >ipSig.data, <float *> chromaipSignatures.data, self.m,numData*self.m)
 				return chromaipSignatures
 			if(kwarg['returnType'] =='uncompressed'):
 				print('Decompressing')

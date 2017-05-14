@@ -16,6 +16,8 @@ threshhold = 2
 
 idMat = np.random.rand(3,3)
 idMat = np.ndarray.astype(idMat,dtype=np.float32)
+
+
 originVec = np.zeros([dim],dtype=np.float32)
 originVec[0] = 0
 originVec[1] = 0
@@ -38,7 +40,7 @@ cov = idMat
 data = np.random.uniform(low=-2.0, high=2.0, size=[numData,3])
 data = data.astype(np.float32, copy=False)
 
-signatures = ipCalc.getIntersections(data,threshhold,returnType='uncompressed',numProc=1)
+signatures = ipCalc.getIntersection(data,threshhold,returnType='uncompressed',numProc=1)
 print signatures
 
 

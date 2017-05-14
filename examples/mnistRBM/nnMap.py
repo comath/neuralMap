@@ -107,7 +107,7 @@ class nnMap:
 		return row[0]
 
 	def addPoints(self,indicies,points):
-		ipSigs = self.traceCalc.getIntersections(points,2, returnType='d', numProc=1)
+		ipSigs = self.traceCalc.getIntersections(points,2, returnType='d', numProc=3)
 		regSigs = self.regCalc.batchCalculateUncompressed(points)
 		bar = progressbar.ProgressBar(max_value=points.shape[0])
 		for i,j in bar(enumerate(indicies)):
