@@ -18,7 +18,6 @@
 
 
 typedef struct TreeNode {
-
 	int createdKL;
 	kint *key;
 
