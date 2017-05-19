@@ -58,7 +58,7 @@ class filtered_mnist:
 		session.run(self.tfimages.initializer,feed_dict={self.images_initializer: self.leaveInData})
 		session.run(self.tflabels.initializer,feed_dict={self.labels_initializer: self.leaveInLabel})
 
-	def setupTFDataConstants(self,num_epochs,batch_size):
+	def setupTFDataConstants(self,batch_size):
 		with tf.name_scope('input'):
 			# Input data
 			with tf.device('/cpu:0'):

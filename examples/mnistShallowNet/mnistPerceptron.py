@@ -8,54 +8,54 @@ import tensorflow as tf
 from dataFeed import filtered_mnist
 
 
-def nnLayer(self,inDim,outDim,input):
-	with tf.name_scope("nnLayer") as scope:
-		
-		return tf.nn.sigmoid(tf.matmul(input,self.weights) + self.bias, name="sigmoid")
 
 inputDim 	= 28*28
-hiddenDim1 	= 60
 outDim 		= 10                         
 batchSize 	= 300
-numEpochs 	= 10000
+numTrainingSteps 	= 20000
 
 
-layer0 = {}
-layer1 = {}
+nnVars = {}
 output = []
 lossObj = []
 train_op = []
 
 data = filtered_mnist()
-images, labels = data.setupTFDataConstants(numEpochs,batchSize)
-optimizer = tf.train.GradientDescentOptimizer(0.01)
+images, labels = data.setupTFDataConstants(batchSize)
+optimizer = tf.train.GradientDescentOptimizer(0.05)
+global_step = tf.Variable(0, name='global_step', trainable=False)
 
-for hiddenDim1 in range(20,101,20):
+for hiddenDim1 in range(20,401,20):
 	with tf.name_scope("hidden_%(hid)d"%{'hid':hiddenDim1}):
 		with tf.name_scope("Layer0"):
-			weights0 = tf.Variable(tf.random_uniform([inputDim,hiddenDim1], -0.005, 0.005),name="weights_0")
-			layer0["matrix%(hid)04d"% {'hid': hiddenDim1}] = weights0
+			weights0 = tf.Variable(tf.random_normal([inputDim,hiddenDim1]),name="weights_0")
+			nnVars["matrix%(hid)04dlayer0"% {'hid': hiddenDim1}] = weights0
 
-			bias0 = tf.Variable(tf.zeros([hiddenDim1]),name='bias_0')
-			layer0["offset%(hid)04d"% {'hid': hiddenDim1}] = bias0
+			bias0 = tf.Variable(tf.random_normal([hiddenDim1]),name='bias_0')
+			nnVars["offset%(hid)04dlayer0"% {'hid': hiddenDim1}] = bias0
 
-			outLayer0 = tf.nn.sigmoid(tf.matmul(images,weights0) + bias0, name="sigmoid")
+			outLayer0 = tf.nn.relu(tf.matmul(images,weights0) + bias0, name="relu")
 		with tf.name_scope("Layer1"):
-			weights1 = tf.Variable(tf.random_uniform([hiddenDim1,outDim], -0.005, 0.005),name="weights_1")
-			layer1["matrix%(hid)04d"% {'hid': hiddenDim1}] = weights1
+			weights1 = tf.Variable(tf.random_normal([hiddenDim1,outDim]),name="weights_1")
+			nnVars["matrix%(hid)04dlayer1"% {'hid': hiddenDim1}] = weights1
 
-			bias1 = tf.Variable(tf.zeros([outDim]),name='bias_1')
-			layer1["offset%(hid)04d"% {'hid': hiddenDim1}] = bias1
+			bias1 = tf.Variable(tf.random_normal([outDim]),name='bias_1')
+			nnVars["offset%(hid)04dlayer1"% {'hid': hiddenDim1}] = bias1
 
-			outLayer1 = tf.nn.sigmoid(tf.matmul(outLayer0,weights1) + bias1, name="sigmoid")
+			outLayer1 = tf.matmul(outLayer0,weights1) + bias1
 			output.append(outLayer1)
-		localLoss = tf.nn.softmax_cross_entropy_with_logits(labels=labels, logits=outLayer1)
+		localCrossEntropy = tf.nn.softmax_cross_entropy_with_logits(labels=labels, logits=outLayer1)
+		localLoss = tf.reduce_mean(localCrossEntropy, name='xentropy_mean')
+		lossObj.append(localLoss)
+		train_op.append(optimizer.minimize(localLoss, global_step=global_step))
+
 		with tf.name_scope('accuracy_%(hid)d'%{'hid':hiddenDim1}):
 		  with tf.name_scope('correct_prediction'):
 		    correct_prediction = tf.equal(tf.argmax(outLayer1, 1), tf.argmax(labels, 1))
 		  with tf.name_scope('accuracy'):
 		    accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 		tf.summary.scalar('accuracy_%(hid)d'%{'hid':hiddenDim1}, accuracy)
+		tf.summary.scalar('loss_%(hid)d'%{'hid':hiddenDim1}, localLoss)
 
 merged = tf.summary.merge_all()
 
@@ -72,9 +72,11 @@ threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 try:
 	step = 0
 	while not coord.should_stop():
-		lossVal,trainVal,summary = sess.run([lossObj,train_op,merged])
+		trainVal,summary = sess.run([train_op,merged])
 		writer.add_summary(summary, step)
 		step +=1
+		if(step > numTrainingSteps):
+			coord.request_stop()
 except tf.errors.OutOfRangeError:
     print('Done training -- epoch limit reached')
 finally:
@@ -82,8 +84,4 @@ finally:
     coord.request_stop()
 
 
-layer0 = sess.run(layer0)
-layer1 = sess.run(layer1)
-
-io.savemat("mnistLayer0.mat", layer0)
-io.savemat("mniatLayer1.mat", layer1)
+io.savemat("mnist2Layer.mat", sess.run(nnVars))

@@ -9,17 +9,14 @@
 #include <mkl_lapacke.h>
 
 typedef struct mapperInput {
-	float * point;
+	int index;
 	uint dim;
-	float errorMargin;
-	float errorThreshhold;
+	uint numHP;
+	int *traceRaw;
 } mapperInput;
 
 typedef struct mapperData {
-	float numPoints;
-	float numErrorPoints;
-	float *avgPoint;
-	float *avgErrorPoint;
+	vector *points;
 } mapperData;
 
 void * mapperDataCreator(void * input)
@@ -217,39 +214,3 @@ location * getLocationArray(_nnMap * map)
 	traverseLocationSubtree(map, locArr, map->locationTree->root);
 	return locArr;
 }
-
-void traverseLocationSubtree(_nnMap * map, location * locArr, TreeNode *node)
-{
-	#ifdef DEBUG
-		printf("Working on node %p node\n",node);
-	#endif
-	int i = 0;
-	int nodeDepth = map->locationTree->depth;
-	node = node - (1 << nodeDepth) + 1;
-	struct mapperData *myData = NULL;
-	int n = (1 << (nodeDepth+1)) - 1;
-
-
-
-	for(i=0;i<n;i++){
-		
-		if(i%2==0 && node[i].smallNode){
-			traverseLocationSubtree(map, locArr, node[i].smallNode);
-		}		
-		if(node[i].dataPointer && node[i].created){
-			locArr->ipSig = node[i].key;
-			locArr->regSig = node[i].key + map->locationTree->keyLength;
-			myData = (struct mapperData *) node[i].dataPointer;
-			
-			locArr->numPoints = myData->numPoints;
-			locArr->numErrorPoints = myData->numErrorPoints;
-			locArr->avgPoint = myData->avgPoint;
-			locArr->avgErrorPoint = myData->avgErrorPoint;
-			locArr++;
-		}
-		if(i%2==0 && node[i].bigNode){
-			traverseLocationSubtree(map, locArr, node[i].bigNode);
-		}
-	}	
-}
-
