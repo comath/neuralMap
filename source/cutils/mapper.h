@@ -14,17 +14,7 @@
 #include <mkl_lapack.h>
 #include <mkl_lapacke.h>
 
-typedef struct pointInfo {
-	int * traceRaw;
-	float * traceDists;
-	long int pointIndex;
-}
 
-typedef struct location {
-	kint *ipSig;
-	kint *regSig;
-	vector *points;
-} location;
 
 typedef struct _nnMap {
 	nnLayer *layer;
@@ -38,7 +28,6 @@ void freeMap(_nnMap *map);
 void addDatumToMap(_nnMap * map, float *datum);
 void addDataToMapBatch(_nnMap * map, float *data, uint numData, uint numProc);
 
-unsigned int numLoc(_nnMap * map);
-location * getLocationArray(_nnMap * map);
+vector * getPointsAt(kint *keyPair);
 
 #endif

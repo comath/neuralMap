@@ -8,80 +8,14 @@
 #include <mkl_lapack.h>
 #include <mkl_lapacke.h>
 
-typedef struct mapperInput {
-	int index;
-	uint dim;
-	uint numHP;
-	int *traceRaw;
-} mapperInput;
-
-typedef struct mapperData {
-	vector *points;
-} mapperData;
-
-void * mapperDataCreator(void * input)
-{
-	struct mapperInput *myInput;
-	myInput = (struct mapperInput *) input;
-	uint dim = myInput->dim;
-
-	mapperData * arrayData = malloc(sizeof(mapperData));
-	arrayData->avgPoint = malloc(sizeof(float)* dim * 2);
-	arrayData->avgErrorPoint = arrayData->avgPoint + dim;
-	arrayData->numPoints = 0;
-	arrayData->numErrorPoints = 0;
-	
-	return arrayData;
-}
-
-void mapperDataModifier(void * input, void * data)
-{
-	struct mapperInput *myInput;
-	myInput = (struct mapperInput *) input;
-	uint dim = myInput->dim;
-	struct mapperData *myData;
-	myData = (struct mapperData *) data;
-
-	if(myData->numPoints == 0) {
-		cblas_scopy (dim, myInput->point, 1, myData->avgPoint, 1);
-		myData->numPoints = 1.0f;
-	} else {
-		cblas_saxpy (dim, 1/myData->numPoints, myInput->point, 1, myData->avgPoint, 1);
-		cblas_sscal (dim, myData->numPoints/(myData->numPoints+1), myData->avgPoint, 1);
-		myData->numPoints++;
-	}
-	if(myInput->errorMargin > myInput->errorThreshhold){
-		if(myData->numErrorPoints == 0.0){
-			cblas_scopy (dim,myInput->point, 1, myData->avgErrorPoint, 1);
-			myData->numErrorPoints = 1.0f;
-		} else {
-			cblas_saxpy (dim, 1/myData->numErrorPoints, myInput->point, 1, myData->avgErrorPoint, 1);
-			cblas_sscal (dim, myData->numErrorPoints/(myData->numErrorPoints+1), myData->avgErrorPoint, 1);
-			myData->numErrorPoints++;
-		}
-	}
-}
-
-void mapperDataDestroy(void * data)
-{	
-	struct mapperData *myData;
-	myData = (struct mapperData *) data;
-	if(myData){
-		free(myData->avgPoint);
-		free(myData);
-	} else {
-		printf("Invalid Free\n");
-	}
-}
-
-_nnMap * allocateMap(nnLayer *layer0, float threshhold, float errorThreshhold)
+_nnMap * allocateMap(nnLayer *layer0, float threshold, float errorThreshold)
 {
 	_nnMap *map = malloc(sizeof(_nnMap));
 	uint keyLength = calcKeyLen(layer0->outDim);
 	// The data is stored lexographically by (ipSig,regSig) as one long key. Thus keyLen has to double
 	map->locationTree = createTree(16, 2*keyLength, mapperDataCreator,mapperDataModifier,mapperDataDestroy);
 	map->layer0 = layer0;
-	map->cache = allocateCache(map->layer0, threshhold);
+	map->cache = allocateCache(map->layer0, threshold);
 	map->errorThreshhold = errorThreshhold;
 	return map;
 }
@@ -98,30 +32,39 @@ void freeMap(_nnMap *map)
 	}
 }
 
-void addDatumToMap(_nnMap * map, float *datum, float errorMargin)
+void addPointToMap(_nnMap * map, traceCache *tc, float *point, int pointIndex, float threshold)
 {
 	uint inDim = map->layer0->inDim;
 	uint outDim = map->layer0->outDim;
 	uint keyLength = calcKeyLen(outDim);
-	float * outOfLayer0 = malloc(outDim* sizeof(float));
+	traceMemory tm = allocateTraceMB(map->layer->outDim, map->layer->inDim);
+	pointInfo 
 
 	// The data is stored lexographically by (ipSig,regSig) as one long key.
 	// This can be easily achieved with some pointer arithmetic
-	kint * sig  = malloc(2*keyLength*sizeof(uint));
+	pointInfo *pi = allocPointInfo(outDim);
+	mapMemory *mm = allocMapMemory(outDim);
+	addPointToMapInternal(map,mm,tc,tm,pi,point,pointIndex,threshold);
+	freeMapMemory(mm);
+}
+
+void addPointToMapInternal(_nnMap * map, mapMemory *mm, traceCache *tc, traceMemory *tm, pointInfo *pi
+							float *point, int pointIndex, float threshold)
+{
+	uint outDim = map->layer->outDim;
+
+	// The data is stored lexographically by (ipSig,regSig) as one long key.
+	// This can be easily achieved with some pointer arithmetic
 	
 	// Get the IP Signature
-	getInterSig(map->cache, datum, sig);
-	// Get the Region Signature, save it offset by keyLength
-	evalLayer(map->layer0, datum, outOfLayer0);
-	convertFloatToKey(outOfLayer0,sig + keyLength,outDim);
+	bothIPCalcTrace(tc,tm,point,threshold, mm->keyPair, pi->traceDists, int pi->traceRaw);
+	pi->pointIndex = pointIndex;
 
-	mapperInput inputStruct;
-	inputStruct.point = datum;
-	inputStruct.errorMargin = errorMargin;
-	inputStruct.dim = inDim;
-	inputStruct.errorThreshhold = map->errorThreshhold;
-	
-	addData(map->locationTree, sig, &inputStruct);
+	// Get the Region Signature, save it offset by keyLength
+	evalLayer(map->layer0, point, mm->outOfLayer);
+	convertFloatToKey(outOfLayer0, mm->keyPair + keyLength,outDim);
+
+	addMapData(map->locationTree, mm->keyPair, pi);
 }
 
 struct mapperAddThreadArgs {
@@ -130,6 +73,8 @@ struct mapperAddThreadArgs {
 
 	uint numData;
 	_nnMap * map;
+	traceCache *tc;
+	traceMemory *tm;
 	float *data;
 	float *errorMargins;
 };
@@ -153,12 +98,12 @@ void * addMapperBatch_thread(void *thread_args)
 	
 	uint i = 0;
 	for(i=tid;i<numData;i=i+numThreads){		
-		addDatumToMap(map, data + i*dim, errorMargins[i]);
+		addDatumToMap(map, myargs->tc,myargs->tm, data + i*dim, errorMargins[i]);
 	}
 	pthread_exit(NULL);
 }
 
-void addDataToMapBatch(_nnMap * map, float *data, float * errorMargins, uint numData, uint numProc)
+void addDataToMapBatch(_nnMap * map, traceCache *tc, float *data, float * errorMargins, uint numData, uint numProc)
 {
 	int maxThreads = numProc;
 	int rc =0;
@@ -175,7 +120,8 @@ void addDataToMapBatch(_nnMap * map, float *data, float * errorMargins, uint num
 	for(i=0;i<maxThreads;i++){
 		thread_args[i].numThreads = maxThreads;
 		thread_args[i].tid = i;
-
+		thread_args[i].tc = tc;
+		thread_args[i].tm = allocateTraceMB(map->layer->outDim, map->layer->inDim);
 		thread_args[i].numData = numData;
 		thread_args[i].map = map;
 		thread_args[i].data = data;
@@ -195,15 +141,22 @@ void addDataToMapBatch(_nnMap * map, float *data, float * errorMargins, uint num
 			exit(-1);
      	}
 	}
-
+	for(i=0;i<maxThreads;i++){
+		freeTraceMB(thread_args[i].tm);
+	}
 	free(thread_args);
 }
+
+
 
 unsigned int numLoc(_nnMap * map)
 {
 	return map->locationTree->numNodes;
 }
 
+
+
+/*
 location * getLocationArray(_nnMap * map)
 {	
 	uint numLoc = map->locationTree->numNodes;
@@ -214,3 +167,4 @@ location * getLocationArray(_nnMap * map)
 	traverseLocationSubtree(map, locArr, map->locationTree->root);
 	return locArr;
 }
+*/

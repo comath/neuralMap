@@ -34,8 +34,8 @@ cdef extern from "../cutils/ipTrace.h":
 	void fullTrace(traceCache * tc, traceMemory * tm, float * point, float * dists, kint * intersections)
 	void batchFullTrace(traceCache * tc, float * point, float * dists, kint * intersections, int numData, int numProc)
 
-	void ipCalc(traceCache * tc, traceMemory * tm, float * point, kint *ipSig, float threshold)
-	void batchIpCalc(traceCache * tc, float * data, kint * ipSigs, float threshold, int numData, int numProc)
+	void ipCalc(traceCache * tc, traceMemory * tm, float * point, float threshold, kint *ipSig)
+	void batchIpCalc(traceCache * tc, float * data,  float threshold, kint * ipSigs, int numData, int numProc)
 
 cdef class traceCalc:
 	cdef traceCache * tc
@@ -117,7 +117,7 @@ cdef class traceCalc:
 		if(data.shape[0] != self.m):
 			raise ValueError('The data is an incorrect dimension')
 		ipSig = np.zeros([self.keyLen], dtype=np.uint32)
-		ipCalc(self.tc,self.tm,<float *> data.data,<kint * >ipSig.data, threshold)
+		ipCalc(self.tc,self.tm,<float *> data.data, threshold,<kint * >ipSig.data)
 		if(kwarg):
 			if(kwarg['output_type']=='color'):
 				chromaipSignatures = np.zeros([3], dtype=np.float32)
@@ -146,7 +146,7 @@ cdef class traceCalc:
 
 		cdef int numData = data.shape[0]
 		cdef np.ndarray[np.uint32_t, ndim=2] ipSig = np.zeros([numData,self.keyLen], dtype=np.uint32)        
-		batchIpCalc(self.tc, <float *> data.data, <kint * >ipSig.data, threshold, numData, numProc)
+		batchIpCalc(self.tc, <float *> data.data, threshold, <kint * >ipSig.data, numData, numProc)
 		print('Done with map')
 		if(kwarg and kwarg['returnType'] != None):
 			if(kwarg['returnType'] =='color'):

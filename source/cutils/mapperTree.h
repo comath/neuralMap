@@ -8,6 +8,7 @@
 #include <stdint.h>
 
 #include "key.h"
+#include "vector.h"
 
 
 #ifndef NODEDEPTH
@@ -16,16 +17,25 @@
 #define SUBCENTER ((1 << NODEDEPTH) - 1)
 #endif
 
+typedef struct pointInfo {
+	int * traceRaw;
+	float * traceDists;
+	long int pointIndex;
+}
+
+typedef struct location {
+	kint *ipSig;
+	kint *regSig;
+	vector *points;
+} location;
 
 typedef struct mapTreeNode {
 	int createdKL;
-	kint *key;
+	kint *ipKey;
+	kint *regKey;
 
 	pthread_mutex_t datamutex;
-	int dataModifiedCount;
 	vector *points;
-	long int memoryUsage;
-	int accessCount;
 } TreeNode;
 
 typedef struct mapSubTree {
@@ -38,12 +48,8 @@ typedef struct mapSubTree {
 } SubTree;
 
 
-typedef struct Tree {
+typedef struct mapTree {
 	// Data handling function pointers
-	void * (*dataCreator)(void * input);
-	void (*dataModifier)(void * input, void * data);
-	void (*dataDestroy)(void * data);
-	int maxDatumMemory;
 
 	long int maxTreeMemory;
 
@@ -53,19 +59,16 @@ typedef struct Tree {
 	int numNodes;
 	long int currentMemoryUseage;
 	
-	SubTree ** root;
-	int numTrees;
+	mapSubTree * root;
 } Tree;
 
-Tree * createTree(uint keyLength, uint numTrees, 
-				int maxDatumMemory, long int maxTreeMemory, 
-				void * (*dataCreator)(void * input),
-				void (*dataModifier)(void * input, void * data),
-				void (*dataDestroy)(void * data));
-void * addData(Tree *tree, kint *key, int treeIndex, void * datum, int memoryUsage);
-void * getData(Tree *tree, kint *key, int treeIndex);
-void balanceAndTrimTree(Tree *tree, long int memMax);
-void freeTree(Tree *tree);
+mapTree * createMapTree(uint keyLength, long int maxTreeMemory);
+void freeMapTree(mapTree *tree);
 
+pointInfo * allocPointInfo(int m);
+void freePointInfor(pointInfo *pi);
+
+vector * addMapData(mapTree *tree, kint * keyPair, pointInfo *pi);
+vector * getMapData(mapTree *tree, kint * keyPair);
 
 #endif
