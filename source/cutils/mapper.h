@@ -25,9 +25,9 @@ typedef struct _nnMap {
 _nnMap * allocateMap(nnLayer *layer0, float threshold, float errorThreshhold);
 void freeMap(_nnMap *map);
 
-void addDatumToMap(_nnMap * map, float *datum);
-void addDataToMapBatch(_nnMap * map, float *data, uint numData, uint numProc);
+location addDatumToMap(_nnMap * map, float *datum);
+void * addDataToMapBatch(_nnMap * map, float *data, uint numData, uint numProc);
 
-vector * getPointsAt(kint *keyPair);
+location getPointsAt(kint *keyPair);
 
 #endif

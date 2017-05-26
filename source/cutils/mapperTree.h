@@ -8,7 +8,7 @@
 #include <stdint.h>
 
 #include "key.h"
-#include "vector.h"
+#include "location.h"
 
 
 #ifndef NODEDEPTH
@@ -17,17 +17,6 @@
 #define SUBCENTER ((1 << NODEDEPTH) - 1)
 #endif
 
-typedef struct pointInfo {
-	int * traceRaw;
-	float * traceDists;
-	long int pointIndex;
-}
-
-typedef struct location {
-	kint *ipSig;
-	kint *regSig;
-	vector *points;
-} location;
 
 typedef struct mapTreeNode {
 	int createdKL;
@@ -35,7 +24,7 @@ typedef struct mapTreeNode {
 	kint *regKey;
 
 	pthread_mutex_t datamutex;
-	vector *points;
+	location loc;
 } TreeNode;
 
 typedef struct mapSubTree {
@@ -68,7 +57,7 @@ void freeMapTree(mapTree *tree);
 pointInfo * allocPointInfo(int m);
 void freePointInfor(pointInfo *pi);
 
-vector * addMapData(mapTree *tree, kint * keyPair, pointInfo *pi);
-vector * getMapData(mapTree *tree, kint * keyPair);
+location * addMapData(mapTree *tree, kint * keyPair, pointInfo *pi);
+location * getMapData(mapTree *tree, kint * keyPair);
 
 #endif

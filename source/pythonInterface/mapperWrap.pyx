@@ -15,14 +15,25 @@ def eprint(*args, **kwargs):
 include "nnLayerUtilsWrap.pyx"
 include "keyWrap.pyx"
 
+cdef extern from "../cutils/vector.h":
+	ctypedef struct vector:
+		void ** items
+		int capacity
+		int total
+	cdef void vector_init(vector *)
+	cdef int vector_total(vector *)
+	cdef static void vector_resize(vector *, int)
+	cdef void vector_add(vector *, void *)
+	cdef void vector_set(vector *, int, void *)
+	cdef void *vector_get(vector *, int)
+	cdef void vector_delete(vector *, int)
+	cdef void vector_free(vector *)
+
 cdef extern from "../cutils/mapper.h":
 	ctypedef struct location:
 		unsigned int *ipSig
 		unsigned int *regSig
-		unsigned int numPoints
-		unsigned int numErrorPoints
-		float *avgPoint
-		float *avgErrorPoint
+		vector *points
 
 	ctypedef struct _nnMap:
 		pass
@@ -56,20 +67,12 @@ cdef class _location:
 		cdef np.ndarray[np.int32_t,ndim=1] regSignature = np.zeros([self.outDim], dtype=np.int32)
 		convertFromKey(self.thisLoc.regSig, <int *> regSignature.data, self.outDim)
 		return regSignature
-	def avgPoint(self):
-		cdef np.ndarray[np.float32_t,ndim=1] avgPoint = np.zeros([self.inDim], dtype=np.float32)
-		for i in range(self.inDim):
-			avgPoint[i] = self.thisLoc.avgPoint[i]
-		return avgPoint
-	def avgErrorPoint(self):
-		cdef np.ndarray[np.float32_t,ndim=1] avgErrorPoint = np.zeros([self.inDim], dtype=np.float32)
-		for i in range(self.inDim):
-			avgErrorPoint[i] = self.thisLoc.avgErrorPoint[i]
-		return avgErrorPoint
-	def numErrorPoints(self):
-		return self.thisLoc.numErrorPoints
-	def numPoints(self):
-		return self.thisLoc.numPoints
+	def points(self):
+		numPoints = vector_total(thisloc->points)
+		cdef np.ndarray[np.float32_t,ndim=2] points = np.zeros([numPoints,self.inDim], dtype=np.float32)
+		pointsAsArray(thisloc,points.data,inDim)
+		return points
+	
 
 cdef class nnMap:
 	cdef _nnMap * internalMap
@@ -86,7 +89,8 @@ cdef class nnMap:
 		self.layer0 = createLayer(&A0[0,0],&b0[0],outDim0,inDim0)
 		if not self.layer0:
 			raise MemoryError()
-		self.internalMap = allocateMap(self.layer0,threshold,errorThreshhold)
+		self.threshold = threshold
+		self.internalMap = allocateMap(self.layer0)
 		if not self.internalMap:
 			raise MemoryError()
 
@@ -112,7 +116,7 @@ cdef class nnMap:
 		numData = data.shape[0]
 		if(data.shape[1] != self.layer0.inDim):
 			eprint("Data is of the wrong dimension.")   
-		addDataToMapBatch(self.internalMap,<float *> data.data, <float *> errorMargins.data, numData, numProc)
+		addDataToMapBatch(self.internalMap,<float *> data.data, self.threshold,numData, numProc)
 		
 	def numLocations(self):
 		if not self.locArr:

@@ -10,6 +10,8 @@ mapSubTree * allocateNodes(uint keyLength)
 	// To store both ip keys an reg keys.
 	kint * keys = malloc(2 * SUBTREESIZE * keyLength * sizeof(kint));
 	int rc = 0;
+	location * locs = malloc(2 * SUBTREESIZE * sizeof(location));
+	int rc = 0;
 	rc = pthread_mutex_init(&(tree->traverseMutexLock), 0);
 	if (rc != 0) {
         printf("spinlock Initialization failed at %p", (void *) tree);
@@ -21,7 +23,6 @@ mapSubTree * allocateNodes(uint keyLength)
 		tree->nodes[i].ipKey = keys + 2*i*keyLength;
 		tree->nodes[i].regKey = keys + (2*i+1)*keyLength;
 
-		tree->nodes[i].points = NULL;
 
 		rc = pthread_mutex_init(&(tree->nodes[i].datamutex), 0);
 		if (rc != 0) {
