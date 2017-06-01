@@ -61,7 +61,7 @@ void convertToKey(int * raw, kint *key,uint dataLen)
 	}
 }
 
-char compareKey(kint *x, kint *y, uint keyLen)
+int compareKey(kint *x, kint *y, uint keyLen)
 {
 	//return memcmp (x,y, keyLen*sizeof(kint));
 
@@ -79,7 +79,68 @@ char compareKey(kint *x, kint *y, uint keyLen)
 
 }
 
-char checkEmptyKey(kint *key,uint keyLength)
+int isPowerOfTwo (kint x)
+{
+  return ((x != 0) && !(x & (x - 1)));
+}
+
+int offByOne(kint *x, kint *y, uint keyLength)
+{
+	kint cmp = 0;
+	int i = 0;
+	int j = 0;
+	// Find the first non-zero difference
+	while(i<keyLength && cmp == 0){
+		cmp = x[i] - y[i];
+		i++; 
+	}
+	// check that it's the only non-zero difference 
+	for(j = i; j<keyLength;j++){
+		if(x[j] - y[j]){
+			return 0;
+		}
+	}
+	// cmp should contain the only non-zero entry of the difference
+	// Checking that it's a power of two
+	return isPowerOfTwo(cmp);
+}
+
+unsigned int numberOfOneBits(kint *x, int keyLength)
+{
+	unsigned int numberOfOneBits = 0;
+	kint xi;
+	int i = 0;
+	for(i = 0l i<keyLength;i++){
+		xi = x[i]; // Copy x[i]
+		while(xi){
+			if ((xi & 1) == 1) 
+			  numberOfOneBits++;
+			xi >>= 1;          
+		}
+	}
+
+	return numberOfOneBits; 
+}
+
+int evalSig(kint *key, float *decompressedSig, float *selectionVec, float selectionBias, int dataLen)
+{
+	uint i = 0;
+	float result = selectionBias;
+	for(i=0;i<dataLen;i++){
+		if(checkIndex(key,i)){
+			result += selectionVec[i]
+		} 
+	}
+	if(result > 0){
+		return 1;
+	} else if(result < 0){
+		return -1;
+	} else {
+		return 0
+	}
+}
+
+int checkEmptyKey(kint *key,uint keyLength)
 {
 	uint i = 0;
 	for(i = 0; i < keyLength; i++){
@@ -130,9 +191,9 @@ void printKeyArr(kint *key, uint length){
 	uint i = 0;
 	printf("[");
 	for(i=0;i<length-1;i++){
-		printf("%lu,",key[i]);
+		printf("%u,",key[i]);
 	}
-	printf("%lu", key[length-1]);
+	printf("%u", key[length-1]);
 	printf("]\n");
 }
 

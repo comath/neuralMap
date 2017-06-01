@@ -8,63 +8,90 @@
 #include <mkl_lapack.h>
 #include <mkl_lapacke.h>
 
-_nnMap * allocateMap(nnLayer *layer0, float threshold, float errorThreshold)
+_nnMap * allocateMap(nnLayer *layer)
 {
 	_nnMap *map = malloc(sizeof(_nnMap));
-	uint keyLength = calcKeyLen(layer0->outDim);
 	// The data is stored lexographically by (ipSig,regSig) as one long key. Thus keyLen has to double
-	map->locationTree = createTree(16, 2*keyLength, mapperDataCreator,mapperDataModifier,mapperDataDestroy);
-	map->layer0 = layer0;
-	map->cache = allocateCache(map->layer0, threshold);
-	map->errorThreshhold = errorThreshhold;
+	map->locationTree = createMapTree(layer->outDim);
+	map->layer = layer;
+	map->tc = allocateTraceCache(map->layer);
 	return map;
 }
 void freeMap(_nnMap *map)
 {
 	if(map){
-		freeTree(map->locationTree);
-		freeCache(map->cache);
-		freeLayer(map->layer0);
-		freeLayer(map->layer1);
+		freeMapTree(map->locationTree);
+		freeTraceCache(map->tc);
+		freeLayer(map->layer);
 		free(map);
 	} else {
 		printf("Map does not exist.\n");
 	}
 }
 
-void addPointToMap(_nnMap * map, traceCache *tc, float *point, int pointIndex, float threshold)
+typedef struct mapMemory
 {
-	uint inDim = map->layer0->inDim;
-	uint outDim = map->layer0->outDim;
-	uint keyLength = calcKeyLen(outDim);
-	traceMemory tm = allocateTraceMB(map->layer->outDim, map->layer->inDim);
-	pointInfo 
+	float * outOfLayer;
+	kint * keyPair;
+	int keyLength;
+} mapMemory;
 
-	// The data is stored lexographically by (ipSig,regSig) as one long key.
-	// This can be easily achieved with some pointer arithmetic
-	pointInfo *pi = allocPointInfo(outDim);
-	mapMemory *mm = allocMapMemory(outDim);
-	addPointToMapInternal(map,mm,tc,tm,pi,point,pointIndex,threshold);
-	freeMapMemory(mm);
+mapMemory * allocMapMemory(int m)
+{
+	mapMemory * mm = malloc(sizeof(mapMemory));
+	if(mm){
+		mm->outOfLayer = malloc(m*sizeof(float));
+		mm->keyLength = calcKeyLen(m);
+		mm->keyPair = malloc(mm->keyLength * 2 * sizeof(kint));
+		if(mm->outOfLayer && mm->keyPair){
+			return mm;
+		}
+	}
+	exit(-1);
 }
 
-void addPointToMapInternal(_nnMap * map, mapMemory *mm, traceCache *tc, traceMemory *tm, pointInfo *pi
+void freeMapMemory(mapMemory *mm)
+{
+	if(mm){
+		if(mm->outOfLayer){
+			free(mm->outOfLayer);
+		} 
+		if(mm->keyPair){
+			free(mm->keyPair);
+		}
+		free(mm);
+	}
+}
+
+void addPointToMapInternal(_nnMap * map, mapMemory *mm, traceMemory *tm, pointInfo *pi,
 							float *point, int pointIndex, float threshold)
 {
-	uint outDim = map->layer->outDim;
-
 	// The data is stored lexographically by (ipSig,regSig) as one long key.
 	// This can be easily achieved with some pointer arithmetic
 	
 	// Get the IP Signature
-	bothIPCalcTrace(tc,tm,point,threshold, mm->keyPair, pi->traceDists, int pi->traceRaw);
-	pi->pointIndex = pointIndex;
+	bothIPCalcTrace(map->tc,tm,point,threshold, mm->keyPair, pi->traceDists, pi->traceRaw);
+	pi->index = pointIndex;
 
 	// Get the Region Signature, save it offset by keyLength
-	evalLayer(map->layer0, point, mm->outOfLayer);
-	convertFloatToKey(outOfLayer0, mm->keyPair + keyLength,outDim);
+	evalLayer(map->layer, point, mm->outOfLayer);
+	convertFloatToKey(mm->outOfLayer, mm->keyPair + mm->keyLength,map->layer->outDim);
 
 	addMapData(map->locationTree, mm->keyPair, pi);
+}
+
+void addPointToMap(_nnMap * map, float *point, int pointIndex, float threshold)
+{
+	uint outDim = map->layer->outDim;
+	traceMemory * tm = allocateTraceMB(outDim, map->layer->inDim);
+	// The data is stored lexographically by (ipSig,regSig) as one long key.
+	// This can be easily achieved with some pointer arithmetic
+	pointInfo *pi = allocPointInfo(outDim);
+	mapMemory *mm = allocMapMemory(outDim);
+	addPointToMapInternal(map,mm,tm,pi,point,pointIndex,threshold);
+	freeMapMemory(mm);
+	freeTraceMB(tm);
+	freePointInfo(pi);
 }
 
 struct mapperAddThreadArgs {
@@ -73,10 +100,9 @@ struct mapperAddThreadArgs {
 
 	uint numData;
 	_nnMap * map;
-	traceCache *tc;
-	traceMemory *tm;
 	float *data;
-	float *errorMargins;
+	int *indexes;
+	float threshold;
 };
 
 void * addMapperBatch_thread(void *thread_args)
@@ -90,20 +116,26 @@ void * addMapperBatch_thread(void *thread_args)
 	uint numData = myargs->numData;
 	_nnMap * map = myargs->map;
 
-	
-	float * errorMargins = myargs->errorMargins;
-	float * data = myargs->data;
+	int m = map->layer->outDim;
+	int n = map->layer->inDim;
 		
-	uint dim = map->layer0->inDim;
+	traceMemory *tm = allocateTraceMB(m,n);
+	// The data is stored lexographically by (ipSig,regSig) as one long key.
+	// This can be easily achieved with some pointer arithmetic
+	pointInfo *pi = allocPointInfo(m);
+	mapMemory *mm = allocMapMemory(m);
 	
 	uint i = 0;
-	for(i=tid;i<numData;i=i+numThreads){		
-		addDatumToMap(map, myargs->tc,myargs->tm, data + i*dim, errorMargins[i]);
+	for(i=tid;i<numData;i=i+numThreads){
+		addPointToMapInternal(map,mm,tm,pi,myargs->data + i*n,myargs->indexes[i],myargs->threshold);
 	}
+	freePointInfo(pi);
+	freeMapMemory(mm);
+	freeTraceMB(tm);
 	pthread_exit(NULL);
 }
 
-void addDataToMapBatch(_nnMap * map, traceCache *tc, float *data, float * errorMargins, uint numData, uint numProc)
+void addDataToMapBatch(_nnMap * map, float *data, int *indexes, float threshold, uint numData, uint numProc)
 {
 	int maxThreads = numProc;
 	int rc =0;
@@ -120,12 +152,11 @@ void addDataToMapBatch(_nnMap * map, traceCache *tc, float *data, float * errorM
 	for(i=0;i<maxThreads;i++){
 		thread_args[i].numThreads = maxThreads;
 		thread_args[i].tid = i;
-		thread_args[i].tc = tc;
-		thread_args[i].tm = allocateTraceMB(map->layer->outDim, map->layer->inDim);
 		thread_args[i].numData = numData;
 		thread_args[i].map = map;
 		thread_args[i].data = data;
-		thread_args[i].errorMargins = errorMargins;
+		thread_args[i].threshold = threshold;
+		thread_args[i].indexes = indexes;
 		
 		rc = pthread_create(&threads[i], NULL, addMapperBatch_thread, (void *)&thread_args[i]);
 		if (rc){
@@ -141,9 +172,6 @@ void addDataToMapBatch(_nnMap * map, traceCache *tc, float *data, float * errorM
 			exit(-1);
      	}
 	}
-	for(i=0;i<maxThreads;i++){
-		freeTraceMB(thread_args[i].tm);
-	}
 	free(thread_args);
 }
 
@@ -154,17 +182,23 @@ unsigned int numLoc(_nnMap * map)
 	return map->locationTree->numNodes;
 }
 
+int regOrder(const void * a, const void * b)
+{
+	struct mapTreeNode *myA = *(mapTreeNode * const *)a;
+	struct mapTreeNode *myB = *(mapTreeNode * const *)b;
+	int regCmp = compareKey(myA->regKey,myB->regKey,myB->createdKL);
+	if(regCmp == 0){
+		return (int)compareKey(myA->ipKey,myB->ipKey,myB->createdKL);
+	}
+	return regCmp;
+}
 
-
-/*
-location * getLocationArray(_nnMap * map)
+mapTreeNode ** getLocations(_nnMap *map, char orderBy)
 {	
-	uint numLoc = map->locationTree->numNodes;
-	location * locArr = malloc(numLoc * sizeof(location));
-	#ifdef DEBUG
-		printf("Root node is %p, numNodes is %u\n",map->locationTree->root, numLoc);
-	#endif
-	traverseLocationSubtree(map, locArr, map->locationTree->root);
+	mapTreeNode ** locArr = getAllNodes(map->locationTree);
+	
+	if(orderBy == 'r'){
+		qsort(locArr, map->locationTree->numNodes, sizeof(mapTreeNode *), regOrder);
+	}
 	return locArr;
 }
-*/

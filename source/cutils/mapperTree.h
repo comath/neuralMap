@@ -25,7 +25,7 @@ typedef struct mapTreeNode {
 
 	pthread_mutex_t datamutex;
 	location loc;
-} TreeNode;
+} mapTreeNode;
 
 typedef struct mapSubTree {
 	pthread_mutex_t traverseMutexLock;
@@ -33,14 +33,14 @@ typedef struct mapSubTree {
 	mapTreeNode nodes[SUBTREESIZE];
 	int nodeCount;
 
-	struct SubTree *nextSubTrees[SUBTREESIZE+1];
-} SubTree;
+	struct mapSubTree *nextSubTrees[SUBTREESIZE+1];
+} mapSubTree;
 
 
 typedef struct mapTree {
 	// Data handling function pointers
 
-	long int maxTreeMemory;
+	int outDim;
 
 	// Tree properties
 	unsigned int keyLength;
@@ -49,13 +49,10 @@ typedef struct mapTree {
 	long int currentMemoryUseage;
 	
 	mapSubTree * root;
-} Tree;
+} mapTree;
 
-mapTree * createMapTree(uint keyLength, long int maxTreeMemory);
+mapTree * createMapTree(int outDim);
 void freeMapTree(mapTree *tree);
-
-pointInfo * allocPointInfo(int m);
-void freePointInfor(pointInfo *pi);
 
 location * addMapData(mapTree *tree, kint * keyPair, pointInfo *pi);
 location * getMapData(mapTree *tree, kint * keyPair);

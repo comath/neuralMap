@@ -1,16 +1,14 @@
-#include "parallelTree.h"
+#include "mapperTree.h"
 #include <stdint.h>
 #include <string.h>
 
 
-mapSubTree * allocateNodes(uint keyLength)
+mapSubTree * allocateMapNodes(uint keyLength)
 {
 	
 	mapSubTree * tree = malloc(sizeof(mapSubTree));
 	// To store both ip keys an reg keys.
 	kint * keys = malloc(2 * SUBTREESIZE * keyLength * sizeof(kint));
-	int rc = 0;
-	location * locs = malloc(2 * SUBTREESIZE * sizeof(location));
 	int rc = 0;
 	rc = pthread_mutex_init(&(tree->traverseMutexLock), 0);
 	if (rc != 0) {
@@ -18,7 +16,6 @@ mapSubTree * allocateNodes(uint keyLength)
     }
 	for (int i = 0; i < SUBTREESIZE; i++)
 	{
-		tree->nodes[i].accessCount = 0;
 		tree->nodes[i].createdKL = 0;
 		tree->nodes[i].ipKey = keys + 2*i*keyLength;
 		tree->nodes[i].regKey = keys + (2*i+1)*keyLength;
@@ -33,38 +30,36 @@ mapSubTree * allocateNodes(uint keyLength)
 	return tree;
 }
 
-void freeMapNodes(mapTree *tree, SubTree *st)
+void freeMapNodes(mapTree *tree, mapSubTree *st)
 {
 	int i = 0;
 	// Free the keyspace.
-	free(st->nodes[0].key);
+	free(st->nodes[0].ipKey);
 	int n = (1 << (NODEDEPTH+1)) - 1;
 
 	for(i=0;i<n;i=i+2){
 		if(st->nextSubTrees[i]){
-			freeNodes(tree,st->nextSubTrees[i]);
+			freeMapNodes(tree,st->nextSubTrees[i]);
 		}
 		if(st->nextSubTrees[i+1]){
-			freeNodes(tree,st->nextSubTrees[i+1]);
+			freeMapNodes(tree,st->nextSubTrees[i+1]);
 		}
 	}
 	for(i=0;i<n;i++){
-		if(st->nodes[i].dataPointer){
-			tree->dataDestroy(st->nodes[i].dataPointer);
-		}
+		if(st->nodes[i].createdKL)
+			location_free(&(st->nodes[i].loc));
 		pthread_mutex_destroy(&(st->nodes[i].datamutex));
 	}
 
 	free(st);
 }
 
-mapTree * createMapTree(uint keyLength, long int maxTreeMemory){
+mapTree * createMapTree(int outDim){
 	mapTree * tree = malloc(sizeof(mapTree));
-	tree->numTrees = numTrees;
-	tree->root = malloc(numTrees*sizeof(mapSubTree *));
-	for(uint i=0;i<numTrees;i++){
-		tree->root[i] = allocateNodes(keyLength);
-	}
+	tree->outDim = outDim;
+	uint keyLength = calcKeyLen(outDim);
+
+	tree->root = allocateMapNodes(keyLength);
 	int rc = pthread_spin_init(&(tree->nodeCountSpinLock), 0);
 	if (rc != 0) {
         printf("spinlock Initialization failed at %p", (void *) tree);
@@ -73,8 +68,6 @@ mapTree * createMapTree(uint keyLength, long int maxTreeMemory){
 	tree->keyLength = keyLength;
 
 	tree->currentMemoryUseage = 0;
-	tree->maxDatumMemory = maxDatumMemory;
-	tree->maxTreeMemory = maxTreeMemory;
 	return tree;	
 }
 
@@ -83,7 +76,6 @@ void freeMapTree(mapTree *tree)
 	if(tree){
 		freeMapNodes(tree,tree->root);
 		
-		free(tree->root);
 		pthread_spin_destroy(&(tree->nodeCountSpinLock));
 		free(tree);
 	}
@@ -94,8 +86,8 @@ We are comparing the key pairs, ipKey and the regKey.
 They are stored in memory in that order so we can compare them as a single key.
 */
 
-vector * addMapData(mapTree *tree, kint * keyPair, pointInfo *pi){
-	SubTree * st =	 tree->root[treeIndex];
+location * addMapData(mapTree *tree, kint * keyPair, pointInfo *pi){
+	mapSubTree * st = tree->root;
 	int keyLen = tree->keyLength;
 	int i = SUBCENTER;
 	int d = NODEDEPTH;
@@ -105,7 +97,7 @@ vector * addMapData(mapTree *tree, kint * keyPair, pointInfo *pi){
 	if (st->nodes[i].createdKL == 0){
 		st->nodes[i].createdKL = keyLen;
 		copyKey(keyPair, st->nodes[i].ipKey, 2*keyLen);
-		vector_init(points);
+		location_init(&(st->nodes[i].loc),tree->outDim);
 		tree->numNodes++;
 	}
 
@@ -119,7 +111,7 @@ vector * addMapData(mapTree *tree, kint * keyPair, pointInfo *pi){
 				i = i;
 			}
 			if(st->nextSubTrees[i] == NULL){
-				st->nextSubTrees[i] = allocateNodes(keyLen);
+				st->nextSubTrees[i] = allocateMapNodes(keyLen);
 				pthread_mutex_unlock(&(st->traverseMutexLock));
 				st = st->nextSubTrees[i];
 				pthread_mutex_lock(&(st->traverseMutexLock));
@@ -128,7 +120,7 @@ vector * addMapData(mapTree *tree, kint * keyPair, pointInfo *pi){
 				d = NODEDEPTH;
 				(st->nodes[i]).createdKL = keyLen;
 				copyKey(keyPair, st->nodes[i].ipKey, 2*keyLen);
-				vector_init(points);
+				location_init(&(st->nodes[i].loc),tree->outDim);
 				pthread_spin_lock(&(tree->nodeCountSpinLock));
 					tree->numNodes++;
 				pthread_spin_unlock(&(tree->nodeCountSpinLock));
@@ -151,7 +143,7 @@ vector * addMapData(mapTree *tree, kint * keyPair, pointInfo *pi){
 			if((st->nodes[i]).createdKL == 0){
 				(st->nodes[i]).createdKL = keyLen;
 				copyKey(keyPair, st->nodes[i].ipKey, 2*keyLen);
-				(st->nodes[i]).dataPointer = tree->dataCreator(datum);
+				location_init(&(st->nodes[i].loc), tree->outDim);
 				pthread_spin_lock(&(tree->nodeCountSpinLock));
 					tree->numNodes++;
 				pthread_spin_unlock(&(tree->nodeCountSpinLock));
@@ -160,13 +152,13 @@ vector * addMapData(mapTree *tree, kint * keyPair, pointInfo *pi){
 	}
 	pthread_mutex_unlock(&(st->traverseMutexLock));
 	pthread_mutex_lock(&(st->nodes[i].datamutex));
-		vector_add(points, pi);
+		location_add(&(st->nodes[i].loc), pi);
 	pthread_mutex_unlock(&(st->nodes[i].datamutex));
-	return (void *) st->nodes[i].points;
+	return &(st->nodes[i].loc);
 }
 
-vector * getMapData(mapTree *tree, kint * keyPair){
-	SubTree * st =	 tree->root[treeIndex];
+location * getMapData(mapTree *tree, kint * keyPair){
+	mapSubTree * st =	 tree->root;
 	int keyLen = tree->keyLength;
 	int i = SUBCENTER;
 	int d = NODEDEPTH;
@@ -204,6 +196,48 @@ vector * getMapData(mapTree *tree, kint * keyPair){
 			} 
 		}
 	}
-	return (void *) st->nodes[i].points;
+	return &(st->nodes[i].loc);
 }
 
+void traverseSubtree(mapTreeNode *(*(*traversePointer)), mapSubTree *st)
+{
+	int i = 0;
+	//printf("-----traverseSubtree-----\n");
+	for(i=0;i<SUBTREESIZE;i++){
+		
+		if(i%2==0 && st->nextSubTrees[i]){
+			//printf("---callingsmall--\n");
+			traverseSubtree(traversePointer, st->nextSubTrees[i]);
+		}
+		if( st->nodes[i].createdKL){
+			/*
+			printf("Node access: %p, ",st->nodes+i);
+			printf("dataPointer: %p, ", st->nodes[i].dataPointer);
+			printf("with access count %d, ", st->nodes[i].accessCount);
+			printf("memory weight: %d. ", st->nodes[i].memoryUsage);
+			printf("key[0]: %lu\n ", st->nodes[i].key[0]);
+			*/
+				*(*traversePointer) = st->nodes + i;
+				(*traversePointer)++;
+		}
+		if(i%2==0 && st->nextSubTrees[i+1]){
+			//printf("---callingBig--\n");
+			traverseSubtree(traversePointer, st->nextSubTrees[i+1]);
+		}
+	}
+	//printf("---//traverseSubtree//--\n");
+}
+
+mapTreeNode ** getAllNodes(mapTree * tree)
+{
+	mapTreeNode *(*nodePointerArr) = malloc(tree->numNodes*sizeof(mapTreeNode *));
+	printf("%p %lu %d %lu\n", nodePointerArr,tree->numNodes*sizeof(mapTreeNode *),tree->numNodes, sizeof(mapTreeNode *));
+	mapTreeNode *(*traversePointer) = nodePointerArr;
+	traverseSubtree(&traversePointer,tree->root);
+	
+	if(traversePointer - nodePointerArr != tree->numNodes){
+		printf("Node Count Off! %ld, should be %d\n", traversePointer - nodePointerArr,tree->numNodes);
+		exit(-1);
+	}
+	return nodePointerArr;
+}

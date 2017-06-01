@@ -29,7 +29,11 @@ all: parallelTree_test key_test
 #The utilities used for most of this
 parallelTree.o: $(UTILS)parallelTree.c $(UTILS)key.c
 	$(CC) $(CCFLAGS) -c $< -o $(BIN)$@
+mapperTree.o: $(UTILS)mapperTree.c $(UTILS)key.c
+	$(CC) $(CCFLAGS) -c $< -o $(BIN)$@
 key.o: $(UTILS)key.c 
+	$(CC) $(CCFLAGS) -c $< -o $(BIN)$@
+location.o: $(UTILS)location.c 
 	$(CC) $(CCFLAGS) -c $< -o $(BIN)$@
 nnLayerUtils.o: $(UTILS)nnLayerUtils.c 
 	$(CC) $(CCFLAGS) $(MKLINC) -c $< -o $(BIN)$@
@@ -39,7 +43,7 @@ ipCalculator.o: $(UTILS)ipCalculator.c  $(UTILS)nnLayerUtils.c $(UTILS)parallelT
 	$(CC) $(CCFLAGS) $(MKLINC) -c $< -o $(BIN)$@
 ipTrace.o: $(UTILS)ipTrace.c  $(UTILS)nnLayerUtils.c $(UTILS)key.c
 	$(CC) $(CCFLAGS) $(MKLINC) -c $< -o $(BIN)$@
-mapper.o: $(UTILS)mapper.c $(UTILS)ipCalculator.c  $(UTILS)nnLayerUtils.c $(UTILS)parallelTree.c
+mapper.o: $(UTILS)mapper.c $(UTILS)ipTrace.c  $(UTILS)nnLayerUtils.c $(UTILS)mapperTree.c $(UTILS)location.c
 	$(CC) $(CCFLAGS) $(MKLINC) -c $< -o $(BIN)$@
 
 #Python Interface
@@ -59,7 +63,7 @@ ipCalculator_test.o: $(TEST)ipCalculator_test.c $(UTILS)ipCalculator.c $(UTILS)p
 ipTrace_test.o: $(TEST)ipTrace_test.c $(UTILS)ipTrace.c $(UTILS)key.c
 	$(CC) $(CXXFLAGS) $(MKLINC) -c $< -o $(BIN)$@
 
-mapper_test.o: $(TEST)mapper_test.c $(UTILS)mapper.c $(UTILS)ipCalculator.c $(UTILS)parallelTree.c
+mapper_test.o: $(TEST)mapper_test.c $(UTILS)mapper.c $(UTILS)ipTrace.c $(UTILS)mapperTree.c $(UTILS)location.c
 	$(CC) $(CXXFLAGS) $(MKLINC) -c $< -o $(BIN)$@
 
 ipCalculator_test: ipCalculator_test.o ipCalculator.o parallelTree.o key.o nnLayerUtils.o
@@ -68,8 +72,8 @@ ipCalculator_test: ipCalculator_test.o ipCalculator.o parallelTree.o key.o nnLay
 ipTrace_test: ipTrace_test.o ipTrace.o key.o nnLayerUtils.o
 	$(CC) $(CCFLAGS) -DDEBUG $(BIN)$< $(BIN)ipTrace.o $(BIN)nnLayerUtils.o $(BIN)key.o -o $@ $(MKLONEDYNAMICLIB) $(LIB_FLAGS) 
 
-mapper_test: mapper_test.o mapper.o ipCalculator.o parallelTree.o key.o nnLayerUtils.o
-	$(CC) $(CCFLAGS) $(BIN)$< $(BIN)mapper.o $(BIN)ipCalculator.o $(BIN)nnLayerUtils.o $(BIN)parallelTree.o $(BIN)key.o -o $@ $(MKLONEDYNAMICLIB) $(LIB_FLAGS) 
+mapper_test: mapper_test.o mapper.o ipTrace.o mapperTree.o key.o nnLayerUtils.o location.o
+	$(CC) $(CCFLAGS) $(BIN)$< $(BIN)mapper.o $(BIN)ipTrace.o $(BIN)nnLayerUtils.o $(BIN)mapperTree.o $(BIN)location.o $(BIN)key.o -o $@ $(MKLONEDYNAMICLIB) $(LIB_FLAGS) 
 
 parallelTree_test.o: $(TEST)parallelTree_test.c $(UTILS)parallelTree.c
 	$(CC) $(CXXFLAGS) -c $< -o $(BIN)$@

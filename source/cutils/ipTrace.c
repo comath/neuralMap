@@ -336,41 +336,40 @@ void fullTrace(traceCache * tc, traceMemory * tm, float * point, float * dists, 
 	#endif
 }
 
-void ipCalc(traceCache * tc, traceMemory * tm, float * point, kint *ipSig, float threshold)
+void getIntersection(float *interDists, distanceWithIndex *dists, int m, kint * ipSig, float threshold)
 {
-	int i =0;
-	int m = tc->layer->outDim;
-	uint keyLen = tc->keyLen;
-	fullTraceWithDist(tc, tm, point, tm->distances, tm->interDists);
-	memset(ipSig,0,m*keyLen*sizeof(kint));
+	int i = 0;
+	int keyLen = calcKeyLen(m);
+	memset(ipSig,0,keyLen*sizeof(kint));
 	for(i = 0; i< m-1;i++){
-		addIndexToKey(ipSig, tm->distances[i].index);
+		addIndexToKey(ipSig, dists[i].index);
 	}
 	i = m-1;
 	#ifdef DEBUG
 		printf("====================================\n");
 		printf("Current ip");
 		printKey(ipSig,m);
-		printf("Distance to closest rank %d intersection %f\n",i, tm->interDists[i-1]);
-		printf("Distance to %d closest hyperplane: %d:%f\n",i,tm->distances[i].index, tm->distances[i].dist);
-		if(threshold*tm->interDists[i-1] - tm->distances[i].dist > 0){
-			printf("Removing %d from key\n",tm->distances[i-1].index);
+		printf("Distance to closest rank %d intersection %f\n",i, interDists[i-1]);
+		printf("Distance to %d closest hyperplane: %d:%f\n",i,dists[i].index, dists[i].dist);
+		if(threshold*interDists[i-1] - dists[i].dist > 0){
+			printf("Removing %d from key\n",dists[i-1].index);
 		} 
 	#endif
 	
-	while(threshold*tm->interDists[i-1] - tm->distances[i].dist > 0 && i > 0){
-		i--;
-		removeIndexFromKey(ipSig,tm->distances[i].index);
+	while(i > 0 && threshold*interDists[i-1] - dists[i].dist > 0){
+		removeIndexFromKey(ipSig,dists[i-1].index);
 		#ifdef DEBUG
 			printf("=======%d=======\n",i);
 			printf("Current ip");
 			printKey(ipSig,m);
-			printf("Distance to closest rank %d intersection %f\n",i, tm->interDists[i-1]);
-			printf("Distance to %d closest hyperplane: %f\n",i, tm->distances[i].dist);
-			if(threshold*tm->interDists[i-1] - tm->distances[i].dist > 0){
-				printf("Removing %d from key\n",tm->distances[i-1].index);
+			printf("Distance to closest rank %d intersection %f\n",i, interDists[i-1]);
+			printf("Distance to %d closest hyperplane: %f\n",i, dists[i].dist);
+			if(threshold*interDists[i-1] - dists[i].dist > 0){
+				printf("Removing %d from key\n",dists[i-1].index);
 			} 
 		#endif
+		i--;
+		
 	}
 	#ifdef DEBUG
 		printf("=======%d=======\n",i);
@@ -378,6 +377,21 @@ void ipCalc(traceCache * tc, traceMemory * tm, float * point, kint *ipSig, float
 		printKey(ipSig,m);
 		printf("====================================\n");
 	#endif
+}
+
+void ipCalc(traceCache * tc, traceMemory * tm, float * point, float threshold, kint *ipSig)
+{
+	fullTraceWithDist(tc, tm, point, tm->distances, tm->interDists);
+	getIntersection(tm->interDists,tm->distances, tc->layer->outDim, ipSig, threshold);
+}
+
+void bothIPCalcTrace(traceCache *tc, traceMemory *tm, float *point,float threshold, kint *ipSig, float *traceDists, int * traceRaw)
+{
+	fullTraceWithDist(tc, tm, point, tm->distances, traceDists);
+	getIntersection(traceDists,tm->distances, tc->layer->outDim, ipSig, threshold);
+	for(uint i = 0; i < tc->layer->outDim; i++){
+		traceRaw[i] = tm->distances[i].index;
+	}
 }
 
 struct traceThreadArgs {
@@ -491,14 +505,14 @@ void * ipCalcBatch_thread(void *thread_args)
 	traceMemory * tm = allocateTraceMB(m,n);
 	uint i = 0;
 	for(i=tid;i<numData;i=i+numThreads){
-		ipCalc(myargs->tc, tm, myargs->data+i*n, myargs->ipSigs+i*keySize, myargs->threshold);
+		ipCalc(myargs->tc, tm, myargs->data+i*n, myargs->threshold, myargs->ipSigs+i*keySize);
 		//printf("Thread %d at mutex with %u nodes \n",tid,tc->bases->numNodes);	
 	}
 	freeTraceMB(tm);
 	pthread_exit(NULL);
 }
 
-void batchIpCalc(traceCache * tc, float * data, kint * ipSigs, float threshold, int numData, int numProc){
+void batchIpCalc(traceCache * tc, float * data, float threshold, kint * ipSigs, int numData, int numProc){
 
 	int maxThreads = numProc;
 	int rc =0;

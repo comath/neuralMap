@@ -10,8 +10,13 @@
 
 #define kint uint32_t
 
-char compareKey(kint *x, kint *y, uint keyLength);
-char checkEmptyKey(kint *key, uint keyLength);
+int compareKey(kint *x, kint *y, uint keyLength);
+int checkEmptyKey(kint *key, uint keyLength);
+
+int offByOne(kint *x, kint *y, uint dataLen);
+unsigned int numberOfOneBits(kint *x, int keyLength);
+int evalSig(kint *regSig, float *selectionVec, float selectionBias, int dataLen);
+
 
 void convertToKey(int * raw, kint *key,uint dataLen);
 void convertFloatToKey(float * raw, kint *key,uint dataLen);

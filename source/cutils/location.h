@@ -3,31 +3,34 @@
 #ifndef LOCATION_H
 #define LOCATION_H
 
-#define VECTOR_INIT_CAPACITY 4
+#define LOCATION_INIT_CAPACITY 4
 
 typedef struct pointInfo {
 	int * traceRaw;
 	float * traceDists;
-	long int pointIndex;
-}
+	long int index;
+} pointInfo;
 
 typedef struct location {
     float *traceDists;
-    int *traceRaw;
-    int *pointIndex;
+    int *traceRaws;
+    int *pointIndexes;
     int m;
     int capacity;
     int total;
 } location;
 
-void location_init(location *);
-int location_total(location *);
-static void location_resize(location *, int);
-void location_add(location *, pointInfo *);
-void location_set(location *, int, pointInfo *);
-pointInfo *location_get(location *, int);
-void location_delete(location *, int);
-void location_free(location *);
+pointInfo * allocPointInfo(int m);
+void freePointInfo(pointInfo *pi);
+
+void location_init(location * l,int m);
+int location_total(location * l);
+void location_resize(location * l, int index);
+void location_add(location * l, pointInfo * pi);
+void location_set(location * l, int index, pointInfo * pi);
+pointInfo location_get(location * l, int index);
+void location_delete(location * l, int index);
+void location_free(location * l);
 
 
 #endif

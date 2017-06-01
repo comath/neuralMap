@@ -60,8 +60,7 @@ float * randomData(uint dim, uint numData)
 
 int main(int argc, char* argv[])
 {
-	uint dim = 3;
-	uint outDim = 2;
+	uint dim = 6;
 	uint numHP = 5;
 	uint numData = 5;
 	uint keySize = calcKeyLen(numHP);
@@ -71,18 +70,24 @@ int main(int argc, char* argv[])
 	uint i = 0;
 	printf("If no faliures are printed then we are fine.\n");
 	nnLayer *layer0 = createDumbLayer(dim,numHP);
-	_nnMap *map = allocateMap(layer0,2,0.5);
-	
+	_nnMap *map = allocateMap(layer0);
 
 	uint *ipSignature = malloc(keySize*numData*sizeof(uint));
 	float *data = randomData(dim,numData);
+	int * indexes = malloc(numData*sizeof(int));
+	for(uint i =0;i<numData;i++){
+		indexes[i] = i;
+	} 
 	float *errorMargins = randomData(1,numData);
 
 	printf("Calculating the signature of Points\n");
 
-	addDatumToMap(map, data, 1.0);
-	addDataToMapBatch(map,data,errorMargins,numData,1);
+	addPointToMap(map, data, -1,2);
 
+	addDataToMapBatch(map,data,indexes,2,numData,1);
+
+	free(ipSignature);
+	free(indexes);
 	freeMap(map);
 	free(data);
 	free(errorMargins);
