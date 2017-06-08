@@ -15,7 +15,7 @@ int checkEmptyKey(kint *key, uint keyLength);
 
 int offByOne(kint *x, kint *y, uint dataLen);
 unsigned int numberOfOneBits(kint *x, int keyLength);
-int evalSig(kint *regSig, float *selectionVec, float selectionBias, int dataLen);
+int evalSig(kint *regSig, float *selectionVec, float selectionBias, uint dataLen);
 
 
 void convertToKey(int * raw, kint *key,uint dataLen);

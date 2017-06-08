@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include "mapperTree.h"
-#include "mapperTree.h"
 #include "ipTrace.h"
 #include "nnLayerUtils.h"
 #include <stdint.h>
@@ -23,6 +22,8 @@ typedef struct _nnMap {
 	traceCache *tc;
 } _nnMap;
 
+
+
 _nnMap * allocateMap(nnLayer *layer0);
 void freeMap(_nnMap *map);
 
@@ -31,6 +32,7 @@ void addDataToMapBatch(_nnMap * map, float *data, int *indexes, float threshold,
 
 location getPointsAt(_nnMap *map, kint *keyPair);
 
+unsigned int numLoc(_nnMap * map);
 mapTreeNode ** getLocations(_nnMap *map, char orderBy);
 
 

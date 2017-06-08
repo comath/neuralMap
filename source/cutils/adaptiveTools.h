@@ -3,18 +3,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include "vector.h"
 #include "mapperTree.h"
+#include "nnLayerUtils.h"
+#include "key.h"
+
+
 
 typedef struct maxPopGroupData {
-	vector locations;
+	mapTreeNode ** locations;
 	kint * hpCrossed;
 	int count;
 	int selectionIndex;
 } maxPopGroupData;
 
-maxPopGroupData * refineMap(mapTreeNode ** locArr, int maxLocIndex, float *selectionMat, float selectionBias);
-void getMaxPopulation(vector * refinedMap, maxPopGroupData * output);
-
+maxPopGroupData * refineMapAndGetMax(mapTreeNode ** locArr, int maxLocIndex, nnLayer * selectionLayer);
 
 #endif

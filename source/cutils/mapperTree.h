@@ -57,4 +57,6 @@ void freeMapTree(mapTree *tree);
 location * addMapData(mapTree *tree, kint * keyPair, pointInfo *pi);
 location * getMapData(mapTree *tree, kint * keyPair);
 
+mapTreeNode ** getAllNodes(mapTree * tree);
+
 #endif

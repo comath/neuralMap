@@ -22,19 +22,33 @@ cdef extern from "../cutils/vector.h":
 		int total
 	cdef void vector_init(vector *)
 	cdef int vector_total(vector *)
-	cdef static void vector_resize(vector *, int)
 	cdef void vector_add(vector *, void *)
 	cdef void vector_set(vector *, int, void *)
 	cdef void *vector_get(vector *, int)
 	cdef void vector_delete(vector *, int)
 	cdef void vector_free(vector *)
 
-cdef extern from "../cutils/mapper.h":
+cdef extern from "../cutils/location.h":
+	ctypedef struct pointInfo:
+		int * traceRaw
+		float * traceDists
+		long int index
 	ctypedef struct location:
-		unsigned int *ipSig
-		unsigned int *regSig
-		vector *points
+		float *traceDists
+		int *traceRaws
+		int *pointIndexes
+		int m
+		int capacity
+		int total
+	cdef void location_init(location *)
+	cdef int location_total(location *)
+	cdef void location_add(location *, pointInfo *)
+	cdef void location_set(location *, int, pointInfo *)
+	cdef pointInfo location_get(location *, int)
+	cdef void location_delete(location *, int)
+	cdef void location_free(location *)
 
+cdef extern from "../cutils/mapper.h":
 	ctypedef struct _nnMap:
 		pass
 
@@ -44,9 +58,18 @@ cdef extern from "../cutils/mapper.h":
 	cdef void addDatumToMap(_nnMap * internalMap, float *datum, float errorMargin)
 	cdef void addDataToMapBatch(_nnMap * internalMap, float *data, float * errorMargins, unsigned int numData, unsigned int numProc)
 
-	cdef unsigned int numLoc(_nnMap * internalMap)
-	cdef location getMaxErrorLoc(_nnMap * internalMap)
-	cdef location * getLocationArray(_nnMap * internalMap)
+	cdef location getPointsAt(_nnMap *map, kint *keyPair)
+	cdef unsigned int numLoc(_nnMap * map)
+	cdef mapTreeNode ** getLocations(_nnMap *map, char orderBy)
+
+cdef extern from "../cutils/adaptiveTools.h":
+	ctypedef struct maxPopGroupData:
+		mapTreeNode ** nodes
+		kint * hpCrossed
+		int count
+		int selectionIndex
+
+	cdef maxPopGroupData * refineMapAndGetMax(mapTreeNode ** locArr, int maxLocIndex, nnLayer * selectionLayer)
 
 cdef class _location:
 	cdef unsigned int outDim 
@@ -67,8 +90,8 @@ cdef class _location:
 		cdef np.ndarray[np.int32_t,ndim=1] regSignature = np.zeros([self.outDim], dtype=np.int32)
 		convertFromKey(self.thisLoc.regSig, <int *> regSignature.data, self.outDim)
 		return regSignature
-	def points(self):
-		numPoints = vector_total(thisloc->points)
+	def pointIndexes(self):
+		numPoints = location_total(thisloc)
 		cdef np.ndarray[np.float32_t,ndim=2] points = np.zeros([numPoints,self.inDim], dtype=np.float32)
 		pointsAsArray(thisloc,points.data,inDim)
 		return points

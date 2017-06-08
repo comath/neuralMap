@@ -6,6 +6,8 @@ Running Valgrind or gdb on the python wrap leads to a bit more headaches.
 #include <stdlib.h>
 #include "../cutils/nnLayerUtils.h"
 #include "../cutils/mapper.h"
+#include "../cutils/adaptiveTools.h"
+
 
 void printFloatArrNoNewLine(float * arr, int numElements){
 	int i = 0;
@@ -62,6 +64,8 @@ int main(int argc, char* argv[])
 {
 	uint dim = 6;
 	uint numHP = 5;
+	uint finalDim = 2;
+
 	uint numData = 5;
 	uint keySize = calcKeyLen(numHP);
 	uint maxThreads = sysconf(_SC_NPROCESSORS_ONLN);
@@ -70,6 +74,7 @@ int main(int argc, char* argv[])
 	uint i = 0;
 	printf("If no faliures are printed then we are fine.\n");
 	nnLayer *layer0 = createDumbLayer(dim,numHP);
+	nnLayer *layer1 = createDumbLayer(numHP, finalDim);
 	_nnMap *map = allocateMap(layer0);
 
 	uint *ipSignature = malloc(keySize*numData*sizeof(uint));
@@ -85,6 +90,12 @@ int main(int argc, char* argv[])
 	addPointToMap(map, data, -1,2);
 
 	addDataToMapBatch(map,data,indexes,2,numData,1);
+
+	mapTreeNode ** locations = getLocations(map, 'i');
+	int maxLocIndex = numLoc(map);
+
+	maxPopGroupData * max = refineMapAndGetMax(locations, maxLocIndex, layer1);
+
 
 	free(ipSignature);
 	free(indexes);

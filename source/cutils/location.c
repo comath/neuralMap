@@ -106,3 +106,4 @@ void location_free(location *v)
     if(v->traceRaws)
         free(v->traceRaws);
 }
+

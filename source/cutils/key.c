@@ -87,8 +87,8 @@ int isPowerOfTwo (kint x)
 int offByOne(kint *x, kint *y, uint keyLength)
 {
 	kint cmp = 0;
-	int i = 0;
-	int j = 0;
+	uint i = 0;
+	uint j = 0;
 	// Find the first non-zero difference
 	while(i<keyLength && cmp == 0){
 		cmp = x[i] - y[i];
@@ -110,7 +110,7 @@ unsigned int numberOfOneBits(kint *x, int keyLength)
 	unsigned int numberOfOneBits = 0;
 	kint xi;
 	int i = 0;
-	for(i = 0l i<keyLength;i++){
+	for(i = 0; i<keyLength;i++){
 		xi = x[i]; // Copy x[i]
 		while(xi){
 			if ((xi & 1) == 1) 
@@ -122,13 +122,13 @@ unsigned int numberOfOneBits(kint *x, int keyLength)
 	return numberOfOneBits; 
 }
 
-int evalSig(kint *key, float *decompressedSig, float *selectionVec, float selectionBias, int dataLen)
+int evalSig(kint *key, float *selectionVec, float selectionBias, uint dataLen)
 {
 	uint i = 0;
 	float result = selectionBias;
 	for(i=0;i<dataLen;i++){
 		if(checkIndex(key,i)){
-			result += selectionVec[i]
+			result += selectionVec[i];
 		} 
 	}
 	if(result > 0){
@@ -136,7 +136,7 @@ int evalSig(kint *key, float *decompressedSig, float *selectionVec, float select
 	} else if(result < 0){
 		return -1;
 	} else {
-		return 0
+		return 0;
 	}
 }
 
