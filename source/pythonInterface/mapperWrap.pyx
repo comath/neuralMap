@@ -13,7 +13,10 @@ def eprint(*args, **kwargs):
 	print(*args, file=sys.stderr, **kwargs)
 
 include "nnLayerUtilsWrap.pyx"
-include "keyWrap.pyx"
+
+cdef extern from "pthread.h" nogil:
+	ctypedef struct pthread_mutex_t:
+		pass
 
 cdef extern from "../cutils/vector.h":
 	ctypedef struct vector:
@@ -48,19 +51,34 @@ cdef extern from "../cutils/location.h":
 	cdef void location_delete(location *, int)
 	cdef void location_free(location *)
 
+cdef extern from "../cutils/mapperTree.h":
+	ctypedef struct mapTreeNode:
+		pass
+	cdef void nodeGetIPKey(mapTreeNode * node, int * ipKey, unsigned int outDim)
+	cdef void nodeGetRegKey(mapTreeNode * node, int * regKey, unsigned int outDim)
+	cdef void nodeGetPointIndexes(mapTreeNode * node, int *indexHolder)
+	cdef int nodeGetTotal(mapTreeNode * node)
+
 cdef extern from "../cutils/mapper.h":
 	ctypedef struct _nnMap:
-		pass
+		int createdKL
+		kint *ipKey
+		kint *regKey
 
-	cdef _nnMap * allocateMap(nnLayer *layer0, float threshold, float errorThreshhold)
+		pthread_mutex_t datamutex
+		location loc
+
+	cdef _nnMap * allocateMap(nnLayer *layer0)
 	cdef void freeMap(_nnMap * internalMap)
 
-	cdef void addDatumToMap(_nnMap * internalMap, float *datum, float errorMargin)
-	cdef void addDataToMapBatch(_nnMap * internalMap, float *data, float * errorMargins, unsigned int numData, unsigned int numProc)
+	cdef void addPointToMap(_nnMap * map, float *point, int pointIndex, float threshold)
+	cdef void addDataToMapBatch(_nnMap * map, float *data, int *indexes, float threshold, unsigned int numData, unsigned int numProc)
 
 	cdef location getPointsAt(_nnMap *map, kint *keyPair)
 	cdef unsigned int numLoc(_nnMap * map)
 	cdef mapTreeNode ** getLocations(_nnMap *map, char orderBy)
+	void location_get_indexes(location *v, int *indexHolder)
+
 
 cdef extern from "../cutils/adaptiveTools.h":
 	ctypedef struct maxPopGroupData:
@@ -74,26 +92,29 @@ cdef extern from "../cutils/adaptiveTools.h":
 cdef class _location:
 	cdef unsigned int outDim 
 	cdef unsigned int inDim 
-	cdef location * thisLoc
+	cdef mapTreeNode * thisLoc
 	@staticmethod
-	cdef _location create(location* ptr, unsigned int outDim, unsigned int inDim):
+	cdef _location create(mapTreeNode* ptr, unsigned int outDim, unsigned int inDim):
 		obj = _location() # create instance without calling __init__
 		obj.thisLoc = ptr
 		obj.outDim = outDim
 		obj.inDim = inDim
 		return obj
+
 	def ipSig(self):
 		cdef np.ndarray[np.int32_t,ndim=1] ipSignature = np.zeros([self.outDim], dtype=np.int32)
-		convertFromKey(self.thisLoc.ipSig, <int *> ipSignature.data, self.outDim)
+		nodeGetIPKey(self.thisLoc, <int *> ipSignature.data, self.outDim)
 		return ipSignature
+
 	def regSig(self):
 		cdef np.ndarray[np.int32_t,ndim=1] regSignature = np.zeros([self.outDim], dtype=np.int32)
-		convertFromKey(self.thisLoc.regSig, <int *> regSignature.data, self.outDim)
+		nodeGetRegKey(self.thisLoc, <int *> regSignature.data, self.outDim)
 		return regSignature
+		
 	def pointIndexes(self):
-		numPoints = location_total(thisloc)
+		numPoints =	nodeGetTotal(self.thisLoc)
 		cdef np.ndarray[np.float32_t,ndim=2] points = np.zeros([numPoints,self.inDim], dtype=np.float32)
-		pointsAsArray(thisloc,points.data,inDim)
+		nodeGetPointIndexes(self.thisLoc, <int *>points.data)
 		return points
 	
 
@@ -103,10 +124,10 @@ cdef class nnMap:
 	cdef nnLayer * layer1
 	cdef unsigned int keyLen
 	cdef unsigned int numLoc
-	cdef location * locArr
+	cdef mapTreeNode ** locArr
 
 	def __cinit__(self,np.ndarray[float,ndim=2,mode="c"] A0 not None, np.ndarray[float,ndim=1,mode="c"] b0 not None,
-					   float threshold, float errorThreshhold):
+					   float threshold):
 		cdef unsigned int outDim0 = A0.shape[1]
 		cdef unsigned int inDim0  = A0.shape[0]
 		self.layer0 = createLayer(&A0[0,0],&b0[0],outDim0,inDim0)
@@ -118,15 +139,16 @@ cdef class nnMap:
 			raise MemoryError()
 
 
-	def add(self,np.ndarray[float,ndim=1,mode="c"] b not None, float errorMargin):
+	def add(self,np.ndarray[float,ndim=1,mode="c"] b not None, int pointIndex, int errorClass):
 		if self.locArr:
 			self.numLoc = 0
-			free(self.locArr)   
-		addDatumToMap(self.internalMap,<float *> b.data, errorMargin)
+			free(self.locArr)
+		addPointToMap(self.internalMap,<float *> b.data, pointIndex, errorClass, self.threshold)
 		
 	#Batch calculate, this is multithreaded and you can specify the number of threads you want to use.
 	#It defaults to the number of virtual cores you have
-	def batchAdd(self,np.ndarray[float,ndim=2,mode="c"] data not None, np.ndarray[float,ndim=1,mode="c"] errorMargins not None, numProc=None):
+	def batchAdd(self,np.ndarray[float,ndim=2,mode="c"] data not None, np.ndarray[int,ndim=1,mode="c"] indexes not None, 
+		np.ndarray[int,ndim=1,mode="c"] errorClass not None, numProc=None):
 		if numProc == None:
 			numProc = multiprocessing.cpu_count()
 		if numProc > multiprocessing.cpu_count():
@@ -139,12 +161,12 @@ cdef class nnMap:
 		numData = data.shape[0]
 		if(data.shape[1] != self.layer0.inDim):
 			eprint("Data is of the wrong dimension.")   
-		addDataToMapBatch(self.internalMap,<float *> data.data, self.threshold,numData, numProc)
-		
+		addDataToMapBatch(self.internalMap,<float *> data.data, <int *> indexes.data,<int *> errorClass.data, self.threshold,numData, numProc)
+
 	def numLocations(self):
 		if not self.locArr:
 			self.numLoc = numLoc(self.internalMap)
-			self.locArr = getLocationArray(self.internalMap)
+			self.locArr = getLocations(self.internalMap,'i')
 			if not self.locArr:
 				raise MemoryError()
 		return self.numLoc
@@ -152,16 +174,37 @@ cdef class nnMap:
 	def location(self,int i):
 		if not self.locArr:
 			self.numLoc = numLoc(self.internalMap)
-			self.locArr = getLocationArray(self.internalMap)
+			self.locArr = getLocations(self.internalMap,'i')
 			if not self.locArr:
 				raise MemoryError()
 		if(i > self.numLoc):
 			eprint("Index out of bounds")
 			raise MemoryError()
-		return _location.create( &(self.locArr[i]) , self.layer0.outDim, self.layer0.inDim)
+		thisLoc = _location.create( self.locArr[i] , self.layer0.outDim, self.layer0.inDim)
+		return thisLoc
 	
 	def __dealloc__(self):
 		freeMap(self.internalMap)
 		if self.locArr:
 			free(self.locArr)
-	
+
+	def adaptiveStep(self, np.ndarray[float,ndim=2,mode="c"] data not None, 
+					np.ndarray[float,ndim=2,mode="c"] A1 not None, 
+					np.ndarray[float,ndim=1,mode="c"] b1 not None):
+		cdef unsigned int outDim1 = A1.shape[1]
+		cdef unsigned int inDim1  = A1.shape[0]
+		layer1 = createLayer(&A1[0,0],&b1[0],outDim1,inDim1)
+		if not layer1:
+			raise MemoryError()
+		if not self.locArr:
+			self.numLoc = numLoc(self.internalMap)
+			self.locArr = getLocations(self.internalMap,'i')
+			if not self.locArr:
+				raise MemoryError()
+		cdef maxPopGroupData * maxErrorGroup = refineMapAndGetMax(self.locArr, self.numLoc, layer1)
+		cdef np.ndarray[np.float32_t,ndim=1] newHPVec = np.zeros([self.inDim], dtype=np.float32)
+		cdef np.ndarray[np.float32_t,ndim=1] newHPoff = np.zeros([1], dtype=np.float32)
+
+		createNewHP(maxErrorGroup,<float *>newHPVec.data,<float *>newHPoff.data)
+
+		cdef int regCount = createTrainingData(self.locArr)

@@ -27,10 +27,12 @@ typedef struct _nnMap {
 _nnMap * allocateMap(nnLayer *layer0);
 void freeMap(_nnMap *map);
 
-void addPointToMap(_nnMap * map, float *point, int pointIndex, float threshold);
-void addDataToMapBatch(_nnMap * map, float *data, int *indexes, float threshold, uint numData, uint numProc);
+void addPointToMap(_nnMap * map, float *point, int pointIndex, int errorClass, float threshold);
+void addDataToMapBatch(_nnMap * map, float *data, int *indexes, int *errorClasses, float threshold, uint numData, uint numProc);
 
 location getPointsAt(_nnMap *map, kint *keyPair);
+
+int regOrder(const void * a, const void * b);
 
 unsigned int numLoc(_nnMap * map);
 mapTreeNode ** getLocations(_nnMap *map, char orderBy);

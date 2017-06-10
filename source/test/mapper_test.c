@@ -71,7 +71,6 @@ int main(int argc, char* argv[])
 	uint maxThreads = sysconf(_SC_NPROCESSORS_ONLN);
 
 	srand(time(NULL));
-	uint i = 0;
 	printf("If no faliures are printed then we are fine.\n");
 	nnLayer *layer0 = createDumbLayer(dim,numHP);
 	nnLayer *layer1 = createDumbLayer(numHP, finalDim);
@@ -80,16 +79,19 @@ int main(int argc, char* argv[])
 	uint *ipSignature = malloc(keySize*numData*sizeof(uint));
 	float *data = randomData(dim,numData);
 	int * indexes = malloc(numData*sizeof(int));
+	int * errorClasses = malloc(numData*sizeof(int));
+
 	for(uint i =0;i<numData;i++){
 		indexes[i] = i;
+		errorClasses[i] = i%2;
 	} 
 	float *errorMargins = randomData(1,numData);
 
 	printf("Calculating the signature of Points\n");
 
-	addPointToMap(map, data, -1,2);
+	addPointToMap(map, data, -1, 0,2);
 
-	addDataToMapBatch(map,data,indexes,2,numData,1);
+	addDataToMapBatch(map,data,indexes,errorClasses,2,numData,1);
 
 	mapTreeNode ** locations = getLocations(map, 'i');
 	int maxLocIndex = numLoc(map);

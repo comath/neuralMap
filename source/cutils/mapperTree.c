@@ -241,3 +241,24 @@ mapTreeNode ** getAllNodes(mapTree * tree)
 	}
 	return nodePointerArr;
 }
+
+
+void nodeGetIPKey(mapTreeNode * node, int * ipKeyUncompressed, uint outDim)
+{
+	convertFromKey(node->ipKey, ipKeyUncompressed, outDim);
+}
+
+void nodeGetRegKey(mapTreeNode * node, int * regKeyUncompressed, uint outDim)
+{
+	convertFromKey(node->regKey, regKeyUncompressed, outDim);
+}
+
+void nodeGetPointIndexes(mapTreeNode * node, int *indexHolder)
+{
+	location_get_indexes(&(node->loc),indexHolder,0);
+}
+
+int nodeGetTotal(mapTreeNode * node, int errorClass)
+{
+	return location_total(&(node->loc), errorClass);
+}

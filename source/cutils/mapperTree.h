@@ -59,4 +59,9 @@ location * getMapData(mapTree *tree, kint * keyPair);
 
 mapTreeNode ** getAllNodes(mapTree * tree);
 
+void nodeGetIPKey(mapTreeNode * node, int * ipKeyuncompressed, uint outDim);
+void nodeGetRegKey(mapTreeNode * node, int * regKeyuncompressed, uint outDim);
+void nodeGetPointIndexes(mapTreeNode * node, int *indexHolder);
+int nodeGetTotal(mapTreeNode * node, int errorClass);
+
 #endif

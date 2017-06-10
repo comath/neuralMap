@@ -17,5 +17,7 @@ typedef struct maxPopGroupData {
 } maxPopGroupData;
 
 maxPopGroupData * refineMapAndGetMax(mapTreeNode ** locArr, int maxLocIndex, nnLayer * selectionLayer);
+vector * getRegSigs(mapTreeNode ** locArr, int numNodes);
+void unpackRegSigs(vector * regSigs, uint dim, float * unpackedSigs);
 
 #endif

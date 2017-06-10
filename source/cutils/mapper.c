@@ -64,7 +64,7 @@ void freeMapMemory(mapMemory *mm)
 }
 
 void addPointToMapInternal(_nnMap * map, mapMemory *mm, traceMemory *tm, pointInfo *pi,
-							float *point, int pointIndex, float threshold)
+							float *point, int pointIndex, int errorClass, float threshold)
 {
 	// The data is stored lexographically by (ipSig,regSig) as one long key.
 	// This can be easily achieved with some pointer arithmetic
@@ -72,7 +72,7 @@ void addPointToMapInternal(_nnMap * map, mapMemory *mm, traceMemory *tm, pointIn
 	// Get the IP Signature
 	bothIPCalcTrace(map->tc,tm,point,threshold, mm->keyPair, pi->traceDists, pi->traceRaw);
 	pi->index = pointIndex;
-
+	pi->errorClass = errorClass;
 	// Get the Region Signature, save it offset by keyLength
 	evalLayer(map->layer, point, mm->outOfLayer);
 	convertFloatToKey(mm->outOfLayer, mm->keyPair + mm->keyLength,map->layer->outDim);
@@ -80,7 +80,7 @@ void addPointToMapInternal(_nnMap * map, mapMemory *mm, traceMemory *tm, pointIn
 	addMapData(map->locationTree, mm->keyPair, pi);
 }
 
-void addPointToMap(_nnMap * map, float *point, int pointIndex, float threshold)
+void addPointToMap(_nnMap * map, float *point, int pointIndex, int errorClass, float threshold)
 {
 	uint outDim = map->layer->outDim;
 	traceMemory * tm = allocateTraceMB(outDim, map->layer->inDim);
@@ -88,7 +88,7 @@ void addPointToMap(_nnMap * map, float *point, int pointIndex, float threshold)
 	// This can be easily achieved with some pointer arithmetic
 	pointInfo *pi = allocPointInfo(outDim);
 	mapMemory *mm = allocMapMemory(outDim);
-	addPointToMapInternal(map,mm,tm,pi,point,pointIndex,threshold);
+	addPointToMapInternal(map,mm,tm,pi,point,pointIndex,errorClass,threshold);
 	freeMapMemory(mm);
 	freeTraceMB(tm);
 	freePointInfo(pi);
@@ -102,6 +102,7 @@ struct mapperAddThreadArgs {
 	_nnMap * map;
 	float *data;
 	int *indexes;
+	int *errorClasses;
 	float threshold;
 };
 
@@ -127,7 +128,7 @@ void * addMapperBatch_thread(void *thread_args)
 	
 	uint i = 0;
 	for(i=tid;i<numData;i=i+numThreads){
-		addPointToMapInternal(map,mm,tm,pi,myargs->data + i*n,myargs->indexes[i],myargs->threshold);
+		addPointToMapInternal(map,mm,tm,pi,myargs->data + i*n,myargs->indexes[i],myargs->errorClasses[i],myargs->threshold);
 	}
 	freePointInfo(pi);
 	freeMapMemory(mm);
@@ -135,7 +136,7 @@ void * addMapperBatch_thread(void *thread_args)
 	pthread_exit(NULL);
 }
 
-void addDataToMapBatch(_nnMap * map, float *data, int *indexes, float threshold, uint numData, uint numProc)
+void addDataToMapBatch(_nnMap * map, float *data, int *indexes, int *errorClasses, float threshold, uint numData, uint numProc)
 {
 	int maxThreads = numProc;
 	int rc =0;
@@ -157,6 +158,8 @@ void addDataToMapBatch(_nnMap * map, float *data, int *indexes, float threshold,
 		thread_args[i].data = data;
 		thread_args[i].threshold = threshold;
 		thread_args[i].indexes = indexes;
+		thread_args[i].errorClasses = errorClasses;
+
 		
 		rc = pthread_create(&threads[i], NULL, addMapperBatch_thread, (void *)&thread_args[i]);
 		if (rc){

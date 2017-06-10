@@ -78,7 +78,7 @@ int getGroupPop(vector * subGroup)
 
 	for(int j = 0; j<groupCount; j++){
 		curLoc = (mapTreeNode *) vector_get(subGroup,j);
-		curPopCount += location_total(&(curLoc->loc));
+		curPopCount += location_total(&(curLoc->loc),1);   // We want the points classified as errors
 	}
 	
 	return curPopCount;
@@ -179,4 +179,32 @@ maxPopGroupData * refineMapAndGetMax(mapTreeNode ** locArr, int maxLocIndex, nnL
 	free(hpCrossSigTemp);
 
 	return maxData;
+}
+
+
+
+vector * getRegSigs(mapTreeNode ** locArr, int numNodes)
+{
+	vector * regSigs = malloc(sizeof(vector));
+	vector_init(regSigs);
+	qsort(locArr, numNodes, sizeof(mapTreeNode *), regOrder);
+	int i = 0;
+	currentSig = locArr[i]->regKey;
+	vector_add(regSigs,currentSig);
+	for(i=0;i<numNodes;i++){
+		if(compareKey(locArr[i]->regKey, currentSig)){
+			currentSig = locArr[i]->regKey;
+			vector_add(regSigs,currentSig);
+		}
+	}
+	return regSigs;
+}
+
+void unpackRegSigs(vector * regSigs, uint dim, float * unpackedSigs)
+{
+	int i = 0;
+	int total = vector_total(regSigs);
+	for(i=0;i<total;i++){
+		convertFromKeyToFloat(regSigs[i], unpackedSigs + i*dim, dim);
+	}
 }
