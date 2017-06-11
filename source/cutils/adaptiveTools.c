@@ -1,8 +1,4 @@
 #include "adaptiveTools.h"
-#include "vector.h"
-#include <stdint.h>
-#include <limits.h>
-#include <string.h>
 
 /*
 static unsigned int uintlog2 (unsigned int val) {
@@ -189,10 +185,11 @@ vector * getRegSigs(mapTreeNode ** locArr, int numNodes)
 	vector_init(regSigs);
 	qsort(locArr, numNodes, sizeof(mapTreeNode *), regOrder);
 	int i = 0;
-	currentSig = locArr[i]->regKey;
+	uint keyLen = locArr[0]->createdKL;
+	kint * currentSig = locArr[i]->regKey;
 	vector_add(regSigs,currentSig);
 	for(i=0;i<numNodes;i++){
-		if(compareKey(locArr[i]->regKey, currentSig)){
+		if(compareKey(locArr[i]->regKey, currentSig, keyLen)){
 			currentSig = locArr[i]->regKey;
 			vector_add(regSigs,currentSig);
 		}
@@ -205,6 +202,52 @@ void unpackRegSigs(vector * regSigs, uint dim, float * unpackedSigs)
 	int i = 0;
 	int total = vector_total(regSigs);
 	for(i=0;i<total;i++){
-		convertFromKeyToFloat(regSigs[i], unpackedSigs + i*dim, dim);
+		convertFromKeyToFloat(vector_get(regSigs,i), unpackedSigs + i*dim, dim);
 	}
+}
+
+// Produces a vector that always point towards the corner in question, and is located to intersect with the average error given
+void createNewHPVec(maxPopGroupData * maxErrorGroup, float * avgError, float *solution, float *newHPVec, float *offset, float *A, float *b, uint inDim, uint outDim)
+{
+	uint keyLen = calcKeyLen(outDim);
+	kint * ipKey = maxErrorGroup->locations[0]->ipKey;
+	int numVectors = 0;
+	uint i = 0;
+	uint j = 0;
+	
+	// Collect the relevant vectors
+	kint * relevantHPKey = calloc(keyLen,sizeof(kint));
+	float * relevantVec = malloc(inDim*outDim*sizeof(float));
+	for(i = 0;i < keyLen;i++){
+		relevantHPKey[i] = ipKey[i] ^ maxErrorGroup->hpCrossed[i];
+	}
+	for(i = 0; i< outDim; i++){
+		if(checkIndex(relevantHPKey, i)){
+			memcpy(relevantVec + numVectors*inDim, A + i*inDim,inDim*sizeof(float));
+			numVectors++;
+		}
+	}
+
+	// Get them pointing the right way
+	float * shiftedAvgError = malloc(inDim * sizeof(float));
+	memcpy(shiftedAvgError,avgError,inDim*sizeof(float));
+	cblas_saxpy(inDim,1,solution,1,shiftedAvgError,1);
+	for(i = 0; i< numVectors;i++){
+		if(cblas_sdot(inDim,shiftedAvgError,1,relevantVec + i*inDim,1) > 0){
+			// Pointing toward the avg error, should be away from
+			cblas_sscal(inDim, -1.0, relevantVec + i*inDim, 1);
+		}
+	}
+
+	// Take the average direction
+	float norm;
+	memset(newHPVec, 0, inDim*sizeof(float));
+	for(i=0;i<numVectors;i++){
+		norm = cblas_snrm2(inDim, relevantVec + i*inDim,1);
+		cblas_saxpy(inDim,norm/numVectors,solution,1,newHPVec,1);
+	}
+
+	// Get the offset and save it.
+
+	offset[0] = - cblas_sdot(inDim,shiftedAvgError,1,newHPVec,1);
 }
