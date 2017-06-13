@@ -55,7 +55,7 @@ void vector_delete(vector *v, int index)
 
     v->items[index] = NULL;
 
-    for (int i = 0; i < v->total - 1; i++) {
+    for (int i = index; i < v->total - 1; i++) {
         v->items[i] = v->items[i + 1];
         v->items[i + 1] = NULL;
     }
@@ -89,4 +89,15 @@ void vector_copy(vector *target, vector *source)
         }
     }
     memcpy(target->items,source->items,source->total*sizeof(void *));
+}
+
+void vector_print_pointers(vector *vec)
+{
+    int i = 0;
+    for(i = 0;i<vec->total-1;i++){
+        printf("%p, ",vec->items[i]);
+    }
+    if(vec->total > 0){
+        printf("%p\n",vec->items[vec->total-1]);
+    }
 }

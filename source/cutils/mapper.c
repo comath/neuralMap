@@ -22,7 +22,6 @@ void freeMap(_nnMap *map)
 	if(map){
 		freeMapTree(map->locationTree);
 		freeTraceCache(map->tc);
-		freeLayer(map->layer);
 		free(map);
 	} else {
 		printf("Map does not exist.\n");

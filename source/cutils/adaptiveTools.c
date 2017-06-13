@@ -26,38 +26,89 @@ static inline uint32_t uintlog2(const uint32_t x) {
 
 int getNextIPGroup(mapTreeNode ** locArr, int startingIndex, int maxLocIndex, vector * ipGroup)
 {
+	if(startingIndex >= maxLocIndex){
+		return maxLocIndex;
+	}
 	kint * curIpSig = locArr[startingIndex]->ipKey;
 	int keyLen = locArr[startingIndex]->createdKL;
+	#ifdef DEBUG
+		printf("--------------\n");
+
+		printf("Creating an ip group starting at %d with key (%p):\n",startingIndex,curIpSig);
+		printKeyArr(curIpSig, keyLen);
+	#endif
 	while(startingIndex < maxLocIndex && compareKey(curIpSig,locArr[startingIndex]->ipKey,keyLen) == 0){
-		vector_add(ipGroup, locArr + startingIndex);
+		#ifdef DEBUG
+			printf("Checking next, index at %d with key (%p):\n",startingIndex,locArr[startingIndex]->ipKey);
+			printKeyArr(locArr[startingIndex]->ipKey, keyLen);
+			if(compareKey(curIpSig,locArr[startingIndex]->ipKey,keyLen) != 0){
+				printf("Keys are different. Stopping.\n");
+			}
+		#endif
+		vector_add(ipGroup, locArr[startingIndex]);
 		startingIndex++;
+		
 	}
+	#ifdef DEBUG
+		printf("ipGroup Pointers\n");
+		vector_print_pointers(ipGroup);
+		printf("-------------\n");
+
+	#endif
 	return startingIndex;
 }
 
 void getHyperplanesCrossed(vector * group, kint *hpCrossSig)
 {
 	kint *seedSig = ((mapTreeNode *)vector_get(group,0))->regKey;
+	kint *compSig;
 	int keyLen = ((mapTreeNode *)vector_get(group,0))->createdKL;
 	memset(hpCrossSig,0,keyLen*sizeof(kint));
 	int total = vector_total(group);
 	int i = 0, j = 0;
 	for(i = 1; i< total;i++){ // Already have the first one
+		compSig = ((mapTreeNode *)vector_get(group,i))->regKey;
+		#ifdef DEBUG
+			printf("<<>>\n");
+			printf("Computing the cornerDim\n");
+			printf("seedSig: %p\n",seedSig);
+			printKey(seedSig, 32*keyLen);
+			printf("crossedSig: %p\n",seedSig);
+			printKey(hpCrossSig, 32*keyLen);
+			printf("compSig: %p\n",seedSig);
+			printKey(compSig, 32*keyLen);
+		#endif
 		for(j = 0; j<keyLen;j++){
-			hpCrossSig[j] |= (seedSig[j] ^ ((mapTreeNode *)vector_get(group,i))->regKey[j]);
+			hpCrossSig[j] |= (seedSig[j] ^ compSig[j]);
 		}
 	}
 }
 
 int getGroupCornerDim(vector * group, kint *hpCrossSigTemp)
 {	
-	int keyLen = ((mapTreeNode *)vector_get(group,0))->createdKL;
-	kint *ipSig = ((mapTreeNode *)vector_get(group,0))->ipKey;
-	uint maxDim = numberOfOneBits(ipSig, keyLen);
+	mapTreeNode * seedLoc = (mapTreeNode *)vector_get(group,0);
+	int keyLen = seedLoc->createdKL;
+	kint *ipSig = seedLoc->ipKey;
+	#ifdef DEBUG
+		printf("<<<<<<<<>>>>>>>>\n");
+		printf("Computing the cornerDim\n");
+		printf("ipSig: %p keyLen %d\n",seedLoc->ipKey,keyLen);
+		printKey(ipSig, 32*keyLen);
+	#endif
+	uint maxDim = numberOfOneBits(ipSig, keyLen);	
+
 	
 	getHyperplanesCrossed(group,hpCrossSigTemp);
 	uint numHpCrossed = numberOfOneBits(hpCrossSigTemp, keyLen);
 	uint total = vector_total(group);
+	#ifdef DEBUG
+		printf("hpCrossSigTemp:\n");
+		printKey(hpCrossSigTemp, 32*keyLen);
+		printf("Number of one bits in ipKey: %u, in hpCrossedKey:%u, and num locs: %u \n", maxDim,numHpCrossed,total);
+	#endif
+	#ifdef DEBUG
+		printf("<<<<<<<<>>>>>>>>\n");
+	#endif
 	if(uintlog2(total) == numHpCrossed){
 		return (int)maxDim - numHpCrossed;
 	} else {
@@ -93,24 +144,70 @@ void createGroup(vector * ipCollection, vector * subGroup, float *selectionVec, 
 
 	int j = 0,k = 0;
 
-	while(lastCombine){
+	#ifdef DEBUG
+		printf("---------\n");
+
+		printf("Creating a group out of IP group\n");
+		printf("ipGroup Pointers (minus seedLoc)\n");
+		vector_print_pointers(ipCollection);
+	
+		printf("Seed Location (%p). Response: %d regSig:\n",seedLoc,selection);
+		printKeyArr(seedLoc->regKey, keyLen);
+	#endif
+	while(lastCombine && vector_total(ipCollection) > 0){
 		lastCombine = 0;
+		#ifdef DEBUG
+			printf("-----\n");
+			printf("Starting a combine run.\n");
+			printf("Current group size: %d\n",vector_total(subGroup));
+			vector_print_pointers(subGroup);
+		#endif
 		for(j = 0;j < vector_total(subGroup); j++){
 			curBaseLoc = (mapTreeNode *)vector_get(subGroup,j);
-
+			#ifdef DEBUG
+				printf("=====\n");
+				printf("Combining to a base location. ");
+				printf("CurrentBase Location. Response: %d regSig:\n",evalSig(curBaseLoc->regKey, selectionVec, selectionBias, n));
+				printKeyArr(curBaseLoc->regKey, keyLen);
+				printf("Remaining ip group size %d\n", vector_total(ipCollection));
+			#endif
 			for(k = 0; k < vector_total(ipCollection); k++){
+				printf("===\n");
+
 				compareLoc = (mapTreeNode *)vector_get(ipCollection,k);
-				
+
+				#ifdef DEBUG
+					printf("Current IP Collection\n");
+					vector_print_pointers(ipCollection);
+					printf("Current subgroup\n");
+					vector_print_pointers(subGroup);
+					printf("CompareLoc Pointer (%p), index %d\n",compareLoc,k );
+					printf("compareLoc Location. Response: %d regSig:\n",evalSig(compareLoc->regKey, selectionVec, selectionBias, n));
+					printKeyArr(compareLoc->regKey, keyLen);
+					printf("Off by one: %d\n", offByOne(curBaseLoc->regKey, compareLoc->regKey,keyLen));
+				#endif
+
 				if(offByOne(curBaseLoc->regKey, compareLoc->regKey,keyLen) && 
 					evalSig(compareLoc->regKey, selectionVec, selectionBias, n) == selection){
 					vector_delete(ipCollection,k);
 					k--;
 					vector_add(subGroup,compareLoc);
+					#ifdef DEBUG
+						printf("Adding compareLoc to subgroup.\n");
+					#endif
+					
 					lastCombine = 1;
 				}
 			}
 		}
+		#ifdef DEBUG
+			printf("End of a combine run. Combine Tracker: %d\n",lastCombine);
+			printf("-----\n");
+		#endif
 	}
+	#ifdef DEBUG
+		printf("---------\n");
+	#endif
 }
 
 mapTreeNode ** unpackGroup(vector * group)
@@ -121,6 +218,19 @@ mapTreeNode ** unpackGroup(vector * group)
 		ret[i] = (mapTreeNode *)vector_get(group,i);
 	}
 	return ret;
+}
+
+void freeMaxPopGroupData(maxPopGroupData * group)
+{
+	if(group){
+		if(group->locations){
+			free(group->locations);
+		}
+		if(group->hpCrossed){
+			free(group->hpCrossed);
+		}
+		free(group);
+	}
 }
 
 maxPopGroupData * refineMapAndGetMax(mapTreeNode ** locArr, int maxLocIndex, nnLayer * selectionLayer)
@@ -147,15 +257,44 @@ maxPopGroupData * refineMapAndGetMax(mapTreeNode ** locArr, int maxLocIndex, nnL
 	int i = 0;
 	int j = 0;
 
+	
+
 	int cornerDim = 0;
-	i = getNextIPGroup(locArr,i,maxLocIndex,&curIP);
 	for(i = 0; i < m; i++){
+		#ifdef DEBUG
+			printf("------------------------------------------------------------\n");
+			printf("On selection %d with bias %f\n",i,selectionBias[i]);
+			printf("------------------------------------------------------------\n");
+
+		#endif
+		j = 0;
+		j = getNextIPGroup(locArr,j,maxLocIndex,&curIP);
 		while(j<maxLocIndex){
+			#ifdef DEBUG
+				printf("===========================\n");
+				printf("On Created an ip group, ending in index %d\n",j);
+				printf("===========================\n");
+
+			#endif
 			while(vector_total(&curIP) > 0){
+				#ifdef DEBUG
+					printf("=============\n");
+					printf("Creating a group to check\n");
+					printf("=============\n");
+				#endif
 				createGroup(&curIP,&curGroup,selectionMat + i*n, selectionBias[i],n);
 				cornerDim = getGroupCornerDim(&curGroup,hpCrossSigTemp);
+				#ifdef DEBUG
+					printf("=\n");
+					printf("Corner Dim: %d\n",cornerDim);
+					printf("=\n");
+				#endif
 				if(cornerDim > 0){
 					if(maxData->count < (cornerDim * getGroupPop(&curGroup))){
+						#ifdef DEBUG
+							printf("Switching maxGroup\n");
+
+						#endif
 						maxData->count = cornerDim * getGroupPop(&curGroup);
 						maxData->selectionIndex = i;
 						memcpy(maxData->hpCrossed,hpCrossSigTemp,keyLen * sizeof(kint));
@@ -165,10 +304,18 @@ maxPopGroupData * refineMapAndGetMax(mapTreeNode ** locArr, int maxLocIndex, nnL
 				vector_reset(&curGroup);
 			}
 			vector_reset(&curIP);
-			j = getNextIPGroup(locArr,i,maxLocIndex,&curIP);
+			j = getNextIPGroup(locArr,j,maxLocIndex,&curIP);
 		}
 	}
+	#ifdef DEBUG
+		printf("=============\n");
+		printf("Final Group:\n");
+	#endif
 	maxData->locations = unpackGroup(&maxGroup);
+	#ifdef DEBUG
+		printf("\n");
+		printf("=============\n");
+	#endif
 	vector_free(&curIP);
 	vector_free(&curGroup);
 	vector_free(&maxGroup);

@@ -62,11 +62,11 @@ float * randomData(uint dim, uint numData)
 
 int main(int argc, char* argv[])
 {
-	uint dim = 6;
-	uint numHP = 5;
+	uint dim = 3;
+	uint numHP = 3;
 	uint finalDim = 2;
 
-	uint numData = 5;
+	uint numData = 200;
 	uint keySize = calcKeyLen(numHP);
 	uint maxThreads = sysconf(_SC_NPROCESSORS_ONLN);
 
@@ -85,7 +85,6 @@ int main(int argc, char* argv[])
 		indexes[i] = i;
 		errorClasses[i] = i%2;
 	} 
-	float *errorMargins = randomData(1,numData);
 
 	printf("Calculating the signature of Points\n");
 
@@ -99,11 +98,13 @@ int main(int argc, char* argv[])
 	maxPopGroupData * max = refineMapAndGetMax(locations, maxLocIndex, layer1);
 
 
+	freeMaxPopGroupData(max);
+	free(locations);
 	free(ipSignature);
 	free(indexes);
 	freeMap(map);
 	free(data);
-	free(errorMargins);
+	free(errorClasses);
 
 
 	return 0;

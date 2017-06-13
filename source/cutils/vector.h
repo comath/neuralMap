@@ -26,5 +26,7 @@ void vector_delete(vector *, int);
 void vector_free(vector *);
 void vector_copy(vector *target, vector *source);
 void vector_reset(vector *v);  // Doesn't deallocate, just puts the total to 0
+void vector_print_pointers(vector *vec);
+
 
 #endif

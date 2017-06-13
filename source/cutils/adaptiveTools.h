@@ -24,6 +24,8 @@ typedef struct maxPopGroupData {
 	int count;
 	int selectionIndex;
 } maxPopGroupData;
+void freeMaxPopGroupData(maxPopGroupData * group);
+
 
 maxPopGroupData * refineMapAndGetMax(mapTreeNode ** locArr, int maxLocIndex, nnLayer * selectionLayer);
 
