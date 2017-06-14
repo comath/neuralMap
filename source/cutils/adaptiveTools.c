@@ -353,8 +353,22 @@ void unpackRegSigs(vector * regSigs, uint dim, float * unpackedSigs)
 	}
 }
 
+void getAverageError(maxPopGroupData * maxErrorGroup, float *data, float * avgError)
+{
+	int dim = maxErrorGroup->locations[0]->m;
+	location * curLoc;
+	int i = 0, j = 0;
+	for(i = 0;i<maxErrorGroup->count;i++){
+		curLoc = maxErrorGroup->locations[i];
+		for(j = 0; j< curLoc->total_error; j++){
+			cblas_saxpy(dim, data + (curLoc->index)*dim,1,avgError);
+		}
+	}
+}
+
+
 // Produces a vector that always point towards the corner in question, and is located to intersect with the average error given
-void createNewHPVec(maxPopGroupData * maxErrorGroup, float * avgError, float *solution, float *newHPVec, float *offset, float *A, float *b, uint inDim, uint outDim)
+void createNewHPVec(maxPopGroupData * maxErrorGroup, float *solution, float *hpVec, float *hpOff, uint inDim, uint outDim, float *newVec, float *newOff)
 {
 	uint keyLen = calcKeyLen(outDim);
 	kint * ipKey = maxErrorGroup->locations[0]->ipKey;

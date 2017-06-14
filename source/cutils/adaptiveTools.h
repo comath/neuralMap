@@ -29,7 +29,7 @@ void freeMaxPopGroupData(maxPopGroupData * group);
 
 maxPopGroupData * refineMapAndGetMax(mapTreeNode ** locArr, int maxLocIndex, nnLayer * selectionLayer);
 
-void createNewHPVec(maxPopGroupData * maxErrorGroup, float * avgError, float *solution, float *newHPVec, float *offset, float *A, float *b, uint inDim, uint outDim);
+void createNewHPVec(maxPopGroupData * maxErrorGroup, float *solution, float *hpVec, float *hpOff, uint inDim, uint outDim, float *newVec, float *newOff);
 
 vector * getRegSigs(mapTreeNode ** locArr, int numNodes);
 void unpackRegSigs(vector * regSigs, uint dim, float * unpackedSigs);

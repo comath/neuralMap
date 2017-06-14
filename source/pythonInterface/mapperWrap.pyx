@@ -88,6 +88,10 @@ cdef extern from "../cutils/adaptiveTools.h":
 		int selectionIndex
 
 	cdef maxPopGroupData * refineMapAndGetMax(mapTreeNode ** locArr, int maxLocIndex, nnLayer * selectionLayer)
+	cdef void createNewHPVec(maxPopGroupData * maxErrorGroup, float * avgError, float *solution, float *newHPVec, float *offset, float *A, float *b, unsigned int inDim, unsigned int outDim);
+
+	cdef vector * getRegSigs(mapTreeNode ** locArr, int numNodes)
+	cdef void unpackRegSigs(vector * regSigs, unsigned int dim, float * unpackedSigs)
 
 cdef class _location:
 	cdef unsigned int outDim 
@@ -205,6 +209,8 @@ cdef class nnMap:
 		cdef np.ndarray[np.float32_t,ndim=1] newHPVec = np.zeros([self.inDim], dtype=np.float32)
 		cdef np.ndarray[np.float32_t,ndim=1] newHPoff = np.zeros([1], dtype=np.float32)
 
+		createNewHPVec(maxPopGroupData * maxErrorGroup, float * avgError, float *solution, float *newHPVec, float *offset, float *A, float *b, uint inDim, uint outDim);
+
 		createNewHP(maxErrorGroup,<float *>newHPVec.data,<float *>newHPoff.data)
 
-		cdef int regCount = createTrainingData(self.locArr)
+		
