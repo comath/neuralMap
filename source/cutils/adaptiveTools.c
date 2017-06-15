@@ -324,8 +324,6 @@ maxPopGroupData * refineMapAndGetMax(mapTreeNode ** locArr, int maxLocIndex, nnL
 	return maxData;
 }
 
-
-
 vector * getRegSigs(mapTreeNode ** locArr, int numNodes)
 {
 	vector * regSigs = malloc(sizeof(vector));
@@ -353,23 +351,33 @@ void unpackRegSigs(vector * regSigs, uint dim, float * unpackedSigs)
 	}
 }
 
+float *getSolutionPointer(_nnMap *map)
+{
+	return map->tc->solution;
+}
+
+
 void getAverageError(maxPopGroupData * maxErrorGroup, float *data, float * avgError)
 {
-	int dim = maxErrorGroup->locations[0]->m;
-	location * curLoc;
+	int dim = maxErrorGroup->locations[0]->loc.m;
+	location curLoc;
 	int i = 0, j = 0;
 	for(i = 0;i<maxErrorGroup->count;i++){
-		curLoc = maxErrorGroup->locations[i];
-		for(j = 0; j< curLoc->total_error; j++){
-			cblas_saxpy(dim, data + (curLoc->index)*dim,1,avgError);
+		curLoc = maxErrorGroup->locations[i]->loc;
+		for(j = 0; j< curLoc.total_error; j++){
+			cblas_saxpy(dim,1, data + (curLoc.pointIndexes_error[j])*dim,1,avgError,1);
 		}
 	}
 }
 
 
 // Produces a vector that always point towards the corner in question, and is located to intersect with the average error given
-void createNewHPVec(maxPopGroupData * maxErrorGroup, float *solution, float *hpVec, float *hpOff, uint inDim, uint outDim, float *newVec, float *newOff)
+void createNewHPVec(maxPopGroupData * maxErrorGroup, float * avgError, float *solution, nnLayer *hpLayer, float *newHPVec, float *newHPOff)
 {
+	uint outDim = hpLayer->outDim;
+	uint inDim = hpLayer->inDim;
+	float * A = hpLayer->A;
+	float * b = hpLayer->b;
 	uint keyLen = calcKeyLen(outDim);
 	kint * ipKey = maxErrorGroup->locations[0]->ipKey;
 	int numVectors = 0;
@@ -405,10 +413,10 @@ void createNewHPVec(maxPopGroupData * maxErrorGroup, float *solution, float *hpV
 	memset(newHPVec, 0, inDim*sizeof(float));
 	for(i=0;i<numVectors;i++){
 		norm = cblas_snrm2(inDim, relevantVec + i*inDim,1);
-		cblas_saxpy(inDim,norm/numVectors,solution,1,newHPVec,1);
+		cblas_saxpy(inDim,norm/numVectors,relevantVec + i*inDim,1,newHPVec,1);
 	}
 
 	// Get the offset and save it.
 
-	offset[0] = - cblas_sdot(inDim,shiftedAvgError,1,newHPVec,1);
+	newHPOff[0] = - cblas_sdot(inDim,shiftedAvgError,1,newHPVec,1);
 }

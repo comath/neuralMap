@@ -57,7 +57,7 @@ cdef extern from "../cutils/mapperTree.h":
 	cdef void nodeGetIPKey(mapTreeNode * node, int * ipKey, unsigned int outDim)
 	cdef void nodeGetRegKey(mapTreeNode * node, int * regKey, unsigned int outDim)
 	cdef void nodeGetPointIndexes(mapTreeNode * node, int *indexHolder)
-	cdef int nodeGetTotal(mapTreeNode * node)
+	cdef int nodeGetTotal(mapTreeNode * node, int errorClass)
 
 cdef extern from "../cutils/mapper.h":
 	ctypedef struct _nnMap:
@@ -71,8 +71,8 @@ cdef extern from "../cutils/mapper.h":
 	cdef _nnMap * allocateMap(nnLayer *layer0)
 	cdef void freeMap(_nnMap * internalMap)
 
-	cdef void addPointToMap(_nnMap * map, float *point, int pointIndex, float threshold)
-	cdef void addDataToMapBatch(_nnMap * map, float *data, int *indexes, float threshold, unsigned int numData, unsigned int numProc)
+	cdef void addPointToMap(_nnMap * map, float *point, int pointIndex, int errorClass, float threshold)
+	cdef void addDataToMapBatch(_nnMap * map, float *data, int *indexes, int * errorClasses, float threshold, unsigned int numData, unsigned int numProc)
 
 	cdef location getPointsAt(_nnMap *map, kint *keyPair)
 	cdef unsigned int numLoc(_nnMap * map)
@@ -88,7 +88,9 @@ cdef extern from "../cutils/adaptiveTools.h":
 		int selectionIndex
 
 	cdef maxPopGroupData * refineMapAndGetMax(mapTreeNode ** locArr, int maxLocIndex, nnLayer * selectionLayer)
-	cdef void createNewHPVec(maxPopGroupData * maxErrorGroup, float * avgError, float *solution, float *newHPVec, float *offset, float *A, float *b, unsigned int inDim, unsigned int outDim);
+	cdef float *getSolutionPointer(_nnMap *map) 
+	cdef void getAverageError(maxPopGroupData * maxErrorGroup, float *data, float * avgError)
+	cdef void createNewHPVec(maxPopGroupData * maxErrorGroup, float * avgError, float *solution, nnLayer *hpLayer, float *newVec, float *newOff)
 
 	cdef vector * getRegSigs(mapTreeNode ** locArr, int numNodes)
 	cdef void unpackRegSigs(vector * regSigs, unsigned int dim, float * unpackedSigs)
@@ -115,8 +117,8 @@ cdef class _location:
 		nodeGetRegKey(self.thisLoc, <int *> regSignature.data, self.outDim)
 		return regSignature
 		
-	def pointIndexes(self):
-		numPoints =	nodeGetTotal(self.thisLoc)
+	def pointIndexes(self, int errorClass):
+		numPoints =	nodeGetTotal(self.thisLoc, errorClass)
 		cdef np.ndarray[np.float32_t,ndim=2] points = np.zeros([numPoints,self.inDim], dtype=np.float32)
 		nodeGetPointIndexes(self.thisLoc, <int *>points.data)
 		return points
@@ -126,14 +128,16 @@ cdef class nnMap:
 	cdef _nnMap * internalMap
 	cdef nnLayer * layer0
 	cdef nnLayer * layer1
+	cdef unsigned int outDim0
+	cdef unsigned int inDim0
 	cdef unsigned int keyLen
 	cdef unsigned int numLoc
 	cdef mapTreeNode ** locArr
 
 	def __cinit__(self,np.ndarray[float,ndim=2,mode="c"] A0 not None, np.ndarray[float,ndim=1,mode="c"] b0 not None,
 					   float threshold):
-		cdef unsigned int outDim0 = A0.shape[1]
-		cdef unsigned int inDim0  = A0.shape[0]
+		self.outDim0 = A0.shape[1]
+		self.inDim0  = A0.shape[0]
 		self.layer0 = createLayer(&A0[0,0],&b0[0],outDim0,inDim0)
 		if not self.layer0:
 			raise MemoryError()
@@ -206,11 +210,15 @@ cdef class nnMap:
 			if not self.locArr:
 				raise MemoryError()
 		cdef maxPopGroupData * maxErrorGroup = refineMapAndGetMax(self.locArr, self.numLoc, layer1)
+
+		cdef np.ndarray[np.float32_t,ndim=1] avgError = np.zeros([self.inDim], dtype=np.float32)
+		getAverageError(maxErrorGroup, <float *> data.data, <float *> avgError.data)
+
+		cdef float * solution = getSolutionPointer(self.internalMap)
 		cdef np.ndarray[np.float32_t,ndim=1] newHPVec = np.zeros([self.inDim], dtype=np.float32)
 		cdef np.ndarray[np.float32_t,ndim=1] newHPoff = np.zeros([1], dtype=np.float32)
+		createNewHPVec(maxErrorGroup, <float *>avgError.data, solution, self.layer0, <float *>newHPVec.data,<float *> newHPoff.data);
 
-		createNewHPVec(maxPopGroupData * maxErrorGroup, float * avgError, float *solution, float *newHPVec, float *offset, float *A, float *b, uint inDim, uint outDim);
+		cdef vector *vecRegKeys = getRegSigs(self.locArr, self.numLoc)
 
-		createNewHP(maxErrorGroup,<float *>newHPVec.data,<float *>newHPoff.data)
-
-		
+		unpackRegSigs(vecRegKeys, , float * unpackedSigs);
