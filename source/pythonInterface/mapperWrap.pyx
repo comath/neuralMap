@@ -93,7 +93,9 @@ cdef extern from "../cutils/adaptiveTools.h":
 	cdef void createNewHPVec(maxPopGroupData * maxErrorGroup, float * avgError, float *solution, nnLayer *hpLayer, float *newVec, float *newOff)
 
 	cdef vector * getRegSigs(mapTreeNode ** locArr, int numNodes)
-	cdef void unpackRegSigs(vector * regSigs, unsigned int dim, float * unpackedSigs)
+	#cdef void unpackRegSigs(vector * regSigs, unsigned int dim, float * unpackedSigs)
+	cdef void createData(maxPopGroupData *maxErrorGroup, nnLayer *selectionLayer, vector *regSigs, float *unpackedSigs, float * labels)
+
 
 cdef class _location:
 	cdef unsigned int outDim 
@@ -138,7 +140,7 @@ cdef class nnMap:
 					   float threshold):
 		self.outDim0 = A0.shape[1]
 		self.inDim0  = A0.shape[0]
-		self.layer0 = createLayer(&A0[0,0],&b0[0],outDim0,inDim0)
+		self.layer0 = createLayer(&A0[0,0],&b0[0],self.outDim0,self.inDim0)
 		if not self.layer0:
 			raise MemoryError()
 		self.threshold = threshold
@@ -211,14 +213,18 @@ cdef class nnMap:
 				raise MemoryError()
 		cdef maxPopGroupData * maxErrorGroup = refineMapAndGetMax(self.locArr, self.numLoc, layer1)
 
-		cdef np.ndarray[np.float32_t,ndim=1] avgError = np.zeros([self.inDim], dtype=np.float32)
+		cdef np.ndarray[np.float32_t,ndim=1] avgError = np.zeros([self.inDim0], dtype=np.float32)
 		getAverageError(maxErrorGroup, <float *> data.data, <float *> avgError.data)
 
 		cdef float * solution = getSolutionPointer(self.internalMap)
-		cdef np.ndarray[np.float32_t,ndim=1] newHPVec = np.zeros([self.inDim], dtype=np.float32)
+		cdef np.ndarray[np.float32_t,ndim=1] newHPVec = np.zeros([self.inDim0], dtype=np.float32)
 		cdef np.ndarray[np.float32_t,ndim=1] newHPoff = np.zeros([1], dtype=np.float32)
 		createNewHPVec(maxErrorGroup, <float *>avgError.data, solution, self.layer0, <float *>newHPVec.data,<float *> newHPoff.data);
 
 		cdef vector *vecRegKeys = getRegSigs(self.locArr, self.numLoc)
+		cdef int dataLength = 2*vector_total(vecRegKeys)
+		cdef np.ndarray[np.float32_t,ndim=2] unpackedSigs = np.zeros([dataLength,inDim1+1], dtype=np.float32)
+		cdef np.ndarray[np.float32_t,ndim=1] labels = np.zeros([dataLength], dtype=np.float32)
+		createData(maxErrorGroup, layer1, vecRegKeys, <float *>unpackedSigs.data, <float *>labels.data)
 
-		unpackRegSigs(vecRegKeys, , float * unpackedSigs);
+		return newHPVec, newHPoff, unpackedSigs, labels

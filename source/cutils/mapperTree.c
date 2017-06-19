@@ -66,8 +66,6 @@ mapTree * createMapTree(int outDim){
     }
 	tree->numNodes = 0;
 	tree->keyLength = keyLength;
-
-	tree->currentMemoryUseage = 0;
 	return tree;	
 }
 
@@ -214,9 +212,9 @@ void traverseSubtree(mapTreeNode *(*(*traversePointer)), mapSubTree *st)
 			printf("Node access: %p, ",st->nodes+i);
 			printf("location total: %d, ", st->nodes[i].loc.total);
 			printf("location error total: %d, ", st->nodes[i].loc.total_error);
-			printf("regKey[0]: %lu, ", st->nodes[i].regKey[0]);
+			printf("regKey[0]: %u, ", st->nodes[i].regKey[0]);
 			printf("regKey address: %p, ", st->nodes[i].regKey);
-			printf("ipKey[0]: %lu, ", st->nodes[i].ipKey[0]);
+			printf("ipKey[0]: %u, ", st->nodes[i].ipKey[0]);
 			printf("ipKey address: %p\n ", st->nodes[i].ipKey);
 
 			
@@ -248,12 +246,12 @@ mapTreeNode ** getAllNodes(mapTree * tree)
 
 void nodeGetIPKey(mapTreeNode * node, int * ipKeyUncompressed, uint outDim)
 {
-	convertFromKey(node->ipKey, ipKeyUncompressed, outDim);
+	convertFromKeyToInt(node->ipKey, ipKeyUncompressed, outDim);
 }
 
 void nodeGetRegKey(mapTreeNode * node, int * regKeyUncompressed, uint outDim)
 {
-	convertFromKey(node->regKey, regKeyUncompressed, outDim);
+	convertFromKeyToInt(node->regKey, regKeyUncompressed, outDim);
 }
 
 void nodeGetPointIndexes(mapTreeNode * node, int *indexHolder)

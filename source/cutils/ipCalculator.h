@@ -1,3 +1,7 @@
+/*
+Soon to be repurposed to be used in ipTrace
+*/
+
 #ifndef _ipCalculator_h
 #define _ipCalculator_h
 #include <stdio.h>

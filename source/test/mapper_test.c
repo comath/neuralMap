@@ -41,6 +41,28 @@ nnLayer *createDumbLayer(uint dim, uint numHP)
 	return layer;
 }
 
+//Creates a layer with HPs parrallel to the cordinate axes
+nnLayer *createDumbSelectionLayer(uint numHP, uint selection)
+{
+	nnLayer * layer = calloc(1,sizeof(nnLayer));
+	layer->A = calloc((numHP+1)*numHP,sizeof(float));
+	layer->b = layer->A + numHP*numHP;
+	uint i,j;
+	for(i=0;i<selection;i++){
+		for(j=0;j<numHP;j++){
+			if(i==j){
+				layer->A[i*numHP + j] = 1;
+			} else {
+				layer->A[i*numHP + j] = 1;
+			}
+		}
+		layer->b[i] = 0.5-(float)numHP;
+	}
+	layer->inDim = numHP;
+	layer->outDim = selection;
+	return layer;
+}
+
 void randomizePoint(float *p, uint dim)
 {
 	uint i = 0;
@@ -64,16 +86,16 @@ int main(int argc, char* argv[])
 {
 	uint dim = 3;
 	uint numHP = 3;
-	uint finalDim = 2;
+	uint finalDim = 1;
 
-	uint numData = 200;
+	uint numData = 400;
 	uint keySize = calcKeyLen(numHP);
 	uint maxThreads = sysconf(_SC_NPROCESSORS_ONLN);
 
 	srand(time(NULL));
 	printf("If no faliures are printed then we are fine.\n");
 	nnLayer *layer0 = createDumbLayer(dim,numHP);
-	nnLayer *layer1 = createDumbLayer(numHP, finalDim);
+	nnLayer *layer1 = createDumbSelectionLayer(numHP, finalDim);
 	_nnMap *map = allocateMap(layer0);
 
 	uint *ipSignature = malloc(keySize*numData*sizeof(uint));
@@ -96,7 +118,18 @@ int main(int argc, char* argv[])
 	int maxLocIndex = numLoc(map);
 
 	maxPopGroupData * max = refineMapAndGetMax(locations, maxLocIndex, layer1);
+	float * avgError = calloc(dim,sizeof(float));
+	getAverageError(max, data, avgError);
 
+	float * solution = getSolutionPointer(map);
+	float * newHPVec = malloc((dim+1)*sizeof(float));
+	createNewHPVec(max, avgError, solution, layer0, newHPVec, newHPVec+dim);
+
+	vector *vecRegKeys = getRegSigs(locations, maxLocIndex);
+	int dataLength = 2*vector_total(vecRegKeys);
+	float *unpackedSigs = malloc(2*dataLength*(numHP+1)*sizeof(float));
+	float *labels = malloc(2*dataLength*sizeof(float));
+	createData(max, layer1, vecRegKeys,unpackedSigs,labels);
 
 	freeMaxPopGroupData(max);
 	free(locations);

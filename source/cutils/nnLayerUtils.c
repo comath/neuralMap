@@ -87,7 +87,7 @@ void getRegSig(nnLayer *layer, float *p, kint * regSig)
 	float *output = malloc(outDim*sizeof(float));
 	evalLayer(layer, p,output);
 
-	convertFloatToKey(output,regSig,outDim);
+	convertFromFloatToKey(output,regSig,outDim);
 }
 
 struct getRegThreadArgs {

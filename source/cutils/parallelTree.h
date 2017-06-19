@@ -1,3 +1,7 @@
+/*
+Used by ipCalculator. Currently not called as ipCalculator is not currently used.
+*/
+
 #ifndef _paralleltree_h
 #define _paralleltree_h
 #include <stdio.h>

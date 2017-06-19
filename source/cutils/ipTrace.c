@@ -1,6 +1,11 @@
 #include "ipTrace.h"
 #include <math.h>
 
+/*
+Creates the data needed for the hp distance computation
+
+Needs two float arrays of size n*m and m
+*/
 void fillHPCache(nnLayer *layer, float * hpNormals, float * hpOffsetVals)
 {
 	int i = 0;
@@ -24,6 +29,7 @@ void fillHPCache(nnLayer *layer, float * hpNormals, float * hpOffsetVals)
 	}
 }
 
+// Orders the distWithIndex struct by the distance
 int distOrderingCmp (const void * a, const void * b)
 {
 	distanceWithIndex *myA = (distanceWithIndex *)a;
@@ -35,9 +41,14 @@ int distOrderingCmp (const void * a, const void * b)
 	}
 }
 
-void computeDistToHPS(float *p, 
-						float * hpNormals, float * hpOffsetVals, int m, int n, 
-						distanceWithIndex *distances)
+/*
+Computes the distance between a point and the hyperplanes.
+
+Inputs: p, and the result of fillHPCache
+Outputs: distances, ordered by distance (close to far)
+*/
+void computeDistToHPS(float *p, distanceWithIndex *distances,
+						float * hpNormals, float * hpOffsetVals, int m, int n)
 {	
 	#ifdef DEBUG
 		printf("Getting distances to local HPs\n");
@@ -65,7 +76,10 @@ void computeDistToHPS(float *p,
 	}
 	qsort(distances, m, sizeof(distanceWithIndex), distOrderingCmp);	
 }
-	
+
+/*
+Creates a traceCache, creates a solution and calls fillHPCache
+*/
 traceCache * allocateTraceCache(nnLayer * layer)
 {
 	int m = layer->outDim;
@@ -79,10 +93,6 @@ traceCache * allocateTraceCache(nnLayer * layer)
 		exit(-1);
 	}
 	traceCache * tc = malloc(sizeof(traceCache));
-	if(!tc){
-		printf("Memory Error\n");
-		exit(-1);
-	}
 	tc->layer = layer;
 
 	tc->hpNormals = calloc(m*n,sizeof(float));
@@ -90,26 +100,9 @@ traceCache * allocateTraceCache(nnLayer * layer)
 	fillHPCache(layer,tc->hpNormals, tc->hpOffsetVals);
 	
 	float *u = malloc(m*m*sizeof(float)); //n^2
-	if(!u){
-		printf("Memory Error\n");
-		exit(-1);	
-	}
 	float *vt = malloc(n*n*sizeof(float)); //m^2
-	if(!vt){
-		printf("Memory Error\n");
-		exit(-1);	
-	}
 	float *c = malloc(n*m*sizeof(float)); //m*n
-	if(!c){
-		printf("Memory Error\n");
-		exit(-1);	
-	}
 	float *s = malloc(m*sizeof(float)); //m
-	if(!s){
-		printf("Memory Error\n");
-		exit(-1);	
-	}
-	
 	
 	tc->solution = malloc(n * sizeof(float));
 	if(!tc->solution){
@@ -120,6 +113,9 @@ traceCache * allocateTraceCache(nnLayer * layer)
 	const float zeroF = 0.0;
 	const char N = 'N';
 
+	// Solves Ax=b, in many steps
+
+	// SVD first
 	MKL_INT info;
 	info = LAPACKE_sgesdd( LAPACK_ROW_MAJOR, 'A', m, n, layer->A, n, 
 							s, 
@@ -141,6 +137,7 @@ traceCache * allocateTraceCache(nnLayer * layer)
 		cblas_sscal(m,(1/s[i]),u+i,m);
 		i++;
 	}
+	// Multiplies v with (sigma+*u)
 	sgemm (&N,&N, 
 		&n, &m, &m, 
 		&oneF, vt, &n, 
@@ -178,35 +175,11 @@ void freeTraceCache(traceCache * tc)
 traceMemory * allocateTraceMB(int m, int n)
 {
 	traceMemory * tm = malloc(sizeof(traceMemory));
-	if(!tm){
-		printf("Memory Error\n");
-		exit(-1);
-	}
 	tm->tau = malloc(m*sizeof(float));
-	if(!tm->tau){
-		printf("Memory Error\n");
-		exit(-1);
-	}
 	tm->distances = malloc(m*sizeof(distanceWithIndex));
-	if(!tm->distances){
-		printf("Memory Error\n");
-		exit(-1);
-	}
 	tm->interDists = malloc(m*sizeof(float));
-	if(!tm->interDists){
-		printf("Memory Error\n");
-		exit(-1);
-	}
 	tm->permA = malloc(m*n*sizeof(float));
-	if(!tm->permA){
-		printf("Memory Error\n");
-		exit(-1);
-	}
 	tm->pointBuff = malloc(n*sizeof(float));
-	if(!tm->pointBuff){
-		printf("Memory Error\n");
-		exit(-1);
-	}
 	return tm;
 }
 
@@ -234,9 +207,21 @@ void fillPermMatrix(distanceWithIndex *distances, nnLayer *layer, float *permA)
 	}
 }
 
+
+/* 
+Workhorse of this file. All external computational calls, eventually call this and repack the return.
+We compute Q with Gram Schmidt, which is orthogonal, so we can do this sequential projection onto Q
+This will produce the projection onto each subspace in the flag of the rearanged matrix
+The flag of that rearanged matrix is the trace of the point through the intersection poset
+Thus we get the distances for the trace in ~ O(mn^2-(1/3)m^3)
+
+The interDists are the distances to the closest rank i intersection for i in (1,... ,n)
+
+Input: point, tc, tm,
+Output: distances, interDists
+*/
 void fullTraceWithDist(traceCache * tc, traceMemory * tm, float * point, distanceWithIndex * distances, float * interDists)
 {
-	int i;
 	int m = tc->layer->outDim;
 	int n = tc->layer->inDim;
 	
@@ -249,24 +234,26 @@ void fullTraceWithDist(traceCache * tc, traceMemory * tm, float * point, distanc
 		}
 	#endif
 
-	computeDistToHPS(point,tc->hpNormals,tc->hpOffsetVals,m,n,distances);
+	computeDistToHPS(point,distances,tc->hpNormals,tc->hpOffsetVals,m,n);
 	fillPermMatrix(distances,tc->layer,tm->permA);
 	#ifdef DEBUG
 		if(n<10 && m<10){
 			printf("Distances to HPs: [");
-			for(i=0;i<m-1;i++){
+			for(int i=0;i<m-1;i++){
 				printf("%d:%f, ", distances[i].index,distances[i].dist);
 			}
-			printf("%d:%f]\n", distances[i].index,distances[m-1].dist);
+			printf("%d:%f]\n", distances[m-1].index,distances[m-1].dist);
 			printf("HPs rearranged:\n");
 			printMatrix(tm->permA,n,m);
 		}
 	#endif
+	// Does QR decomp. Creates R and the pivot indexes for Q. 
 	int rc = LAPACKE_sgeqrf (LAPACK_COL_MAJOR, m, m, tm->permA, n, tm->tau);
 	if(rc){
 		printf("QR failed\n");
 		exit(-1);
 	}
+	// Unpacks Q from R and the pivot indexes
 	rc = LAPACKE_sorgqr(LAPACK_COL_MAJOR, m, m, m, tm->permA, n, tm->tau);
 	if(rc){
 		printf("Getting Q failed\n");
@@ -288,10 +275,7 @@ void fullTraceWithDist(traceCache * tc, traceMemory * tm, float * point, distanc
 		}
 	#endif
 
-	// We have Q from Gram Schmidt, which is orthogonal, so we can do this sequential projection onto Q
-	// This will produce the projection onto each subspace in the flag of the rearanged matrix
-	// The flag of that rearanged matrix is the trace of the point through the intersection poset
-	// Thus we get the distances for the trace in ~ O(mn^2-(1/3)m^3)
+	// Final computation of trace distances
 	float curProj = 0;
 	float dot = 0;
 	for(int i = 0; i< m;i++){
@@ -336,6 +320,12 @@ void fullTrace(traceCache * tc, traceMemory * tm, float * point, float * dists, 
 	#endif
 }
 
+
+/* 
+Computes the associated intersection from the outputs fullTraceWithDist with the given threshold. See paper for explanation of workings. 
+
+Used in the other packing functions, internal. 
+*/
 void getIntersection(float *interDists, distanceWithIndex *dists, int m, kint * ipSig, float threshold)
 {
 	int i = 0;
@@ -378,6 +368,7 @@ void getIntersection(float *interDists, distanceWithIndex *dists, int m, kint * 
 		printf("====================================\n");
 	#endif
 }
+
 
 void ipCalc(traceCache * tc, traceMemory * tm, float * point, float threshold, kint *ipSig)
 {

@@ -23,7 +23,7 @@ uint checkIndex(kint *key, uint i)
 	}
 }
 
-void convertFromKey(kint *key, int * raw, uint dataLen)
+void convertFromKeyToInt(kint *key, int * raw, uint dataLen)
 {
 	uint i = 0;
 	for(i=0;i<dataLen;i++){
@@ -35,7 +35,7 @@ void convertFromKey(kint *key, int * raw, uint dataLen)
 	}
 }
 
-void convertFromKeyChar(kint *key, char * raw, uint dataLen)
+void convertFromKeyToChar(kint *key, char * raw, uint dataLen)
 {
 	uint i = 0;
 	for(i=0;i<dataLen;i++){
@@ -47,7 +47,7 @@ void convertFromKeyChar(kint *key, char * raw, uint dataLen)
 	}
 }
 
-void convertToKey(int * raw, kint *key,uint dataLen)
+void convertFromIntToKey(int * raw, kint *key,uint dataLen)
 {
 
 	uint keyLen = calcKeyLen(dataLen);
@@ -152,11 +152,11 @@ int checkEmptyKey(kint *key,uint keyLength)
 }
 
 
-void batchConvertToKey(int * raw, kint *key,uint dataLen, uint numData){
+void batchConvertFromIntToKey(int * raw, kint *key,uint dataLen, uint numData){
 	uint i =0;
 	uint keyLen = calcKeyLen(dataLen);
 	for(i=0;i<numData;i++){
-		convertToKey(raw + i*dataLen, key +i*keyLen,dataLen);
+		convertFromIntToKey(raw + i*dataLen, key +i*keyLen,dataLen);
 	}
 }
 
@@ -225,22 +225,22 @@ void copyKey(kint *key1, kint *key2, uint keyLen)
 	memcpy(key2, key1, keyLen*sizeof(kint));
 }
 
-void batchConvertFromKey(kint *key, int * raw, uint dataLen,uint numData){
+void batchConvertFromKeyToInt(kint *key, int * raw, uint dataLen,uint numData){
 	uint i =0;
 	uint keyLen = calcKeyLen(dataLen);
 	printf("Converting a key. Data length: %u, numData: %u\n",dataLen,numData );
 	for(i=0;i<numData;i++){
-		convertFromKey(key + i*keyLen, raw +i*dataLen,dataLen);
+		convertFromKeyToInt(key + i*keyLen, raw +i*dataLen,dataLen);
 	}
 }
 
-void batchConvertFromKeyChar(kint *key, char * raw, uint dataLen,uint numData)
+void batchConvertFromKeyToChar(kint *key, char * raw, uint dataLen,uint numData)
 {
 	uint i =0;
 	uint keyLen = calcKeyLen(dataLen);
 	printf("Converting a key. Data length: %u, numData: %u\n",dataLen,numData );
 	for(i=0;i<numData;i++){
-		convertFromKeyChar(key + i*keyLen, raw +i*dataLen,dataLen);
+		convertFromKeyToChar(key + i*keyLen, raw +i*dataLen,dataLen);
 	}
 }
 
@@ -267,7 +267,7 @@ void batchChromaticKey(kint* key, float *rgb, uint dataLen, uint numData){
 	}
 }
 
-void convertFloatToKey(float * raw, kint *key,uint dataLen)
+void convertFromFloatToKey(float * raw, kint *key,uint dataLen)
 {
 	uint keyLen = calcKeyLen(dataLen);
 	clearKey(key, keyLen);

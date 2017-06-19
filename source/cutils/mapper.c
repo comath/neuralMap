@@ -74,7 +74,7 @@ void addPointToMapInternal(_nnMap * map, mapMemory *mm, traceMemory *tm, pointIn
 	pi->errorClass = errorClass;
 	// Get the Region Signature, save it offset by keyLength
 	evalLayer(map->layer, point, mm->outOfLayer);
-	convertFloatToKey(mm->outOfLayer, mm->keyPair + mm->keyLength,map->layer->outDim);
+	convertFromFloatToKey(mm->outOfLayer, mm->keyPair + mm->keyLength,map->layer->outDim);
 
 	addMapData(map->locationTree, mm->keyPair, pi);
 }
@@ -83,8 +83,6 @@ void addPointToMap(_nnMap * map, float *point, int pointIndex, int errorClass, f
 {
 	uint outDim = map->layer->outDim;
 	traceMemory * tm = allocateTraceMB(outDim, map->layer->inDim);
-	// The data is stored lexographically by (ipSig,regSig) as one long key.
-	// This can be easily achieved with some pointer arithmetic
 	pointInfo *pi = allocPointInfo(outDim);
 	mapMemory *mm = allocMapMemory(outDim);
 	addPointToMapInternal(map,mm,tm,pi,point,pointIndex,errorClass,threshold);
