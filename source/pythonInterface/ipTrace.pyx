@@ -76,7 +76,7 @@ cdef class traceCalc:
 				return dists,chromaipSignatures
 			if(kwarg['returnType'] =='uncompressed'):
 				ipSignaturesUncompressed = np.zeros([self.m,self.m], dtype=np.int8)
-				batchConvertFromKeyChar(<kint * >ipSigTraces.data, <char *> ipSignaturesUncompressed.data, self.m,self.m)
+				batchConvertFromKeyToChar(<kint * >ipSigTraces.data, <char *> ipSignaturesUncompressed.data, self.m,self.m)
 				return dists,ipSignaturesUncompressed
 		return dists,ipSigTraces
 
@@ -105,7 +105,7 @@ cdef class traceCalc:
 				return dists,chromaipSignatures
 			if(kwarg['returnType'] =='uncompressed'):
 				ipSignaturesUncompressed = np.zeros([numData,self.m,self.m], dtype=np.int8)
-				batchConvertFromKeyChar(<kint * >ipSigTraces.data, <char *> ipSignaturesUncompressed.data, self.m,numData*self.m)
+				batchConvertFromKeyToChar(<kint * >ipSigTraces.data, <char *> ipSignaturesUncompressed.data, self.m,numData*self.m)
 				return dists,ipSignaturesUncompressed
 		return dists,ipSigTraces
 		
@@ -125,7 +125,7 @@ cdef class traceCalc:
 				return chromaipSignatures
 			if(kwarg['output_type']=='uncompressed'):
 				ipSignaturesUncompressed = np.zeros([self.m], dtype=np.int8)
-				batchConvertFromKeyChar(<kint * >ipSig.data, <char *> ipSignaturesUncompressed.data, self.m,1)
+				batchConvertFromKeyToChar(<kint * >ipSig.data, <char *> ipSignaturesUncompressed.data, self.m,1)
 				return ipSignaturesUncompressed
 		return ipSig
 
@@ -157,7 +157,7 @@ cdef class traceCalc:
 			if(kwarg['returnType'] =='uncompressed'):
 				print('Decompressing')
 				ipSignaturesUncompressed = np.zeros([numData,self.m], dtype=np.int8)
-				batchConvertFromKeyChar(<kint * >ipSig.data, <char *> ipSignaturesUncompressed.data, self.m,numData)
+				batchConvertFromKeyToChar(<kint * >ipSig.data, <char *> ipSignaturesUncompressed.data, self.m,numData)
 				return ipSignaturesUncompressed
 		
 		return ipSig

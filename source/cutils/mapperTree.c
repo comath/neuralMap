@@ -208,15 +208,15 @@ void traverseSubtree(mapTreeNode *(*(*traversePointer)), mapSubTree *st)
 			traverseSubtree(traversePointer, st->nextSubTrees[i]);
 		}
 		if( st->nodes[i].createdKL){
-			
-			printf("Node access: %p, ",st->nodes+i);
-			printf("location total: %d, ", st->nodes[i].loc.total);
-			printf("location error total: %d, ", st->nodes[i].loc.total_error);
-			printf("regKey[0]: %u, ", st->nodes[i].regKey[0]);
-			printf("regKey address: %p, ", st->nodes[i].regKey);
-			printf("ipKey[0]: %u, ", st->nodes[i].ipKey[0]);
-			printf("ipKey address: %p\n ", st->nodes[i].ipKey);
-
+			#ifdef DEBUG
+				printf("Node access: %p, ",st->nodes+i);
+				printf("location total: %d, ", st->nodes[i].loc.total);
+				printf("location error total: %d, ", st->nodes[i].loc.total_error);
+				printf("regKey[0]: %u, ", st->nodes[i].regKey[0]);
+				printf("regKey address: %p, ", st->nodes[i].regKey);
+				printf("ipKey[0]: %u, ", st->nodes[i].ipKey[0]);
+				printf("ipKey address: %p\n ", st->nodes[i].ipKey);
+			#endif
 			
 				*(*traversePointer) = st->nodes + i;
 				(*traversePointer)++;

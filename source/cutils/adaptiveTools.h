@@ -71,7 +71,9 @@ void createData(maxErrorCorner *maxErrorGroup, nnLayer *selectionLayer, vector *
 
 //void unpackRegSigs(vector * regSigs, uint dim, float * unpackedSigs);
 
-// Helper function for cython.
+// Helper functions for cython.
 float *getSolutionPointer(_nnMap *map);
+int getSelectionIndex(maxErrorCorner * maxGroup);
+
 
 #endif

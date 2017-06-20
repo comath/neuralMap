@@ -192,8 +192,9 @@ void createGroup(vector * ipCollection, vector * subGroup, float *selectionVec, 
 				printf("Remaining ip group size %d\n", vector_total(ipCollection));
 			#endif
 			for(k = 0; k < vector_total(ipCollection); k++){
-				printf("===\n");
-
+				#ifdef DEBUG
+					printf("===\n");
+				#endif
 				compareLoc = (mapTreeNode *)vector_get(ipCollection,k);
 
 				#ifdef DEBUG
@@ -244,7 +245,7 @@ mapTreeNode ** unpackGroup(vector * group)
 	return ret;
 }
 
-void freeMaxPopGroupData(maxPopGroupData * group)
+void freeMaxErrorCorner(maxErrorCorner * group)
 {
 	if(group){
 		if(group->locations){
@@ -259,7 +260,7 @@ void freeMaxPopGroupData(maxPopGroupData * group)
 
 
 
-maxPopGroupData * refineMapAndGetMax(mapTreeNode ** locArr, int maxLocIndex, nnLayer * selectionLayer)
+maxErrorCorner * refineMapAndGetMax(mapTreeNode ** locArr, int maxLocIndex, nnLayer * selectionLayer)
 {
 	float *selectionMat = selectionLayer->A;
 	float *selectionBias = selectionLayer->b;
@@ -269,7 +270,7 @@ maxPopGroupData * refineMapAndGetMax(mapTreeNode ** locArr, int maxLocIndex, nnL
 	int keyLen = locArr[0]->createdKL;
 	kint * hpCrossSigTemp = malloc(keyLen * sizeof(kint));
 	
-	maxPopGroupData * maxData = malloc(sizeof(maxPopGroupData));
+	maxErrorCorner * maxData = malloc(sizeof(maxErrorCorner));
 	maxData->hpCrossed = malloc(keyLen * sizeof(kint));
 	maxData->weightedCount = 0;
 	maxData->locCount = 0;
@@ -375,7 +376,7 @@ vector * getRegSigs(mapTreeNode ** locArr, int numNodes)
 }
 
 // Should be improved, slow search algo
-int checkIfListed(maxPopGroupData *maxErrorGroup, kint *regSig,uint keyLength)
+int checkIfListed(maxErrorCorner *maxErrorGroup, kint *regSig,uint keyLength)
 {
 	int i = 0;
 	for(i=0; i<maxErrorGroup->locCount; i++){
@@ -386,7 +387,7 @@ int checkIfListed(maxPopGroupData *maxErrorGroup, kint *regSig,uint keyLength)
 	return 0;
 }
 
-void createData(maxPopGroupData *maxErrorGroup, nnLayer *selectionLayer, vector *regSigs, float *unpackedSigs, float * labels)
+void createData(maxErrorCorner *maxErrorGroup, nnLayer *selectionLayer, vector *regSigs, float *unpackedSigs, float * labels)
 {
 	uint dim = selectionLayer->inDim;
 	int i = 0;
@@ -451,7 +452,7 @@ float *getSolutionPointer(_nnMap *map)
 }
 
 
-void getAverageError(maxPopGroupData * maxErrorGroup, float *data, float * avgError)
+void getAverageError(maxErrorCorner * maxErrorGroup, float *data, float * avgError)
 {
 	int dim = maxErrorGroup->locations[0]->loc.m;
 	location curLoc;
@@ -467,7 +468,7 @@ void getAverageError(maxPopGroupData * maxErrorGroup, float *data, float * avgEr
 
 
 // Produces a vector that always point towards the corner in question, and is located to intersect with the average error given
-void createNewHPVec(maxPopGroupData * maxErrorGroup, float * avgError, float *solution, nnLayer *hpLayer, float *newHPVec, float *newHPOff)
+void createNewHPVec(maxErrorCorner * maxErrorGroup, float * avgError, float *solution, nnLayer *hpLayer, float *newHPVec, float *newHPOff)
 {
 	uint outDim = hpLayer->outDim;
 	uint inDim = hpLayer->inDim;
@@ -512,4 +513,9 @@ void createNewHPVec(maxPopGroupData * maxErrorGroup, float * avgError, float *so
 
 	// Get the offset and save it.
 	newHPOff[0] = - cblas_sdot(inDim,shiftedAvgError,1,newHPVec,1);
+}
+
+int getSelectionIndex(maxErrorCorner * maxGroup)
+{
+	return maxGroup->selectionIndex;
 }

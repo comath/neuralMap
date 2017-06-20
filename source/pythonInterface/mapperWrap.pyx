@@ -81,20 +81,23 @@ cdef extern from "../cutils/mapper.h":
 
 
 cdef extern from "../cutils/adaptiveTools.h":
-	ctypedef struct maxPopGroupData:
+	ctypedef struct maxErrorCorner:
 		mapTreeNode ** nodes
 		kint * hpCrossed
 		int count
 		int selectionIndex
 
-	cdef maxPopGroupData * refineMapAndGetMax(mapTreeNode ** locArr, int maxLocIndex, nnLayer * selectionLayer)
-	cdef float *getSolutionPointer(_nnMap *map) 
-	cdef void getAverageError(maxPopGroupData * maxErrorGroup, float *data, float * avgError)
-	cdef void createNewHPVec(maxPopGroupData * maxErrorGroup, float * avgError, float *solution, nnLayer *hpLayer, float *newVec, float *newOff)
+	cdef maxErrorCorner * refineMapAndGetMax(mapTreeNode ** locArr, int maxLocIndex, nnLayer * selectionLayer)
+	
+	cdef void getAverageError(maxErrorCorner * maxErrorGroup, float *data, float * avgError)
+	cdef void createNewHPVec(maxErrorCorner * maxErrorGroup, float * avgError, float *solution, nnLayer *hpLayer, float *newVec, float *newOff)
 
 	cdef vector * getRegSigs(mapTreeNode ** locArr, int numNodes)
 	#cdef void unpackRegSigs(vector * regSigs, unsigned int dim, float * unpackedSigs)
-	cdef void createData(maxPopGroupData *maxErrorGroup, nnLayer *selectionLayer, vector *regSigs, float *unpackedSigs, float * labels)
+	cdef void createData(maxErrorCorner *maxErrorGroup, nnLayer *selectionLayer, vector *regSigs, float *unpackedSigs, float * labels)
+
+	cdef float *getSolutionPointer(_nnMap *map) 
+	cdef int getSelectionIndex(maxErrorCorner * maxGroup)
 
 
 cdef class _location:
@@ -134,6 +137,7 @@ cdef class nnMap:
 	cdef unsigned int inDim0
 	cdef unsigned int keyLen
 	cdef unsigned int numLoc
+	cdef float threshold
 	cdef mapTreeNode ** locArr
 
 	def __cinit__(self,np.ndarray[float,ndim=2,mode="c"] A0 not None, np.ndarray[float,ndim=1,mode="c"] b0 not None,
@@ -211,20 +215,27 @@ cdef class nnMap:
 			self.locArr = getLocations(self.internalMap,'i')
 			if not self.locArr:
 				raise MemoryError()
-		cdef maxPopGroupData * maxErrorGroup = refineMapAndGetMax(self.locArr, self.numLoc, layer1)
+		print("Starting the adaptive step.")
+		print("Searching for the corner with the most error")
+		cdef maxErrorCorner * maxErrorGroup = refineMapAndGetMax(self.locArr, self.numLoc, layer1)
 
+		print("Aquiring average error in the max error corner")
 		cdef np.ndarray[np.float32_t,ndim=1] avgError = np.zeros([self.inDim0], dtype=np.float32)
 		getAverageError(maxErrorGroup, <float *> data.data, <float *> avgError.data)
 
+		print("Creating new hyperplane.")
 		cdef float * solution = getSolutionPointer(self.internalMap)
 		cdef np.ndarray[np.float32_t,ndim=1] newHPVec = np.zeros([self.inDim0], dtype=np.float32)
 		cdef np.ndarray[np.float32_t,ndim=1] newHPoff = np.zeros([1], dtype=np.float32)
 		createNewHPVec(maxErrorGroup, <float *>avgError.data, solution, self.layer0, <float *>newHPVec.data,<float *> newHPoff.data);
 
+		print("Creating new data.")
 		cdef vector *vecRegKeys = getRegSigs(self.locArr, self.numLoc)
 		cdef int dataLength = 2*vector_total(vecRegKeys)
 		cdef np.ndarray[np.float32_t,ndim=2] unpackedSigs = np.zeros([dataLength,inDim1+1], dtype=np.float32)
 		cdef np.ndarray[np.float32_t,ndim=1] labels = np.zeros([dataLength], dtype=np.float32)
 		createData(maxErrorGroup, layer1, vecRegKeys, <float *>unpackedSigs.data, <float *>labels.data)
 
-		return newHPVec, newHPoff, unpackedSigs, labels
+		selectionIndex = getSelectionIndex(maxErrorGroup)
+
+		return newHPVec, newHPoff, unpackedSigs, labels, selectionIndex

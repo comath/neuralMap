@@ -15,13 +15,13 @@ import sys
 cdef extern from "../cutils/key.h":
 	cdef char compareKey(kint *x, kint *y, unsigned int keyLength)
 	
-	cdef void convertToKey(int * raw, kint *key,unsigned int dataLen)
-	cdef void convertFromKey(kint *key, int * output, unsigned int dataLen)
+	cdef void convertFromIntToKey(int * raw, kint *key,unsigned int dataLen)
+	cdef void convertFromKeyToInt(kint *key, int * output, unsigned int dataLen)
 	cdef void chromaticKey(kint *key, float *rgb, unsigned int dataLen)
 
-	cdef void batchConvertToKey(int * raw, kint *key,unsigned int dataLen, unsigned int numData)
-	cdef void batchConvertFromKey(kint *key, int * output, unsigned int dataLen,unsigned int numData)
-	cdef void batchConvertFromKeyChar(kint *key, char * output, unsigned int dataLen,unsigned int numData)
+	cdef void batchConvertFromIntToKey(int * raw, kint *key,unsigned int dataLen, unsigned int numData)
+	cdef void batchConvertFromKeyToInt(kint *key, int * output, unsigned int dataLen,unsigned int numData)
+	cdef void batchConvertFromKeyToChar(kint *key, char * output, unsigned int dataLen,unsigned int numData)
 	cdef void batchChromaticKey(kint *key, float *rgb, unsigned int dataLen, unsigned int numData)
 
 	cdef unsigned int calcKeyLen(unsigned int dataLen)
@@ -37,7 +37,7 @@ def convertToRGB(np.ndarray[int,ndim=1,mode="c"] b not None):
 	cdef kint *_key = <kint *>malloc(keyLen * sizeof(kint))
 	if not _key:
 		raise MemoryError()		
-	convertToKey(&b[0],_key,dim)
+	convertFromIntToKey(&b[0],_key,dim)
 	cdef np.ndarray[np.float32_t,ndim=1] chromaKey = np.zeros([3], dtype=np.float32)
 
 	chromaticKey(_key, <float *> chromaKey.data, dim)
@@ -46,7 +46,7 @@ def convertToRGB(np.ndarray[int,ndim=1,mode="c"] b not None):
 
 def readKey(np.ndarray[np.uint64_t,ndim=1,mode="c"] compressedKey not None,unsigned int dataLen):
 	cdef np.ndarray[np.int32_t,ndim=1] rawKey = np.zeros([dataLen], dtype=np.int32)
-	convertFromKey(<kint *> compressedKey.data, <int *> rawKey.data, dataLen)
+	convertFromKeyToInt(<kint *> compressedKey.data, <int *> rawKey.data, dataLen)
 	return rawKey
 
 def pyCalcKeyLen(unsigned int dataLen):
