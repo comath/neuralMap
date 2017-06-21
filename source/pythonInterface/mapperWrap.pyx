@@ -72,7 +72,7 @@ cdef extern from "../cutils/mapper.h":
 	cdef void freeMap(_nnMap * internalMap)
 
 	cdef void addPointToMap(_nnMap * map, float *point, int pointIndex, int errorClass, float threshold)
-	cdef void addDataToMapBatch(_nnMap * map, float *data, int *indexes, int * errorClasses, float threshold, unsigned int numData, unsigned int numProc)
+	cdef void addPointsToMapBatch(_nnMap * map, float *data, int *indexes, int * errorClasses, float threshold, unsigned int numData, unsigned int numProc)
 
 	cdef location getPointsAt(_nnMap *map, kint *keyPair)
 	cdef unsigned int numLoc(_nnMap * map)
@@ -94,7 +94,8 @@ cdef extern from "../cutils/adaptiveTools.h":
 
 	cdef vector * getRegSigs(mapTreeNode ** locArr, int numNodes)
 	#cdef void unpackRegSigs(vector * regSigs, unsigned int dim, float * unpackedSigs)
-	cdef void createData(maxErrorCorner *maxErrorGroup, nnLayer *selectionLayer, vector *regSigs, float *unpackedSigs, float * labels)
+	cdef void createData(maxErrorCorner *maxErrorGroup, nnLayer *selectionLayer, int selectionIndex, vector *regSigs, float *unpackedSigs, int * labels)
+
 
 	cdef float *getSolutionPointer(_nnMap *map) 
 	cdef int getSelectionIndex(maxErrorCorner * maxGroup)
@@ -175,7 +176,7 @@ cdef class nnMap:
 		numData = data.shape[0]
 		if(data.shape[1] != self.layer0.inDim):
 			eprint("Data is of the wrong dimension.")   
-		addDataToMapBatch(self.internalMap,<float *> data.data, <int *> indexes.data,<int *> errorClass.data, self.threshold,numData, numProc)
+		addPointsToMapBatch(self.internalMap,<float *> data.data, <int *> indexes.data,<int *> errorClass.data, self.threshold,numData, numProc)
 
 	def numLocations(self):
 		if not self.locArr:
@@ -233,9 +234,12 @@ cdef class nnMap:
 		cdef vector *vecRegKeys = getRegSigs(self.locArr, self.numLoc)
 		cdef int dataLength = 2*vector_total(vecRegKeys)
 		cdef np.ndarray[np.float32_t,ndim=2] unpackedSigs = np.zeros([dataLength,inDim1+1], dtype=np.float32)
-		cdef np.ndarray[np.float32_t,ndim=1] labels = np.zeros([dataLength], dtype=np.float32)
-		createData(maxErrorGroup, layer1, vecRegKeys, <float *>unpackedSigs.data, <float *>labels.data)
-
+		cdef np.ndarray[np.int32_t,ndim=1] labels = np.zeros([dataLength], dtype=np.int32)
+		
 		selectionIndex = getSelectionIndex(maxErrorGroup)
+		print("... Creating %(dataLength)d artificial data"%{'dataLength':dataLength})
+		createData(maxErrorGroup, layer1, selectionIndex, vecRegKeys, <float *>unpackedSigs.data, <int *>labels.data)
+
+		
 
 		return newHPVec, newHPoff, unpackedSigs, labels, selectionIndex

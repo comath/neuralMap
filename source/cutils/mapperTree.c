@@ -232,7 +232,7 @@ void traverseSubtree(mapTreeNode *(*(*traversePointer)), mapSubTree *st)
 mapTreeNode ** getAllNodes(mapTree * tree)
 {
 	mapTreeNode *(*nodePointerArr) = malloc(tree->numNodes*sizeof(mapTreeNode *));
-	printf("%p %lu %d %lu\n", nodePointerArr,tree->numNodes*sizeof(mapTreeNode *),tree->numNodes, sizeof(mapTreeNode *));
+	//printf("%p %d \n", nodePointerArr,tree->numNodes);
 	mapTreeNode *(*traversePointer) = nodePointerArr;
 	traverseSubtree(&traversePointer,tree->root);
 	

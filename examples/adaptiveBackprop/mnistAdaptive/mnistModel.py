@@ -7,7 +7,7 @@ trX, trY, teX, teY = mnist.train.images, mnist.train.labels,\
 mnist.test.images, mnist.test.labels
 
 inDim = 28*28
-hiddenDim = 25
+hiddenDim = 15
 outDim = 10
 batchSize = 300
 

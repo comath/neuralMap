@@ -108,17 +108,14 @@ int main(int argc, char* argv[])
 		errorClasses[i] = i%2;
 	} 
 
-	printf("Calculating the signature of Points\n");
-
-	addPointToMap(map, data, -1, 0,2);
-
-	addDataToMapBatch(map,data,indexes,errorClasses,2,numData,1);
+	printf("Calculating the signature of %d Points\n",numData);
+	addPointsToMapBatch(map,data,indexes,errorClasses,2,numData,4);
 
 	mapTreeNode ** locations = getLocations(map, 'i');
 	int maxLocIndex = numLoc(map);
 
-	maxPopGroupData * max = refineMapAndGetMax(locations, maxLocIndex, layer1);
-	float * avgError = calloc(dim,sizeof(float));
+	maxErrorCorner * max = refineMapAndGetMax(locations, maxLocIndex, layer1);
+	float * avgError = malloc(dim*sizeof(float));
 	getAverageError(max, data, avgError);
 
 	float * solution = getSolutionPointer(map);
@@ -128,10 +125,10 @@ int main(int argc, char* argv[])
 	vector *vecRegKeys = getRegSigs(locations, maxLocIndex);
 	int dataLength = 2*vector_total(vecRegKeys);
 	float *unpackedSigs = malloc(2*dataLength*(numHP+1)*sizeof(float));
-	float *labels = malloc(2*dataLength*sizeof(float));
-	createData(max, layer1, vecRegKeys,unpackedSigs,labels);
+	int *labels = malloc(2*dataLength*sizeof(int));
+	createData(max, layer1, 0, vecRegKeys,unpackedSigs,labels);
 
-	freeMaxPopGroupData(max);
+	freeMaxErrorCorner(max);
 	free(locations);
 	free(ipSignature);
 	free(indexes);

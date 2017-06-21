@@ -124,6 +124,7 @@ void * addMapperBatch_thread(void *thread_args)
 	mapMemory *mm = allocMapMemory(m);
 	
 	uint i = 0;
+
 	for(i=tid;i<numData;i=i+numThreads){
 		addPointToMapInternal(map,mm,tm,pi,myargs->data + i*n,myargs->indexes[i],myargs->errorClasses[i],myargs->threshold);
 	}
@@ -133,7 +134,7 @@ void * addMapperBatch_thread(void *thread_args)
 	pthread_exit(NULL);
 }
 
-void addDataToMapBatch(_nnMap * map, float *data, int *indexes, int *errorClasses, float threshold, uint numData, uint numProc)
+void addPointsToMapBatch(_nnMap * map, float *data, int *indexes, int *errorClasses, float threshold, uint numData, uint numProc)
 {
 	int maxThreads = numProc;
 	int rc =0;

@@ -39,12 +39,6 @@ void evalLayer(nnLayer *layer, float * input, float * output)
 {
 	uint inDim = layer->inDim;
 	uint outDim = layer->outDim;
-	#ifdef DEBUG
-		if(inDim < 10 && outDim < 20){
-			printMatrix(layer->A,layer->inDim,layer->outDim);
-			printFloatArr(layer->b,layer->outDim);
-		}
-	#endif
 	cblas_scopy (outDim, layer->b, 1, output, 1);
 	cblas_sgemv (CblasRowMajor, CblasNoTrans, outDim,inDim,1, layer->A, inDim, input, 1, 1, output, 1);
 }

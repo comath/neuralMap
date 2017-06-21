@@ -67,7 +67,8 @@ Creates a artificial dataset with which we can train the new selection vector.
 Inputs: maxErrorGroup, selectionLayer, regSigs
 Outputs: unpackedSigs, labels
 */
-void createData(maxErrorCorner *maxErrorGroup, nnLayer *selectionLayer, vector *regSigs, float *unpackedSigs, float * labels);
+void createData(maxErrorCorner *maxErrorGroup, nnLayer *selectionLayer, int selectionIndex, vector *regSigs, float *unpackedSigs, int * labels);
+
 
 //void unpackRegSigs(vector * regSigs, uint dim, float * unpackedSigs);
 

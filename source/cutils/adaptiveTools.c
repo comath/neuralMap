@@ -387,10 +387,15 @@ int checkIfListed(maxErrorCorner *maxErrorGroup, kint *regSig,uint keyLength)
 	return 0;
 }
 
-void createData(maxErrorCorner *maxErrorGroup, nnLayer *selectionLayer, vector *regSigs, float *unpackedSigs, float * labels)
+void createData(maxErrorCorner *maxErrorGroup, nnLayer *selectionLayer, int selectionIndex, vector *regSigs, float *unpackedSigs, int * labels)
 {
+	nnLayer selector;
+	selector.inDim = selectionLayer->inDim;
 	uint dim = selectionLayer->inDim;
-	int i = 0;
+	selector.outDim = 1;
+	selector.A = selectionLayer->A + selectionIndex*dim;
+	selector.b = selectionLayer->b + selectionIndex;
+	uint i = 0;
 	float output;
 	kint * regSig;
 	uint keyLen = maxErrorGroup->locations[0]->createdKL;
@@ -400,34 +405,44 @@ void createData(maxErrorCorner *maxErrorGroup, nnLayer *selectionLayer, vector *
 		regSig = (kint*)vector_get(regSigs,i);
 		convertFromKeyToFloat(regSig, unpackedSigs + i*(dim+1), dim);
 		unpackedSigs[i*(dim+1) + dim] = 0;
-		memcpy(unpackedSigs + (i+total)*(dim+1),unpackedSigs + i*(dim+1),dim*sizeof(float));
+		convertFromKeyToFloat(regSig, unpackedSigs + (total+i)*(dim+1), dim);
 		unpackedSigs[(i+total)*(dim+1) + dim] = 1;
-
-		evalLayer(selectionLayer, unpackedSigs + i*(dim+1), &output);
+		#ifdef DEBUG
+			printf("Unpacking regSig %u\n", i);
+			printf("Created normal data. Final entry: %f (should be 0)\n", unpackedSigs[i*(dim+1) + dim]);
+			printf("Created augment data. Final entry: %f (should be 1)\n", unpackedSigs[(i+total)*(dim+1) + dim]);
+		#endif
+		evalLayer(&selector, unpackedSigs + i*(dim+1), &output);
 		if(checkIfListed(maxErrorGroup,regSig,keyLen)){
-
-			// The following created label data according to the scheme outlined in the main paper.
+			// The following creates label data according to the scheme outlined in the main paper.
 			if(output > 0){
 				labels[i] = 1;
-				labels[i+total] = -1;
+				labels[i+total] = 0;
 			} else if(output < 0) {
-				labels[i] = -1;
+				labels[i] = 0;
 				labels[i+total] = 1;
 			} else {
 				labels[i] = 0;
 				labels[i+total] = 0;
 			}
+			#ifdef DEBUG
+				printf(".....regSig is listed. output: %f, label for normal: %d, label for augment: %d\n", output, labels[i],labels[i+total]);
+			#endif
 		} else {
 			if(output > 0){
 				labels[i] = 1;
 				labels[i+total] = 1;
 			} else if(output < 0) {
-				labels[i] = -1;
-				labels[i+total] = -1;
+				labels[i] = 0;
+				labels[i+total] = 0;
 			} else {
 				labels[i] = 0;
 				labels[i+total] = 0;
 			}
+			#ifdef DEBUG
+				printf(".....regSig is NOT listed. output: %f, label for normal: %d, label for augment: %d\n", output, labels[i],labels[i+total]);
+
+			#endif
 		}
 	}
 
