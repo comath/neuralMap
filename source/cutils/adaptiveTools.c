@@ -387,6 +387,8 @@ int checkIfListed(maxErrorCorner *maxErrorGroup, kint *regSig,uint keyLength)
 	return 0;
 }
 
+#define DEBUG
+
 void createData(maxErrorCorner *maxErrorGroup, nnLayer *selectionLayer, int selectionIndex, vector *regSigs, float *unpackedSigs, int * labels)
 {
 	nnLayer selector;
@@ -449,6 +451,8 @@ void createData(maxErrorCorner *maxErrorGroup, nnLayer *selectionLayer, int sele
 	
 
 }
+
+#undef DEBUG
 
 /*
 void unpackRegSigs(vector * regSigs, uint dim, float * unpackedSigs)

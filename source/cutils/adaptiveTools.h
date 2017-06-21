@@ -1,5 +1,5 @@
-#ifndef _refineMap_h
-#define _refineMap_h
+#ifndef _adaptiveTools_h
+#define _adaptiveTools_h
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
@@ -68,6 +68,7 @@ Inputs: maxErrorGroup, selectionLayer, regSigs
 Outputs: unpackedSigs, labels
 */
 void createData(maxErrorCorner *maxErrorGroup, nnLayer *selectionLayer, int selectionIndex, vector *regSigs, float *unpackedSigs, int * labels);
+void createDataBatch(maxErrorCorner *maxErrorGroup, nnLayer *selectionLayer, int selectionIndex, vector *regSigs, float *unpackedSigs, int * labels, int batchSize);
 
 
 //void unpackRegSigs(vector * regSigs, uint dim, float * unpackedSigs);
