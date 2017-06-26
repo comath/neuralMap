@@ -376,21 +376,21 @@ vector * getRegSigs(mapTreeNode ** locArr, int numNodes)
 }
 
 // Should be improved, slow search algo
-int checkIfListed(maxErrorCorner *maxErrorGroup, kint *regSig,uint keyLength)
+int checkIfListed(vector *listedRegSigs, kint *regSig,uint keyLength)
 {
 	int i = 0;
-	for(i=0; i<maxErrorGroup->locCount; i++){
-		if(compareKey(maxErrorGroup->locations[i]->regKey, regSig, keyLength) == 0){
+	int total = vector_total(listedRegSigs);
+	for(i=0; i<total; i++){
+		if(compareKey((kint *)vector_get(listedRegSigs,i), regSig, keyLength) == 0){
 			return 1;
 		}
 	}
 	return 0;
 }
 
-#define DEBUG
-
-void createData(maxErrorCorner *maxErrorGroup, nnLayer *selectionLayer, int selectionIndex, vector *regSigs, float *unpackedSigs, int * labels)
+void createData(maxErrorCorner *maxErrorGroup, nnLayer *selectionLayer, vector *regSigs, float *unpackedSigs, int * labels)
 {
+	int selectionIndex = maxErrorGroup->selectionIndex;
 	nnLayer selector;
 	selector.inDim = selectionLayer->inDim;
 	uint dim = selectionLayer->inDim;
@@ -401,7 +401,9 @@ void createData(maxErrorCorner *maxErrorGroup, nnLayer *selectionLayer, int sele
 	float output;
 	kint * regSig;
 	uint keyLen = maxErrorGroup->locations[0]->createdKL;
-	int total = vector_total(regSigs);
+	uint total = vector_total(regSigs);
+
+	vector *importantSigs = getRegSigs(maxErrorGroup->locations, maxErrorGroup->locCount);
 
 	for(i = 0; i < total;i++){
 		regSig = (kint*)vector_get(regSigs,i);
@@ -415,7 +417,7 @@ void createData(maxErrorCorner *maxErrorGroup, nnLayer *selectionLayer, int sele
 			printf("Created augment data. Final entry: %f (should be 1)\n", unpackedSigs[(i+total)*(dim+1) + dim]);
 		#endif
 		evalLayer(&selector, unpackedSigs + i*(dim+1), &output);
-		if(checkIfListed(maxErrorGroup,regSig,keyLen)){
+		if(checkIfListed(importantSigs,regSig,keyLen)){
 			// The following creates label data according to the scheme outlined in the main paper.
 			if(output > 0){
 				labels[i] = 1;
@@ -447,23 +449,9 @@ void createData(maxErrorCorner *maxErrorGroup, nnLayer *selectionLayer, int sele
 			#endif
 		}
 	}
-
-	
-
+	vector_free(importantSigs);
+	free(importantSigs);
 }
-
-#undef DEBUG
-
-/*
-void unpackRegSigs(vector * regSigs, uint dim, float * unpackedSigs)
-{
-	int i = 0;
-	int total = vector_total(regSigs);
-	for(i=0;i<total;i++){
-		convertFromKeyToFloat(vector_get(regSigs,i), unpackedSigs + i*dim, dim);
-	}
-}
-*/
 
 float *getSolutionPointer(_nnMap *map)
 {

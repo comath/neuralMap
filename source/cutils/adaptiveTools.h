@@ -28,6 +28,7 @@ typedef struct maxErrorCorner {
 	int weightedCount;
 	int selectionIndex;
 } maxErrorCorner;
+
 void freemaxErrorCorner(maxErrorCorner * group);
 
 /*
@@ -59,7 +60,8 @@ Outputs: newVec, newOff
 void createNewHPVec(maxErrorCorner * maxErrorGroup, float * avgError, float *solution, nnLayer *hpLayer, float *newVec, float *newOff);
 
 /*
-Collects the region signatures from the location array, also reorders to a region centric ordering. Returns a vector that contains all regions.
+Collects the region signatures from the location array, also reorders to a region centric ordering. 
+Returns a vector that contains all regions.
 */
 vector * getRegSigs(mapTreeNode ** locArr, int numNodes);
 /*
@@ -67,11 +69,8 @@ Creates a artificial dataset with which we can train the new selection vector.
 Inputs: maxErrorGroup, selectionLayer, regSigs
 Outputs: unpackedSigs, labels
 */
-void createData(maxErrorCorner *maxErrorGroup, nnLayer *selectionLayer, int selectionIndex, vector *regSigs, float *unpackedSigs, int * labels);
-void createDataBatch(maxErrorCorner *maxErrorGroup, nnLayer *selectionLayer, int selectionIndex, vector *regSigs, float *unpackedSigs, int * labels, int batchSize);
-
-
-//void unpackRegSigs(vector * regSigs, uint dim, float * unpackedSigs);
+void createData(maxErrorCorner *maxGroup, nnLayer *selectionLayer, vector *regSigs, float *unpackedSigs, int * labels);
+//void createDataBatch(maxErrorCorner *maxErrorGroup, nnLayer *selectionLayer, int selectionIndex, vector *regSigs, float *unpackedSigs, int * labels, int batchSize);
 
 // Helper functions for cython.
 float *getSolutionPointer(_nnMap *map);

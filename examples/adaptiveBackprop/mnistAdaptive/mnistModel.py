@@ -78,5 +78,6 @@ for i in range(20000):
 		neuralMap = nnMap(npWeights1,npBias1,2)
 		indicies = np.arange(trX.shape[0],dtype=np.int32)
 		neuralMap.batchAdd(trX,indicies,errors)
-		newHPVec, newHPoff, unpackedSigs, labels, selectionIndex = neuralMap.adaptiveStep(trX,npWeights2,npBias2)
+		newHPVec, newHPoff, newSelectionWeight, newSelectionBias = neuralMap.adaptiveStep(trX,npWeights2,npBias2)
+		print("Have new hp and selector, CRASH INCOMING.")
 

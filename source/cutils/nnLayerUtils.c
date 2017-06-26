@@ -12,6 +12,15 @@
 #include <mkl_lapacke.h>
 
 
+nnLayer *allocateLayer(uint inDim, uint outDim)
+{
+	nnLayer * layer = malloc(sizeof(nnLayer));
+	layer->A = malloc(inDim*outDim*sizeof(float));
+	layer->b = malloc(outDim*sizeof(float));
+	layer->inDim = inDim;
+	layer->outDim = outDim;
+	return layer;
+}
 
 nnLayer * createLayer(float * A, float *b, uint inDim, uint outDim)
 {
@@ -30,6 +39,9 @@ void freeLayer(nnLayer *layer)
 	if(layer){
 		if(layer->A){
 			free(layer->A);
+		}
+		if(layer->b){
+			free(layer->b);
 		}
 		free(layer);
 	}
@@ -69,6 +81,14 @@ void printMatrix(float *arr, uint inDim, uint outDim){
 	for(i=0;i<outDim;i++){
 		printFloatArr(arr + inDim*i,inDim);
 	}
+}
+
+void printLayer(nnLayer * layer)
+{
+	printf("Weight Matrix:\n");
+	printMatrix(layer->A,layer->inDim,layer->outDim);
+	printf("Bias:\n");
+	printFloatArr(layer->b,layer->outDim);
 }
 	
 

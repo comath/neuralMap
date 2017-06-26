@@ -49,6 +49,8 @@ mapper.o: $(UTILS)mapper.c $(UTILS)ipTrace.c  $(UTILS)nnLayerUtils.c $(UTILS)map
 	$(CC) $(CCFLAGS) $(MKLINC) -c $< -o $(BIN)$@
 adaptiveTools.o: $(UTILS)adaptiveTools.c $(UTILS)nnLayerUtils.c $(UTILS)mapperTree.c $(UTILS)location.c $(UTILS)key.c $(UTILS)vector.c 
 	$(CC) $(CCFLAGS) $(MKLINC) -c $< -o $(BIN)$@
+selectionTrainer.o: $(UTILS)selectionTrainer.c $(UTILS)nnLayerUtils.c $(UTILS)adaptiveTools.c $(UTILS)location.c $(UTILS)key.c $(UTILS)vector.c 
+	$(CC) $(CCFLAGS) $(MKLINC) -c $< -o $(BIN)$@
 
 #Python Interface
 mapperWrap:
@@ -76,8 +78,8 @@ ipCalculator_test: ipCalculator_test.o ipCalculator.o parallelTree.o key.o nnLay
 ipTrace_test: ipTrace_test.o ipTrace.o key.o nnLayerUtils.o
 	$(CC) $(CCFLAGS) -DDEBUG $(BIN)$< $(BIN)ipTrace.o $(BIN)nnLayerUtils.o $(BIN)key.o -o $@ $(MKLONEDYNAMICLIB) $(LIB_FLAGS) 
 
-mapper_test: mapper_test.o mapper.o ipTrace.o mapperTree.o key.o nnLayerUtils.o location.o adaptiveTools.o vector.o
-	$(CC) $(CCFLAGS) $(BIN)$< $(BIN)mapper.o $(BIN)ipTrace.o $(BIN)nnLayerUtils.o $(BIN)mapperTree.o $(BIN)location.o $(BIN)vector.o $(BIN)adaptiveTools.o $(BIN)key.o -o $@ $(MKLONEDYNAMICLIB) $(LIB_FLAGS) 
+mapper_test: mapper_test.o mapper.o ipTrace.o mapperTree.o key.o nnLayerUtils.o location.o adaptiveTools.o vector.o selectionTrainer.o
+	$(CC) $(CCFLAGS) $(BIN)$< $(BIN)mapper.o $(BIN)ipTrace.o $(BIN)nnLayerUtils.o $(BIN)mapperTree.o $(BIN)location.o $(BIN)selectionTrainer.o $(BIN)vector.o $(BIN)adaptiveTools.o $(BIN)key.o -o $@ $(MKLONEDYNAMICLIB) $(LIB_FLAGS) 
 
 parallelTree_test.o: $(TEST)parallelTree_test.c $(UTILS)parallelTree.c
 	$(CC) $(CXXFLAGS) -c $< -o $(BIN)$@
@@ -94,34 +96,6 @@ key_test: key_test.o key.o
 #2d Visualization
 
 all: imagetest ann
-
-selectiontrainer.o: $(SOURCE)$(NEURAL)selectiontrainer.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $(BIN)$@
-
-selectiontrainer: selectiontrainer.o
-	$(CXX) $(CXXFLAGS) $(BIN)$<  -o $@ $(LIB_FLAGS) -lpthread -lm
-
-
-pgmreader.o: $(SOURCE)$(IMAGE)pgmreader.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $(BIN)$@ 
-
-annpgm.o: $(SOURCE)$(IMAGE)annpgm.cpp $(SOURCE)$(IMAGE)pgmreader.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $(BIN)$@ 
-
-ann.o: $(SOURCE)$(NEURAL)ann.cpp $(SOURCE)$(IMAGE)pgmreader.cpp $(SOURCE)$(IMAGE)annpgm.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $(BIN)$@  
-
-nnanalyzer.o: $(SOURCE)$(NEURAL)nnanalyzer.cpp $(SOURCE)$(NEURAL)ann.cpp $(SOURCE)$(NEURAL)selectiontrainer.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $(BIN)$@
-
-nnmap.o: $(SOURCE)$(NEURAL)nnmap.cpp $(SOURCE)$(NEURAL)ann.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $(BIN)$@
-
-imagetest.o: $(SOURCE)imagetest.cpp $(SOURCE)$(IMAGE)pgmreader.cpp $(SOURCE)$(NEURAL)ann.cpp $(SOURCE)$(NEURAL)nnanalyzer.cpp $(SOURCE)$(NEURAL)nnmap.cpp $(SOURCE)$(IMAGE)annpgm.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $(BIN)$@
-
-imagetest: imagetest.o pgmreader.o ann.o nnanalyzer.o nnmap.o annpgm.o selectiontrainer.o
-	$(CXX) $(CXXFLAGS)  $(BIN)$< $(BIN)pgmreader.o $(BIN)ann.o $(BIN)nnanalyzer.o $(BIN)nnmap.o $(BIN)annpgm.o $(BIN)selectiontrainer.o -o $@ $(LIB_FLAGS) -lpthread -lm
 
 
 .PHONY: clean

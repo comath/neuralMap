@@ -21,13 +21,16 @@ typedef struct nnLayer {
 } nnLayer;
 
 // Tools for dealing with a layer
-nnLayer * createLayer(float *A, float *b, uint outDim, uint inDim);
+nnLayer *allocateLayer(uint inDim, uint outDim);
+nnLayer *createLayer(float *A, float *b, uint outDim, uint inDim);
 void freeLayer(nnLayer * layer);
 
 // Computes Ax+b and puts the result in the output
 void evalLayer(nnLayer * layer, float *x, float *output);
 void printFloatArr(float * arr, uint length);
 void printMatrix(float * arr, uint inDim, uint outDim);
+void printLayer(nnLayer * layer);
+
 
 /*
 Computes Ax+b then puts it through the heavyside function and bitpacks it, put the bitpacking in regSig. 

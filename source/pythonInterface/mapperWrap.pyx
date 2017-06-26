@@ -100,6 +100,10 @@ cdef extern from "../cutils/adaptiveTools.h":
 	cdef float *getSolutionPointer(_nnMap *map) 
 	cdef int getSelectionIndex(maxErrorCorner * maxGroup)
 
+cdef extern from "../cutils/selectionTrainer.h":
+	cdef void trainNewSelector(nnLayer *selectionLayer, mapTreeNode **locArr, int maxLocIndex, maxErrorCorner *maxGroup, float * newSelectionWeight, float * newSelectionBias)
+
+
 
 cdef class _location:
 	cdef unsigned int outDim 
@@ -230,16 +234,11 @@ cdef class nnMap:
 		cdef np.ndarray[np.float32_t,ndim=1] newHPoff = np.zeros([1], dtype=np.float32)
 		createNewHPVec(maxErrorGroup, <float *>avgError.data, solution, self.layer0, <float *>newHPVec.data,<float *> newHPoff.data);
 
-		print("Creating new data.")
-		cdef vector *vecRegKeys = getRegSigs(self.locArr, self.numLoc)
-		cdef int dataLength = 2*vector_total(vecRegKeys)
-		cdef np.ndarray[np.float32_t,ndim=2] unpackedSigs = np.zeros([dataLength,inDim1+1], dtype=np.float32)
-		cdef np.ndarray[np.int32_t,ndim=1] labels = np.zeros([dataLength], dtype=np.int32)
+		print("Creating new selection Layer.")
+		cdef np.ndarray[np.float32_t,ndim=2] newSelectionWeight = np.zeros([inDim1+1,outDim1], dtype=np.float32)
+		cdef np.ndarray[np.float32_t,ndim=1] newSelectionBias = np.zeros([outDim1], dtype=np.float32)
+		trainNewSelector(layer1, self.locArr, self.numLoc, maxErrorGroup, <float *>newSelectionWeight.data, <float *>newSelectionBias.data);
 		
-		selectionIndex = getSelectionIndex(maxErrorGroup)
-		print("... Creating %(dataLength)d artificial data"%{'dataLength':dataLength})
-		createData(maxErrorGroup, layer1, selectionIndex, vecRegKeys, <float *>unpackedSigs.data, <int *>labels.data)
-
+		return newHPVec, newHPoff, newSelectionWeight, newSelectionBias
 		
 
-		return newHPVec, newHPoff, unpackedSigs, labels, selectionIndex

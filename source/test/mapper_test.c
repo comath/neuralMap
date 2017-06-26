@@ -7,6 +7,8 @@ Running Valgrind or gdb on the python wrap leads to a bit more headaches.
 #include "../cutils/nnLayerUtils.h"
 #include "../cutils/mapper.h"
 #include "../cutils/adaptiveTools.h"
+#include "../cutils/selectionTrainer.h"
+
 
 
 void printFloatArrNoNewLine(float * arr, int numElements){
@@ -122,11 +124,20 @@ int main(int argc, char* argv[])
 	float * newHPVec = malloc((dim+1)*sizeof(float));
 	createNewHPVec(max, avgError, solution, layer0, newHPVec, newHPVec+dim);
 
-	vector *vecRegKeys = getRegSigs(locations, maxLocIndex);
+
+	
+/*
 	int dataLength = 2*vector_total(vecRegKeys);
 	float *unpackedSigs = malloc(2*dataLength*(numHP+1)*sizeof(float));
 	int *labels = malloc(2*dataLength*sizeof(int));
-	createData(max, layer1, 0, vecRegKeys,unpackedSigs,labels);
+	createData(max, layer1, vecRegKeys,unpackedSigs,labels);
+*/
+	float * newweight = malloc((numHP+1)*finalDim*sizeof(float));
+	float * newbias = malloc((finalDim)*sizeof(float));
+
+	trainNewSelector(layer1, locations, maxLocIndex, max,newweight,newbias);
+
+
 
 	freeMaxErrorCorner(max);
 	free(locations);
