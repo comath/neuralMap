@@ -94,11 +94,15 @@ traceCache * allocateTraceCache(nnLayer * layer)
 	}
 	traceCache * tc = malloc(sizeof(traceCache));
 	tc->layer = layer;
+	printf("In trace layer->A[0]: %f pointer %p\n", layer->A[0], layer->A);
 
 	tc->hpNormals = calloc(m*n,sizeof(float));
 	tc->hpOffsetVals = calloc(m,sizeof(float));
 	fillHPCache(layer,tc->hpNormals, tc->hpOffsetVals);
-	
+	printf("after hpC layer->A[0]: %f pointer %p\n", layer->A[0], layer->A);
+
+	float *Acopy = malloc(n*m*sizeof(float));
+	memcpy(Acopy,layer->A,n*m*sizeof(float));
 	float *u = malloc(m*m*sizeof(float)); //n^2
 	float *vt = malloc(n*n*sizeof(float)); //m^2
 	float *c = malloc(n*m*sizeof(float)); //m*n
@@ -115,9 +119,11 @@ traceCache * allocateTraceCache(nnLayer * layer)
 
 	// Solves Ax=b, in many steps
 
+	printf("just before svm layer->A[0]: %f pointer %p\n", layer->A[0], layer->A);
+
 	// SVD first
 	MKL_INT info;
-	info = LAPACKE_sgesdd( LAPACK_ROW_MAJOR, 'A', m, n, layer->A, n, 
+	info = LAPACKE_sgesdd( LAPACK_ROW_MAJOR, 'A', m, n, Acopy, n, 
 							s, 
 							u, m, 
 							vt, n );
@@ -131,6 +137,8 @@ traceCache * allocateTraceCache(nnLayer * layer)
 		}
 		exit( 1 );
 	}
+	printf("just after svm layer->A[0]: %f pointer %p\n", layer->A[0], layer->A);
+
 	// Multiplying Sigma+t with u
 	i = 0;
 	while(i<m && s[i] !=0){
@@ -144,11 +152,15 @@ traceCache * allocateTraceCache(nnLayer * layer)
 		u, &m,
 		&zeroF,c,&n);
 	
+	printf("just before gemv layer->A[0]: %f pointer %p\n", layer->A[0], layer->A);
+
 	// Multiplying v sigma+ u with b for the solution				\/ param 7
 	cblas_sgemv (CblasRowMajor, CblasTrans, m, n,1, c, n, layer->b, 1, 0, tc->solution, 1);
 	free(u);
 	free(vt);
 	free(c);
+	free(Acopy);
+
 	free(s);
 
 	
@@ -157,6 +169,8 @@ traceCache * allocateTraceCache(nnLayer * layer)
 	#ifdef DEBUG
 		printf("Trace Cache Allocated\n");
 	#endif
+	printf("End of trace layer->A[0]: %f pointer %p\n", layer->A[0], layer->A);
+
 	return tc;
 }
 
@@ -250,7 +264,8 @@ void fullTraceWithDist(traceCache * tc, traceMemory * tm, float * point, distanc
 	// Does QR decomp. Creates R and the pivot indexes for Q. 
 	int rc = LAPACKE_sgeqrf (LAPACK_COL_MAJOR, m, m, tm->permA, n, tm->tau);
 	if(rc){
-		printf("QR failed\n");
+		printf("QR failed, maybe inDim=%d and outDim=%d? illegal parameter at index: %d with val of %f\n",n,m, -rc, tm->permA[-rc]);
+		//printMatrix(tc->layer->A,n,m);
 		exit(-1);
 	}
 	// Unpacks Q from R and the pivot indexes

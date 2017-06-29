@@ -8,13 +8,14 @@
 #include <mkl_lapack.h>
 #include <mkl_lapacke.h>
 
-_nnMap * allocateMap(nnLayer *layer)
+_nnMap * allocateMap(nnLayer * layer)
 {
 	_nnMap *map = malloc(sizeof(_nnMap));
 	// The data is stored lexographically by (ipSig,regSig) as one long key. Thus keyLen has to double
 	map->locationTree = createMapTree(layer->outDim);
 	map->layer = layer;
 	map->tc = allocateTraceCache(map->layer);
+	printf("A[0]: %f\n", map->layer->A[0]);
 	return map;
 }
 void freeMap(_nnMap *map)
@@ -59,6 +60,7 @@ void freeMapMemory(mapMemory *mm)
 			free(mm->keyPair);
 		}
 		free(mm);
+		//mkl_thread_free_buffers(); //Not a real leak, it's the MKL buffer.
 	}
 }
 

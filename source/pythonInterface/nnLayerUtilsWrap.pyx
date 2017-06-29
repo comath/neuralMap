@@ -11,10 +11,12 @@ cdef extern from "../cutils/nnLayerUtils.h":
 		unsigned int inDim
 		unsigned int outDim
 	nnLayer * createLayer(float *A, float *b, unsigned int outDim, unsigned int inDim)
+	nnLayer * createCopyLayer(float *A, float *b, unsigned int outDim, unsigned int inDim)
 	void freeLayer(nnLayer * layer)
 	void evalLayer(nnLayer *layer, float * input, float * output)
 	void getRegSig(nnLayer *layer, float *p, kint * regSig)
 	void getRegSigBatch(nnLayer *layer, float *data, kint *regSig, unsigned numData, unsigned numProc)
+	void printMatrix(float *A, int n, int m)
 
 cdef class neuralLayer:
 	cdef nnLayer * _c_layer

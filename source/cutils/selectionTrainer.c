@@ -19,8 +19,9 @@ nnLayer expandAndRescaleLayer(nnLayer *selectionLayer, int selectionIndex, float
 		newSelectionLayer.A[inDim] = 0.001;
 	}
 
-	float norm = cblas_snrm2(inDim,selectionLayer->A+selectionIndex*inDim,1);
-	cblas_sscal(inDim, 1/(5*norm), newSelectionLayer.A + selectionIndex*(inDim+1), 1);
+	printf("InDim for snrm2 in expandAndRescaleLayer %d\n", inDim);
+	float norm = cblas_snrm2(inDim,newSelectionLayer.A+selectionIndex*(inDim+1),1);
+	cblas_sscal(inDim, 1/(5*norm), selectionLayer->A + selectionIndex*inDim, 1);
 	newSelectionLayer.b[selectionIndex] *= (1.0/(5*norm));
 	#ifdef DEBUG
 		printf("==\n");
@@ -52,7 +53,6 @@ void trainNewSelector(nnLayer *selectionLayer, mapTreeNode ** locArr, int locArr
 	#endif
 	int selectionIndex = maxGroup->selectionIndex;
 
-	vector *regionVec = getRegSigs(locArr, locArrLen);
 
 	nnLayer newSelectionLayer = expandAndRescaleLayer(selectionLayer,selectionIndex,newSelectionWeights,newSelectionBias);
 
@@ -63,22 +63,23 @@ void trainNewSelector(nnLayer *selectionLayer, mapTreeNode ** locArr, int locArr
 	selector.A = newSelectionLayer.A + selectionIndex*dim;
 	selector.b = newSelectionLayer.b + selectionIndex;
 
-	#ifdef DEBUG
+	//#ifdef DEBUG
 		printf("==\n");
 		printf("Creating the global data.\n");
 		printf("==\n");
-	#endif
+	//#endif
 
+	vector *regionVec = getRegSigs(locArr, locArrLen);
 	int dataLength = 2*vector_total(regionVec);
 	float *unpackedSigs = malloc(2*dataLength*(dim)*sizeof(float));
 	int *labels = malloc(2*dataLength*sizeof(int));
 	createData(maxGroup, selectionLayer, regionVec,unpackedSigs,labels);
 
-	#ifdef DEBUG
+	//#ifdef DEBUG
 		printf("==\n");
 		printf("Creating the local data that will recieve extra training\n");
 		printf("==\n");
-	#endif
+	//#endif
 
 	vector * importantRegVec = getRegSigs(maxGroup->locations, maxGroup->locCount);
 	int importantDataLength = 2*vector_total(importantRegVec);

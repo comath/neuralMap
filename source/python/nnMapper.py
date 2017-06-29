@@ -28,7 +28,7 @@ sqlite3.register_converter("array", convert_array)
 
 
 
-class nnMapper:
+class nnMap_adaptive:
 	"""docstring for ClassName"""
 	def __init__(self,matrix,offset,filename,tablename):
 		self.conn = sqlite3.connect(filename)

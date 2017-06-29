@@ -45,10 +45,10 @@ Returns tha average error in the max-error-corner. This can be replaced by your 
 Data should be an array of floats that contain all datapoints.
 Average error should be a floar buffer of length inDim for the hyperplane layer.
 
-Input: maxErrorGroup, data
+Input: maxErrorGroup, data, dim
 Output: averageError
 */
-void getAverageError(maxErrorCorner * maxErrorGroup, float *data, float * avgError);
+void getAverageError(maxErrorCorner * maxErrorGroup, float *data, float * avgError, int dim);
 /*
 Creates a hyperplane vector that points from the average error location to the corner. 
 The newVec should be a float array of length inDim for the hpLayer, the newOff should be a 1 length float array

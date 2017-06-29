@@ -3,7 +3,7 @@
 #include <float.h>
 #include <stdlib.h>
 #include <stdint.h>
-
+#include <string.h>
 
 #include <mkl.h>
 #include <mkl_cblas.h>
@@ -30,6 +30,19 @@ nnLayer * createLayer(float * A, float *b, uint inDim, uint outDim)
 	layer->b = b;
 	layer->inDim = inDim;
 	layer->outDim = outDim;
+	return layer;
+}
+
+nnLayer * createCopyLayer(float * A, float *b, uint inDim, uint outDim)
+{
+	printf("In copy A[0]: %f inDim: %d outDim: %d\n", A[0],inDim,outDim);
+	//Allocating A and b together
+	nnLayer * layer = allocateLayer(inDim,outDim);
+	memcpy(layer->A,A,inDim*outDim*sizeof(float));
+	memcpy(layer->b,b,outDim*sizeof(float));
+	layer->inDim = inDim;
+	layer->outDim = outDim;
+	printf("In copy layer->A[0]: %f pointer %p\n", layer->A[0], layer->A);
 	return layer;
 }
 

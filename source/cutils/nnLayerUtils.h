@@ -22,6 +22,7 @@ typedef struct nnLayer {
 
 // Tools for dealing with a layer
 nnLayer *allocateLayer(uint inDim, uint outDim);
+nnLayer *createCopyLayer(float *A, float *b, uint outDim, uint inDim);
 nnLayer *createLayer(float *A, float *b, uint outDim, uint inDim);
 void freeLayer(nnLayer * layer);
 

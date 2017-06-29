@@ -68,15 +68,15 @@ cdef extern from "../cutils/mapper.h":
 		pthread_mutex_t datamutex
 		location loc
 
-	cdef _nnMap * allocateMap(nnLayer *layer0)
-	cdef void freeMap(_nnMap * internalMap)
+	cdef _nnMap * allocateMap(nnLayer *layer0) with gil
+	cdef void freeMap(_nnMap * internalMap) 
 
-	cdef void addPointToMap(_nnMap * map, float *point, int pointIndex, int errorClass, float threshold)
-	cdef void addPointsToMapBatch(_nnMap * map, float *data, int *indexes, int * errorClasses, float threshold, unsigned int numData, unsigned int numProc)
+	cdef void addPointToMap(_nnMap * map, float *point, int pointIndex, int errorClass, float threshold) with gil 
+	cdef void addPointsToMapBatch(_nnMap * map, float *data, int *indexes, int * errorClasses, float threshold, unsigned int numData, unsigned int numProc) with gil
 
 	cdef location getPointsAt(_nnMap *map, kint *keyPair)
 	cdef unsigned int numLoc(_nnMap * map)
-	cdef mapTreeNode ** getLocations(_nnMap *map, char orderBy)
+	cdef mapTreeNode ** getLocations(_nnMap *map, char orderBy) with gil
 	void location_get_indexes(location *v, int *indexHolder)
 
 
@@ -89,19 +89,19 @@ cdef extern from "../cutils/adaptiveTools.h":
 
 	cdef maxErrorCorner * refineMapAndGetMax(mapTreeNode ** locArr, int maxLocIndex, nnLayer * selectionLayer)
 	
-	cdef void getAverageError(maxErrorCorner * maxErrorGroup, float *data, float * avgError)
-	cdef void createNewHPVec(maxErrorCorner * maxErrorGroup, float * avgError, float *solution, nnLayer *hpLayer, float *newVec, float *newOff)
+	cdef void getAverageError(maxErrorCorner * maxErrorGroup, float *data, float * avgError, int dim) with gil
+	cdef void createNewHPVec(maxErrorCorner * maxErrorGroup, float * avgError, float *solution, nnLayer *hpLayer, float *newVec, float *newOff) with gil
 
-	cdef vector * getRegSigs(mapTreeNode ** locArr, int numNodes)
+	cdef vector * getRegSigs(mapTreeNode ** locArr, int numNodes) with gil
 	#cdef void unpackRegSigs(vector * regSigs, unsigned int dim, float * unpackedSigs)
-	cdef void createData(maxErrorCorner *maxErrorGroup, nnLayer *selectionLayer, int selectionIndex, vector *regSigs, float *unpackedSigs, int * labels)
+	cdef void createData(maxErrorCorner *maxErrorGroup, nnLayer *selectionLayer, int selectionIndex, vector *regSigs, float *unpackedSigs, int * labels) with gil
 
 
-	cdef float *getSolutionPointer(_nnMap *map) 
-	cdef int getSelectionIndex(maxErrorCorner * maxGroup)
+	cdef float *getSolutionPointer(_nnMap *map) with gil
+	cdef int getSelectionIndex(maxErrorCorner * maxGroup) with gil
 
 cdef extern from "../cutils/selectionTrainer.h":
-	cdef void trainNewSelector(nnLayer *selectionLayer, mapTreeNode **locArr, int maxLocIndex, maxErrorCorner *maxGroup, float * newSelectionWeight, float * newSelectionBias)
+	cdef void trainNewSelector(nnLayer *selectionLayer, mapTreeNode **locArr, int maxLocIndex, maxErrorCorner *maxGroup, float * newSelectionWeight, float * newSelectionBias) with gil
 
 
 
@@ -138,8 +138,8 @@ cdef class nnMap:
 	cdef _nnMap * internalMap
 	cdef nnLayer * layer0
 	cdef nnLayer * layer1
-	cdef unsigned int outDim0
-	cdef unsigned int inDim0
+	cdef long int outDim0
+	cdef long int inDim0
 	cdef unsigned int keyLen
 	cdef unsigned int numLoc
 	cdef float threshold
@@ -147,9 +147,10 @@ cdef class nnMap:
 
 	def __cinit__(self,np.ndarray[float,ndim=2,mode="c"] A0 not None, np.ndarray[float,ndim=1,mode="c"] b0 not None,
 					   float threshold):
-		self.outDim0 = A0.shape[1]
-		self.inDim0  = A0.shape[0]
-		self.layer0 = createLayer(&A0[0,0],&b0[0],self.outDim0,self.inDim0)
+		self.outDim0 = A0.shape[0]
+		self.inDim0  = A0.shape[1]
+		print("Creating map structure, outdim %(n)d, inDim %(m)d"%{'n':self.outDim0,'m':self.inDim0})
+		self.layer0 = createLayer(<float *> A0.data,<float *> b0.data,self.inDim0,self.outDim0)
 		if not self.layer0:
 			raise MemoryError()
 		self.threshold = threshold
@@ -203,6 +204,7 @@ cdef class nnMap:
 		return thisLoc
 	
 	def __dealloc__(self):
+		print("Deallocating map")
 		freeMap(self.internalMap)
 		if self.locArr:
 			free(self.locArr)
@@ -210,9 +212,11 @@ cdef class nnMap:
 	def adaptiveStep(self, np.ndarray[float,ndim=2,mode="c"] data not None, 
 					np.ndarray[float,ndim=2,mode="c"] A1 not None, 
 					np.ndarray[float,ndim=1,mode="c"] b1 not None):
-		cdef unsigned int outDim1 = A1.shape[1]
-		cdef unsigned int inDim1  = A1.shape[0]
-		layer1 = createLayer(&A1[0,0],&b1[0],outDim1,inDim1)
+		cdef long int outDim1 = A1.shape[0]
+		cdef long int inDim1  = A1.shape[1]
+		print("adaptive, outdim %(n)d, inDim %(m)d"%{'n':outDim1,'m':inDim1})
+
+		layer1 = createLayer(&A1[0,0],&b1[0],inDim1,outDim1)
 		if not layer1:
 			raise MemoryError()
 		if not self.locArr:
@@ -223,22 +227,24 @@ cdef class nnMap:
 		print("Starting the adaptive step.")
 		print("Searching for the corner with the most error")
 		cdef maxErrorCorner * maxErrorGroup = refineMapAndGetMax(self.locArr, self.numLoc, layer1)
-
-		print("Aquiring average error in the max error corner")
 		cdef np.ndarray[np.float32_t,ndim=1] avgError = np.zeros([self.inDim0], dtype=np.float32)
-		getAverageError(maxErrorGroup, <float *> data.data, <float *> avgError.data)
-
-		print("Creating new hyperplane.")
 		cdef float * solution = getSolutionPointer(self.internalMap)
 		cdef np.ndarray[np.float32_t,ndim=1] newHPVec = np.zeros([self.inDim0], dtype=np.float32)
 		cdef np.ndarray[np.float32_t,ndim=1] newHPoff = np.zeros([1], dtype=np.float32)
+		newDim = inDim1 + 1
+		cdef np.ndarray[np.float32_t,ndim=2] newSelectionWeight = np.zeros([newDim,outDim1], dtype=np.float32)
+		cdef np.ndarray[np.float32_t,ndim=1] newSelectionBias = np.zeros([outDim1], dtype=np.float32)
+		
+		print("Aquiring average error in the max error corner with %(baseInDim)d"%{'baseInDim':self.inDim0})
+		getAverageError(maxErrorGroup, <float *> data.data, <float *> avgError.data, self.inDim0)
+
+		print("Creating new hyperplane.")
 		createNewHPVec(maxErrorGroup, <float *>avgError.data, solution, self.layer0, <float *>newHPVec.data,<float *> newHPoff.data);
 
 		print("Creating new selection Layer.")
-		cdef np.ndarray[np.float32_t,ndim=2] newSelectionWeight = np.zeros([inDim1+1,outDim1], dtype=np.float32)
-		cdef np.ndarray[np.float32_t,ndim=1] newSelectionBias = np.zeros([outDim1], dtype=np.float32)
 		trainNewSelector(layer1, self.locArr, self.numLoc, maxErrorGroup, <float *>newSelectionWeight.data, <float *>newSelectionBias.data);
 		
+		print("Returning everything")
 		return newHPVec, newHPoff, newSelectionWeight, newSelectionBias
 		
 

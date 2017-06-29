@@ -75,9 +75,15 @@ for i in range(20000):
 		npBias1 = np.ascontiguousarray(npBias1, dtype=np.float32)
 		npBias2 = np.ascontiguousarray(npBias2, dtype=np.float32)
 
+		print npWeights1.shape
 		neuralMap = nnMap(npWeights1,npBias1,2)
 		indicies = np.arange(trX.shape[0],dtype=np.int32)
 		neuralMap.batchAdd(trX,indicies,errors)
 		newHPVec, newHPoff, newSelectionWeight, newSelectionBias = neuralMap.adaptiveStep(trX,npWeights2,npBias2)
 		print("Have new hp and selector, CRASH INCOMING.")
+		print newHPVec.shape
+		print newHPoff.shape
+
+		print newSelectionWeight.shape
+		print newSelectionBias.shape
 

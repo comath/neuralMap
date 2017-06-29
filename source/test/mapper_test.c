@@ -86,7 +86,7 @@ float * randomData(uint dim, uint numData)
 
 int main(int argc, char* argv[])
 {
-	uint dim = 3;
+	uint dim = 9;
 	uint numHP = 3;
 	uint finalDim = 1;
 
@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
 
 	maxErrorCorner * max = refineMapAndGetMax(locations, maxLocIndex, layer1);
 	float * avgError = malloc(dim*sizeof(float));
-	getAverageError(max, data, avgError);
+	getAverageError(max, data, avgError, dim);
 
 	float * solution = getSolutionPointer(map);
 	float * newHPVec = malloc((dim+1)*sizeof(float));

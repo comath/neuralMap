@@ -23,7 +23,7 @@ typedef struct _nnMap {
 } _nnMap;
 
 // Given a layer it initalizes the traceCache, and preps the mapTree
-_nnMap * allocateMap(nnLayer *layer0);
+_nnMap * allocateMap(nnLayer * layer);
 void freeMap(_nnMap *map);
 
 /*

@@ -359,17 +359,27 @@ maxErrorCorner * refineMapAndGetMax(mapTreeNode ** locArr, int maxLocIndex, nnLa
 // Aquires the region signatures from the total list of locations. 
 vector * getRegSigs(mapTreeNode ** locArr, int numNodes)
 {
+	printf("extracting regSigs from location array with initial pointer %p\n", locArr);
 	vector * regSigs = malloc(sizeof(vector));
 	vector_init(regSigs);
 	qsort(locArr, numNodes, sizeof(mapTreeNode *), regOrder);
 	int i = 0;
 	uint keyLen = locArr[0]->createdKL;
-	kint * currentSig = locArr[i]->regKey;
+	kint * currentSig = locArr[0]->regKey;
 	vector_add(regSigs,currentSig);
-	for(i=0;i<numNodes;i++){
+	for(i=1;i<numNodes;i++){
+		printf("On %p, the %dth one. RegKey:", locArr[i],i);
+		printKey(locArr[i]->regKey,keyLen*32);
+		printf("ipKey:");
+		printKey(locArr[i]->ipKey,keyLen*32);
+
 		if(compareKey(locArr[i]->regKey, currentSig, keyLen)){
+			printf("Accepted\n");
 			currentSig = locArr[i]->regKey;
 			vector_add(regSigs,currentSig);
+		}
+		else {
+			printf("Denied\n");
 		}
 	}
 	return regSigs;
@@ -459,9 +469,9 @@ float *getSolutionPointer(_nnMap *map)
 }
 
 
-void getAverageError(maxErrorCorner * maxErrorGroup, float *data, float * avgError)
+void getAverageError(maxErrorCorner * maxErrorGroup, float *data, float * avgError, int dim)
 {
-	int dim = maxErrorGroup->locations[0]->loc.m;
+	printf("Writing %d floats to the provied buffer.\n",dim);
 	location curLoc;
 	memset(avgError,0,dim*sizeof(float));
 	int i = 0, j = 0;
