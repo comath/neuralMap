@@ -359,7 +359,9 @@ maxErrorCorner * refineMapAndGetMax(mapTreeNode ** locArr, int maxLocIndex, nnLa
 // Aquires the region signatures from the total list of locations. 
 vector * getRegSigs(mapTreeNode ** locArr, int numNodes)
 {
-	printf("extracting regSigs from location array with initial pointer %p\n", locArr);
+	#ifdef DEBUG
+		printf("extracting regSigs from location array with initial pointer %p\n", locArr);
+	#endif
 	vector * regSigs = malloc(sizeof(vector));
 	vector_init(regSigs);
 	qsort(locArr, numNodes, sizeof(mapTreeNode *), regOrder);
@@ -368,19 +370,24 @@ vector * getRegSigs(mapTreeNode ** locArr, int numNodes)
 	kint * currentSig = locArr[0]->regKey;
 	vector_add(regSigs,currentSig);
 	for(i=1;i<numNodes;i++){
-		printf("On %p, the %dth one. RegKey:", locArr[i],i);
-		printKey(locArr[i]->regKey,keyLen*32);
-		printf("ipKey:");
-		printKey(locArr[i]->ipKey,keyLen*32);
-
+		#ifdef DEBUG
+			printf("On %p, the %dth one. RegKey:", locArr[i],i);
+			printKey(locArr[i]->regKey,keyLen*32);
+			printf("ipKey:");
+			printKey(locArr[i]->ipKey,keyLen*32);
+		#endif
 		if(compareKey(locArr[i]->regKey, currentSig, keyLen)){
-			printf("Accepted\n");
+			#ifdef DEBUG
+				printf("Accepted\n");
+			#endif			
 			currentSig = locArr[i]->regKey;
 			vector_add(regSigs,currentSig);
 		}
-		else {
-			printf("Denied\n");
-		}
+		#ifdef DEBUG
+			else {
+				printf("Denied\n");
+			}
+		#endif
 	}
 	return regSigs;
 }

@@ -63,11 +63,11 @@ void trainNewSelector(nnLayer *selectionLayer, mapTreeNode ** locArr, int locArr
 	selector.A = newSelectionLayer.A + selectionIndex*dim;
 	selector.b = newSelectionLayer.b + selectionIndex;
 
-	//#ifdef DEBUG
+	#ifdef DEBUG
 		printf("==\n");
 		printf("Creating the global data.\n");
 		printf("==\n");
-	//#endif
+	#endif
 
 	vector *regionVec = getRegSigs(locArr, locArrLen);
 	int dataLength = 2*vector_total(regionVec);
@@ -75,11 +75,11 @@ void trainNewSelector(nnLayer *selectionLayer, mapTreeNode ** locArr, int locArr
 	int *labels = malloc(2*dataLength*sizeof(int));
 	createData(maxGroup, selectionLayer, regionVec,unpackedSigs,labels);
 
-	//#ifdef DEBUG
+	#ifdef DEBUG
 		printf("==\n");
 		printf("Creating the local data that will recieve extra training\n");
 		printf("==\n");
-	//#endif
+	#endif
 
 	vector * importantRegVec = getRegSigs(maxGroup->locations, maxGroup->locCount);
 	int importantDataLength = 2*vector_total(importantRegVec);

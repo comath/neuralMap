@@ -229,7 +229,7 @@ cdef class nnMap:
 		cdef maxErrorCorner * maxErrorGroup = refineMapAndGetMax(self.locArr, self.numLoc, layer1)
 		cdef np.ndarray[np.float32_t,ndim=1] avgError = np.zeros([self.inDim0], dtype=np.float32)
 		cdef float * solution = getSolutionPointer(self.internalMap)
-		cdef np.ndarray[np.float32_t,ndim=1] newHPVec = np.zeros([self.inDim0], dtype=np.float32)
+		cdef np.ndarray[np.float32_t,ndim=2] newHPVec = np.zeros([1,self.inDim0], dtype=np.float32)
 		cdef np.ndarray[np.float32_t,ndim=1] newHPoff = np.zeros([1], dtype=np.float32)
 		newDim = inDim1 + 1
 		cdef np.ndarray[np.float32_t,ndim=2] newSelectionWeight = np.zeros([newDim,outDim1], dtype=np.float32)
