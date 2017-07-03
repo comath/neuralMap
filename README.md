@@ -16,6 +16,7 @@ nnMap.__init__(A,b)
 Parameters:
 * A must be a rank 2 32 bit float numpy ndarray with C packing
 * b must be a rank 1 32 bit float numpy ndarray with C packing
+
 A must be a weight matrix, b must be the associated offsets. These must be for the hyperplane layer that you want to map out, directly below the selection layer that you may use later.
 
 #### Adding points:
@@ -26,6 +27,7 @@ Parameters:
 * point must be a rank 1 32 bit float numpy ndarray with C packing
 * pointIndex must be an integer
 * pointErrorClass must be either 0 for no error, or 1 for error.
+
 This adds the point to the map. You must provide the point's vector, a unique index for that point and whether or not you consider this point to be misclassified.
 
 #### Adding points:
@@ -69,6 +71,7 @@ nnMap.location(index).ipSig()
 ```
 Parameters:
 * index must be an integer less than the one returned by numLocations
+
 This returns the intersection signature for the ith location (ordered lexographically).
 
 #### Region signature of a location:
@@ -77,6 +80,7 @@ nnMap.location(index).regSig()
 ```
 Parameters:
 * index must be an integer less than the one returned by numLocations
+
 This returns the region signature for the ith location (ordered lexographically).
 
 #### Point indexes of a location:
@@ -85,6 +89,7 @@ nnMap.location(index).pointIndexes()
 ```
 Parameters:
 * index must be an integer less than the one returned by numLocations
+
 Returns the indexes of the points stored in this location. You can then use these indexes to reference the actual points.
 
 
