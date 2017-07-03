@@ -100,6 +100,7 @@ cdef extern from "../cutils/adaptiveTools.h":
 	cdef float *getSolutionPointer(_nnMap *map) with gil
 	cdef int getSelectionIndex(maxErrorCorner * maxGroup) with gil
 
+
 cdef extern from "../cutils/selectionTrainer.h":
 	cdef void trainNewSelector(nnLayer *selectionLayer, mapTreeNode **locArr, int maxLocIndex, maxErrorCorner *maxGroup, float * newSelectionWeight, float * newSelectionBias) with gil
 
@@ -227,24 +228,27 @@ cdef class nnMap:
 		print("Starting the adaptive step.")
 		print("Searching for the corner with the most error")
 		cdef maxErrorCorner * maxErrorGroup = refineMapAndGetMax(self.locArr, self.numLoc, layer1)
+
 		cdef np.ndarray[np.float32_t,ndim=1] avgError = np.zeros([self.inDim0], dtype=np.float32)
 		cdef float * solution = getSolutionPointer(self.internalMap)
 		cdef np.ndarray[np.float32_t,ndim=2] newHPVec = np.zeros([1,self.inDim0], dtype=np.float32)
 		cdef np.ndarray[np.float32_t,ndim=1] newHPoff = np.zeros([1], dtype=np.float32)
 		newDim = inDim1 + 1
-		cdef np.ndarray[np.float32_t,ndim=2] newSelectionWeight = np.zeros([newDim,outDim1], dtype=np.float32)
+		cdef np.ndarray[np.float32_t,ndim=2] newSelectionWeight = np.zeros([outDim1,newDim], dtype=np.float32)
 		cdef np.ndarray[np.float32_t,ndim=1] newSelectionBias = np.zeros([outDim1], dtype=np.float32)
 		
-		print("Aquiring average error in the max error corner with %(baseInDim)d"%{'baseInDim':self.inDim0})
-		getAverageError(maxErrorGroup, <float *> data.data, <float *> avgError.data, self.inDim0)
+		if(getSelectionIndex(maxErrorGroup) >= 0):
+			print("Aquiring average error in the max error corner with %(baseInDim)d"%{'baseInDim':self.inDim0})
+			getAverageError(maxErrorGroup, <float *> data.data, <float *> avgError.data, self.inDim0)
 
-		print("Creating new hyperplane.")
-		createNewHPVec(maxErrorGroup, <float *>avgError.data, solution, self.layer0, <float *>newHPVec.data,<float *> newHPoff.data);
+			print("Creating new hyperplane.")
+			createNewHPVec(maxErrorGroup, <float *>avgError.data, solution, self.layer0, <float *>newHPVec.data,<float *> newHPoff.data);
 
-		print("Creating new selection Layer.")
-		trainNewSelector(layer1, self.locArr, self.numLoc, maxErrorGroup, <float *>newSelectionWeight.data, <float *>newSelectionBias.data);
+			print("Creating new selection Layer.")
+			trainNewSelector(layer1, self.locArr, self.numLoc, maxErrorGroup, <float *>newSelectionWeight.data, <float *>newSelectionBias.data);
+			
+			print("Returning everything")
 		
-		print("Returning everything")
-		return newHPVec, newHPoff, newSelectionWeight, newSelectionBias
+		return newDim, newHPVec, newHPoff, newSelectionWeight, newSelectionBias
 		
 

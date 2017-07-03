@@ -70,13 +70,13 @@ init = tf.global_variables_initializer()
 sess.run(init)
 
 
-for i in range(20000):
+for i in range(10000):
 	tr_x, tr_y = mnist.train.next_batch(batchSize)
 	feedDict = {X:tr_x, Y:tr_y}
 	summ,lossVal,trainVal = sess.run([merged,loss[currentHiddenDim],trainOp[currentHiddenDim]], feed_dict = feedDict)
 	writer.add_summary(summ, i)
 
-	if(i % 1000 == 0 and i>0 and currentHiddenDim < maxHiddenDim):
+	if(i % 2000 == 0 and i>0 and currentHiddenDim < maxHiddenDim):
 		
 
 		npWeights1, npBias1, npWeights2,npBias2 = sess.run([weights1[currentHiddenDim],bias1[currentHiddenDim],weights2[currentHiddenDim],bias2[currentHiddenDim]])
@@ -86,8 +86,6 @@ for i in range(20000):
 		npWeights2 = np.ascontiguousarray(npWeights2.T, dtype=np.float32)
 		npBias2 = np.ascontiguousarray(npBias2, dtype=np.float32)
 
-		currentHiddenDim += 1
-
 
 		errors = sess.run([misclass[currentHiddenDim]], feed_dict = {X:trX, Y:trY})
 		errors = np.concatenate(errors)
@@ -95,17 +93,20 @@ for i in range(20000):
 		neuralMap = nnMap(npWeights1,npBias1,2)
 		indicies = np.arange(trX.shape[0],dtype=np.int32)
 		neuralMap.batchAdd(trX,indicies,errors)
-		npNewHPVec, npNewHPbias, npNewSelectionWeight, npNewSelectionBias = neuralMap.adaptiveStep(trX,npWeights2,npBias2)
+		newHiddenDim, npNewHPVec, npNewHPbias, npNewSelectionWeight, npNewSelectionBias = neuralMap.adaptiveStep(trX,npWeights2,npBias2)
 
-		print npNewHPVec.shape
-		print npWeights1.shape
-		newWeights1 = np.concatenate([npWeights1,npNewHPVec.T], axis=0)
-		newBias1 = np.concatenate([npBias1,npNewHPbias])
-		print newBias1.shape
+		if(newHiddenDim == currentHiddenDim + 1):
+			print("New Hyperplane created, inserting")
+			currentHiddenDim = newHiddenDim
+			newWeights1 = np.concatenate([npWeights1,npNewHPVec], axis=0)
+			newBias1 = np.concatenate([npBias1,npNewHPbias])
+			print newBias1.shape
 
-		updateWeights1Op = tf.assign(weights1[currentHiddenDim], newWeights1.T)
-		updateWeights2Op = tf.assign(weights2[currentHiddenDim], npNewSelectionWeight)
-		updateBias1Op = tf.assign(bias1[currentHiddenDim], newBias1)
-		updateBias2Op = tf.assign(bias2[currentHiddenDim], npNewSelectionBias)
+			updateWeights1Op = tf.assign(weights1[currentHiddenDim], newWeights1.T)
+			updateWeights2Op = tf.assign(weights2[currentHiddenDim], npNewSelectionWeight.T)
+			updateBias1Op = tf.assign(bias1[currentHiddenDim], newBias1)
+			updateBias2Op = tf.assign(bias2[currentHiddenDim], npNewSelectionBias)
 
-		sess.run([updateWeights1Op,updateWeights2Op,updateBias1Op,updateBias2Op])
+			sess.run([updateWeights1Op,updateWeights2Op,updateBias1Op,updateBias2Op])
+		else:
+			print("No hyperplane found")

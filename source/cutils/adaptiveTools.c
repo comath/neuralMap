@@ -271,6 +271,7 @@ maxErrorCorner * refineMapAndGetMax(mapTreeNode ** locArr, int maxLocIndex, nnLa
 	kint * hpCrossSigTemp = malloc(keyLen * sizeof(kint));
 	
 	maxErrorCorner * maxData = malloc(sizeof(maxErrorCorner));
+	maxData->selectionIndex = -1;
 	maxData->hpCrossed = malloc(keyLen * sizeof(kint));
 	maxData->weightedCount = 0;
 	maxData->locCount = 0;
