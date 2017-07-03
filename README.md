@@ -46,6 +46,7 @@ Parameters:
 * points must be a rank 2 32 bit float numpy ndarray with C packing. This currently has to contain the complete dataset. 
 * A1 must be a rank 2 32 bit float numpy ndarray with C packing
 * b1 must be a rank 1 32 bit float numpy ndarray with C packing
+
 Returns (in order):
 * New dimesion, this will not change in the event of a failure. 
 * new hyperplane vector, a rank 1 32 bit float numpy ndarray 
