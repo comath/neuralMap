@@ -1,7 +1,9 @@
 # nnMapper
 
 This is based on my paper: https://arxiv.org/abs/1612.02522
-The objective of this project is to make a fast neural network mapper to use in algorithms to adaptively adjust the neural network topology to the data, harden the network against misclassifying data (see adverserial examples) and several other applications. 
+The objective of this project is to make a fast neural network mapper to use in algorithms to adaptively adjust the neural network topology to the data, harden the network against misclassifying data (adversarial examples) and several other applications. 
+
+
 
 # Python Interface
 
@@ -9,7 +11,7 @@ To use this in python with either tensorflow or some other machine learning fram
 
 For now the python interface consists of one class, `nnMap`. 
 
-#### Initializer 
+#### nnMap Initializer 
 ```python
 nnMap.__init__(A,b)
 ```
@@ -72,7 +74,7 @@ nnMap.location(index).ipSig()
 Parameters:
 * index must be an integer less than the one returned by numLocations
 
-This returns the intersection signature for the ith location (ordered lexographically).
+This returns the intersection signature for the ith location (ordered lexicographically).
 
 #### Region signature of a location:
 ```python
@@ -81,7 +83,7 @@ nnMap.location(index).regSig()
 Parameters:
 * index must be an integer less than the one returned by numLocations
 
-This returns the region signature for the ith location (ordered lexographically).
+This returns the region signature for the ith location (ordered lexicographically).
 
 #### Point indexes of a location:
 ```python
@@ -91,6 +93,3 @@ Parameters:
 * index must be an integer less than the one returned by numLocations
 
 Returns the indexes of the points stored in this location. You can then use these indexes to reference the actual points.
-
-
-
