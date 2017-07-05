@@ -57,7 +57,7 @@ void trainNewSelector(nnLayer *selectionLayer, mapTreeNode ** locArr, int locArr
 	nnLayer newSelectionLayer = expandAndRescaleLayer(selectionLayer,selectionIndex,newSelectionWeights,newSelectionBias);
 
 	nnLayer selector;
-	selector.inDim = selectionLayer->inDim;
+	selector.inDim = selectionLayer->inDim + 1;
 	uint dim = newSelectionLayer.inDim;
 	selector.outDim = 1;
 	selector.A = newSelectionLayer.A + selectionIndex*dim;
@@ -95,6 +95,7 @@ void trainNewSelector(nnLayer *selectionLayer, mapTreeNode ** locArr, int locArr
 	#endif
 	float stepsize = INITSTEPSIZE;
 	for(int i = 0; i<NUMEPOCHS; i++){
+	
 		for(int j = 0; j<dataLength; j++){
 			oneGradientDecentForSelector(&selector,unpackedSigs + j*dim, labels[j],stepsize);
 		}
@@ -115,5 +116,4 @@ void trainNewSelector(nnLayer *selectionLayer, mapTreeNode ** locArr, int locArr
 	free(importantLabels);
 	vector_free(importantRegVec);
 	free(importantRegVec);
-	return newSelectionLayer;
 }

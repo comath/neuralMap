@@ -3,18 +3,25 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include "mapperTree.h"
-#include "ipTrace.h"
-#include "nnLayerUtils.h"
 #include <stdint.h>
+#include <float.h>
 
+#ifdef USE_MKL
 #include <mkl.h>
 #include <mkl_cblas.h>
 #include <mkl_blas.h>
 #include <mkl_lapack.h>
 #include <mkl_lapacke.h>
+#endif
 
+#ifdef USE_OPENBLAS
+#include <lapacke.h>
+#include <cblas.h>
+#endif
 
+#include "mapperTree.h"
+#include "ipTrace.h"
+#include "nnLayerUtils.h"
 
 typedef struct _nnMap {
 	nnLayer *layer;

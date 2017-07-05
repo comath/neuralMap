@@ -1,6 +1,5 @@
 #include "parallelTree.h"
-#include <stdint.h>
-#include <string.h>
+
 
 
 SubTree * allocateNodes(uint keyLength)

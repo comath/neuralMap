@@ -59,8 +59,8 @@ float * randomData(uint dim, uint numData)
 
 int main(int argc, char* argv[])
 {
-	uint dim = 5;
-	uint numHP = 4;
+	uint dim = 6;
+	uint numHP = 3;
 	uint numData = 5;
 	uint keySize = calcKeyLen(numHP);
 	uint maxThreads = sysconf(_SC_NPROCESSORS_ONLN);
@@ -95,7 +95,7 @@ int main(int argc, char* argv[])
 	free(data);
 	free(ipSigs);
 	free(outPut);
-	freeLayer(layer);
+	//freeLayer(layer);
 	freeTraceCache(tc);
 	return 0;
 }

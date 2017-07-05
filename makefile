@@ -1,14 +1,16 @@
-CC = gcc -Wall -Wextra -DMKL
+CC = gcc -Wall -Wextra -DUSE_OPENBLAS
 
 OPT = -O1
 DEBUG = -DDEBUG
 GDB = -g
 PROFILE = -lprofiler
 
-MKLROOT = /opt/intel/compilers_and_libraries/linux/mkl
-MKLINC = -I$(MKLROOT)/include/
-MKLSTATICLIB = -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_ilp64.a $(MKLROOT)/lib/intel64/libmkl_sequential.a $(MKLROOT)/lib/intel64/libmkl_core.a -Wl,--end-group
-MKLONEDYNAMICLIB =  -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_rt 
+
+#MKLROOT = /opt/intel/compilers_and_libraries/linux/mkl
+#MKLINC = -I$(MKLROOT)/include/
+#MKLSTATICLIB = -Wl,--start-group $(MKLROOT)/lib/intel64/libmkl_intel_ilp64.a $(MKLROOT)/lib/intel64/libmkl_sequential.a $(MKLROOT)/lib/intel64/libmkl_core.a -Wl,--end-group
+#MKLONEDYNAMICLIB =  -L${MKLROOT}/lib/intel64 -Wl,--no-as-needed -lmkl_rt 
+
 PYINCDIR = $(shell python -c \
 			"from distutils import sysconfig; print(sysconfig.get_python_inc())")
 
@@ -21,7 +23,7 @@ WRAP = ./source/pythonInterface/
 UTILS = ./source/cutils/
 TEST = ./source/test/
 
-LIB_FLAGS = -ldl -lpthread -lm
+LIB_FLAGS = -ldl -lpthread -lm -llapacke -lopenblas
 
 
 all: parallelTree_test key_test

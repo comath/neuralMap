@@ -13,14 +13,30 @@ buildDir 	= "build/"
 wrapDir = "source/pythonInterface/"
 utilsDir 	= "source/cutils/"
 testDir 	= "source/test/"
-mklRootDir = "/opt/intel/compilers_and_libraries/linux/mkl"
+useMKL = False
+useBLAS = True
 
-mklIncDir =  mklRootDir + "/include/"
-mklLibDir = mklRootDir+'/lib/intel64'
-intelLinLibDir = '/opt/intel/compilers_and_libraries/linux/lib/intel64_lin'
-mklStaticLib = [mklLibDir + "/libmkl_intel_ilp64.a",  
-			    mklLibDir + "/libmkl_sequential.a",  
-			    mklLibDir + "/libmkl_core.a"]
+if(useMKL):
+	mklRootDir = "/opt/intel/compilers_and_libraries/linux/mkl"
+	mklIncDir =  mklRootDir + "/include/"
+	mklLibDir = mklRootDir+'/lib/intel64'
+	intelLinLibDir = '/opt/intel/compilers_and_libraries/linux/lib/intel64_lin'
+	blasLibDir = [mklLibDir,intelLinLibDir]
+	mklStaticLib = [mklLibDir + "/libmkl_intel_ilp64.a",  
+				    mklLibDir + "/libmkl_sequential.a",  
+				    mklLibDir + "/libmkl_core.a"]
+	libs=['mkl_rt','pthread', 'm', 'dl',]
+	inc_dirs = [numpy.get_include(),utilsDir,mklIncDir]
+	extra_compile_args=[ '-DMKL_ILP64','-DUSE_MKL', "-O2", '-m64']
+	extra_link_args=['-Wl,--no-as-needed' ]
+
+
+if(useBLAS):
+	blasLibDir = []
+	inc_dirs = [numpy.get_include(),utilsDir]
+	libs=['pthread', 'm', 'dl','openblas','lapacke']
+	extra_compile_args=['-DUSE_OPENBLAS', "-O2", '-m64']
+	extra_link_args=[]
 
 mapperExt = Extension(name='mapperWrap',
 						sources=[wrapDir+"mapperWrap.pyx",
@@ -33,13 +49,12 @@ mapperExt = Extension(name='mapperWrap',
 								 utilsDir+"adaptiveTools.c",
 								 utilsDir+"selectionTrainer.c",
 								 utilsDir+"nnLayerUtils.c"],
-						include_dirs = [numpy.get_include(),utilsDir,mklIncDir],
+						include_dirs = inc_dirs,
 						#extra_objects = mklStaticLib ,
-						library_dirs=[mklLibDir,intelLinLibDir],
-						libraries=['mkl_rt',
-									'pthread', 'm', 'dl'],
-						extra_compile_args=[ '-DMKL_ILP64','-DMKL', "-O2", '-m64'],
-						extra_link_args=['-Wl,--no-as-needed' ]
+						library_dirs= blasLibDir,
+						libraries=libs,
+						extra_compile_args=extra_compile_args,
+						extra_link_args=extra_link_args
 						#,define_macros=[('DEBUG',None)]
 						)
 

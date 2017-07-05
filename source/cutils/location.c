@@ -1,9 +1,4 @@
 // from http://eddmann.com/posts/implementing-a-dynamic-vector-array-in-c/
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "location.h"
 
 pointInfo * allocPointInfo(int m)

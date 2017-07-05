@@ -1,8 +1,13 @@
 #ifndef _nnLayerUtils_h
 #define _nnLayerUtils_h
+
+#include <stdio.h>
+#include <float.h>
+#include <stdlib.h>
 #include <stdint.h>
-#include "key.h"
-#ifdef MKL
+#include <string.h>
+
+#ifdef USE_MKL
 #include <mkl.h>
 #include <mkl_cblas.h>
 #include <mkl_blas.h>
@@ -10,6 +15,12 @@
 #include <mkl_lapacke.h>
 #endif
 
+#ifdef USE_OPENBLAS
+#include <lapacke.h>
+#include <cblas.h>
+#endif
+
+#include "key.h"
 /*
 Struct for passing layers of a perceptron.
 */

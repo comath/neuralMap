@@ -70,13 +70,13 @@ init = tf.global_variables_initializer()
 sess.run(init)
 
 
-for i in range(10000):
+for i in range(50000):
 	tr_x, tr_y = mnist.train.next_batch(batchSize)
 	feedDict = {X:tr_x, Y:tr_y}
 	summ,lossVal,trainVal = sess.run([merged,loss[currentHiddenDim],trainOp[currentHiddenDim]], feed_dict = feedDict)
 	writer.add_summary(summ, i)
 
-	if(i % 2000 == 0 and i>0 and currentHiddenDim < maxHiddenDim):
+	if(i % 5000 == 0 and i>0 and currentHiddenDim < maxHiddenDim):
 		
 
 		npWeights1, npBias1, npWeights2,npBias2 = sess.run([weights1[currentHiddenDim],bias1[currentHiddenDim],weights2[currentHiddenDim],bias2[currentHiddenDim]])

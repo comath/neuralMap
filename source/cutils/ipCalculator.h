@@ -7,16 +7,23 @@ Soon to be repurposed to be used in ipTrace
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include "parallelTree.h"
-#include "nnLayerUtils.h"
 #include <stdint.h>
 
+#ifdef USE_MKL
 #include <mkl.h>
 #include <mkl_cblas.h>
 #include <mkl_blas.h>
 #include <mkl_lapack.h>
 #include <mkl_lapacke.h>
+#endif
 
+#ifdef USE_OPENBLAS
+#include <lapacke.h>
+#include <cblas.h>
+#endif
+
+#include "parallelTree.h"
+#include "nnLayerUtils.h"
 
 typedef struct intersection {
 	int numHps;

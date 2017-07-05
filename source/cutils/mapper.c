@@ -1,12 +1,4 @@
 #include "mapper.h"
-#include <float.h>
-#include <stdint.h>
-
-#include <mkl.h>
-#include <mkl_cblas.h>
-#include <mkl_blas.h>
-#include <mkl_lapack.h>
-#include <mkl_lapacke.h>
 
 _nnMap * allocateMap(nnLayer * layer)
 {
@@ -60,7 +52,6 @@ void freeMapMemory(mapMemory *mm)
 			free(mm->keyPair);
 		}
 		free(mm);
-		//mkl_thread_free_buffers(); //Not a real leak, it's the MKL buffer.
 	}
 }
 

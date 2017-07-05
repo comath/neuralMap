@@ -1,5 +1,5 @@
 #include "ipTrace.h"
-#include <math.h>
+
 
 /*
 Creates the data needed for the hp distance computation
@@ -77,6 +77,12 @@ void computeDistToHPS(float *p, distanceWithIndex *distances,
 	qsort(distances, m, sizeof(distanceWithIndex), distOrderingCmp);	
 }
 
+void solveSquareSystem(int n, int m, float *A, float *b, float *x, int *pivot)
+{
+	memcpy(x,b,m*sizeof(float));
+	int rc = LAPACKE_sgetrs (CblasRowMajor , 'N' , n, m , A , 1, pivot , x, 1);
+}
+
 /*
 Creates a traceCache, creates a solution and calls fillHPCache
 */
@@ -121,9 +127,9 @@ traceCache * allocateTraceCache(nnLayer * layer)
 
 	printf("just before svm layer->A[0]: %f pointer %p\n", layer->A[0], layer->A);
 
+
 	// SVD first
-	MKL_INT info;
-	info = LAPACKE_sgesdd( LAPACK_ROW_MAJOR, 'A', m, n, Acopy, n, 
+	int info = LAPACKE_sgesdd( LAPACK_ROW_MAJOR, 'A', m, n, Acopy, n, 
 							s, 
 							u, m, 
 							vt, n );
@@ -145,17 +151,28 @@ traceCache * allocateTraceCache(nnLayer * layer)
 		cblas_sscal(m,(1/s[i]),u+i,m);
 		i++;
 	}
-	// Multiplies v with (sigma+*u)
+	/* Multiplies v with (sigma+*u)
 	sgemm (&N,&N, 
 		&n, &m, &m, 
 		&oneF, vt, &n, 
 		u, &m,
 		&zeroF,c,&n);
-	
+	*/
+	cblas_sgemm(CblasRowMajor, CblasTrans, CblasTrans, n, m, m, 1, vt, n, u, m, 0, c, m);
+
+	#ifdef DEBUG
+		printf("U:\n");
+		printMatrix(u,m,m);
+		printf("Vt:\n");
+		printMatrix(vt,n,n);
+		printf("C:\n");
+		printMatrix(c,m,n);
+	#endif
 	printf("just before gemv layer->A[0]: %f pointer %p\n", layer->A[0], layer->A);
 
 	// Multiplying v sigma+ u with b for the solution				\/ param 7
 	cblas_sgemv (CblasRowMajor, CblasTrans, m, n,1, c, n, layer->b, 1, 0, tc->solution, 1);
+
 	free(u);
 	free(vt);
 	free(c);
@@ -262,14 +279,14 @@ void fullTraceWithDist(traceCache * tc, traceMemory * tm, float * point, distanc
 		}
 	#endif
 	// Does QR decomp. Creates R and the pivot indexes for Q. 
-	int rc = LAPACKE_sgeqrf (LAPACK_COL_MAJOR, m, m, tm->permA, n, tm->tau);
+	int rc = LAPACKE_sgeqrf (LAPACK_COL_MAJOR, n, m, tm->permA, n, tm->tau);
 	if(rc){
 		printf("QR failed, maybe inDim=%d and outDim=%d? illegal parameter at index: %d with val of %f\n",n,m, -rc, tm->permA[-rc]);
 		//printMatrix(tc->layer->A,n,m);
 		exit(-1);
 	}
 	// Unpacks Q from R and the pivot indexes
-	rc = LAPACKE_sorgqr(LAPACK_COL_MAJOR, m, m, m, tm->permA, n, tm->tau);
+	rc = LAPACKE_sorgqr(LAPACK_COL_MAJOR, n, m, m, tm->permA, n, tm->tau);
 	if(rc){
 		printf("Getting Q failed\n");
 		exit(-1);

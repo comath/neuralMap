@@ -86,9 +86,9 @@ float * randomData(uint dim, uint numData)
 
 int main(int argc, char* argv[])
 {
-	uint dim = 9;
-	uint numHP = 3;
-	uint finalDim = 1;
+	uint dim = 8;
+	uint numHP = 4;
+	uint finalDim = 2;
 
 	uint numData = 400;
 	uint keySize = calcKeyLen(numHP);
@@ -136,7 +136,10 @@ int main(int argc, char* argv[])
 	float * newbias = malloc((finalDim)*sizeof(float));
 
 	trainNewSelector(layer1, locations, maxLocIndex, max,newweight,newbias);
-
+	printf("New Weights: \n");
+	printMatrix(newweight,5,2);
+	printf("Old Weights: \n");
+	printMatrix(layer1->A,4,2);
 
 
 	freeMaxErrorCorner(max);

@@ -1,6 +1,9 @@
 // From http://eddmann.com/posts/implementing-a-dynamic-vector-array-in-c/
 #ifndef LOCATION_H
 #define LOCATION_H
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 #define LOCATION_INIT_CAPACITY 4
 

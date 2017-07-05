@@ -1,19 +1,29 @@
 #ifndef _fullTrace_h
 #define _fullTrace_h
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include "nnLayerUtils.h"
-#include "key.h"
 #include <stdint.h>
 #include <float.h>
 #include <string.h>
+#include <math.h>
 
+#ifdef USE_MKL
 #include <mkl.h>
 #include <mkl_cblas.h>
 #include <mkl_blas.h>
 #include <mkl_lapack.h>
 #include <mkl_lapacke.h>
+#endif
+
+#ifdef USE_OPENBLAS
+#include <lapacke.h>
+#include <cblas.h>
+#endif
+
+#include "nnLayerUtils.h"
+#include "key.h"
 
 // Internal struct, contains the index of a hyperplane and the distance to that hyperplane
 typedef struct distanceWithIndex {

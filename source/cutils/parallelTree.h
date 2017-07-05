@@ -10,6 +10,7 @@ Used by ipCalculator. Currently not called as ipCalculator is not currently used
 #include <error.h>
 #include <unistd.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "key.h"
 

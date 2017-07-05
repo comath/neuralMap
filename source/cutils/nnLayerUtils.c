@@ -1,15 +1,6 @@
 #include "nnLayerUtils.h"
-#include <stdio.h>
-#include <float.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <string.h>
 
-#include <mkl.h>
-#include <mkl_cblas.h>
-#include <mkl_blas.h>
-#include <mkl_lapack.h>
-#include <mkl_lapacke.h>
+
 
 
 nnLayer *allocateLayer(uint inDim, uint outDim)
@@ -30,6 +21,7 @@ nnLayer * createLayer(float * A, float *b, uint inDim, uint outDim)
 	layer->b = b;
 	layer->inDim = inDim;
 	layer->outDim = outDim;
+	printf("In createLayer A[0]: %f inDim: %d outDim: %d\n", A[0],inDim,outDim);
 	return layer;
 }
 

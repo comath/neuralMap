@@ -3,20 +3,28 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <pthread.h>
-#include "mapperTree.h"
-#include "mapper.h"
-#include "nnLayerUtils.h"
-#include "key.h"
-#include "vector.h"
 #include <stdint.h>
 #include <limits.h>
 #include <string.h>
+
+#ifdef USE_MKL
 #include <mkl.h>
 #include <mkl_cblas.h>
 #include <mkl_blas.h>
 #include <mkl_lapack.h>
 #include <mkl_lapacke.h>
+#endif
 
+#ifdef USE_OPENBLAS
+#include <lapacke.h>
+#include <cblas.h>
+#endif
+
+#include "mapperTree.h"
+#include "mapper.h"
+#include "nnLayerUtils.h"
+#include "key.h"
+#include "vector.h"
 
 /*
 Stores the needed information to make a new hyperplane
