@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-
-from distutils.core import setup, Extension
+from setuptools import setup
+from distutils.core import Extension
 from Cython.Build import cythonize
 
 import numpy

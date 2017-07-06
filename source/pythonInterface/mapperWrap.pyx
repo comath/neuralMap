@@ -135,7 +135,7 @@ cdef class _location:
 		return points
 	
 
-cdef class nnMap:
+cdef class mapperWrap:
 	cdef _nnMap * internalMap
 	cdef nnLayer * layer0
 	cdef nnLayer * layer1
