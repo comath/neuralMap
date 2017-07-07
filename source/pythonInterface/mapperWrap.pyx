@@ -56,7 +56,7 @@ cdef extern from "../cutils/mapperTree.h":
 		pass
 	cdef void nodeGetIPKey(mapTreeNode * node, int * ipKey, unsigned int outDim)
 	cdef void nodeGetRegKey(mapTreeNode * node, int * regKey, unsigned int outDim)
-	cdef void nodeGetPointIndexes(mapTreeNode * node, int *indexHolder)
+	cdef void nodeGetPointIndexes(mapTreeNode * node, int errorClass, int *indexHolder)
 	cdef int nodeGetTotal(mapTreeNode * node, int errorClass)
 
 cdef extern from "../cutils/mapper.h":
@@ -134,6 +134,8 @@ cdef class _location:
 		nodeGetPointIndexes(self.thisLoc, <int *>points.data)
 		return points
 	
+	def all(self):
+		return self.ipSig(), self.regSig(), self.pointIndexes(0), self.pointIndexes(1)
 
 cdef class mapperWrap:
 	cdef _nnMap * internalMap
@@ -159,6 +161,11 @@ cdef class mapperWrap:
 		if not self.internalMap:
 			raise MemoryError()
 
+	def __dealloc__(self):
+		print("Deallocating map")
+		freeMap(self.internalMap)
+		if self.locArr:
+			free(self.locArr)
 
 	def add(self,np.ndarray[float,ndim=1,mode="c"] b not None, int pointIndex, int errorClass):
 		if self.locArr:
@@ -203,12 +210,10 @@ cdef class mapperWrap:
 			raise MemoryError()
 		thisLoc = _location.create( self.locArr[i] , self.layer0.outDim, self.layer0.inDim)
 		return thisLoc
+
+
 	
-	def __dealloc__(self):
-		print("Deallocating map")
-		freeMap(self.internalMap)
-		if self.locArr:
-			free(self.locArr)
+	
 
 	def adaptiveStep(self, np.ndarray[float,ndim=2,mode="c"] data not None, 
 					np.ndarray[float,ndim=2,mode="c"] A1 not None, 

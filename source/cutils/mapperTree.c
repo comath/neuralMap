@@ -254,9 +254,9 @@ void nodeGetRegKey(mapTreeNode * node, int * regKeyUncompressed, uint outDim)
 	convertFromKeyToInt(node->regKey, regKeyUncompressed, outDim);
 }
 
-void nodeGetPointIndexes(mapTreeNode * node, int *indexHolder)
+void nodeGetPointIndexes(mapTreeNode * node, int errorClass, int *indexHolder)
 {
-	location_get_indexes(&(node->loc),indexHolder,0);
+	location_get_indexes(&(node->loc),indexHolder,errorClass);
 }
 
 int nodeGetTotal(mapTreeNode * node, int errorClass)

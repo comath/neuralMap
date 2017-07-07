@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
-from mapperWrap import nnMap
+import nnMap
 mnist = input_data.read_data_sets('MNIST_data/', one_hot=True)
 trX, trY, teX, teY = mnist.train.images, mnist.train.labels,\
 mnist.test.images, mnist.test.labels
@@ -24,7 +24,6 @@ eval2 = {}
 loss = {}
 misclass = {}
 accuracy = {}
-
 
 for hd in range(currentHiddenDim,maxHiddenDim+1):
 	with tf.name_scope('NeuralNetwork%(hidDim)d'%{'hidDim':hd}):
@@ -81,30 +80,20 @@ for i in range(50000):
 
 		npWeights1, npBias1, npWeights2,npBias2 = sess.run([weights1[currentHiddenDim],bias1[currentHiddenDim],weights2[currentHiddenDim],bias2[currentHiddenDim]])
 
-		npWeights1 = np.ascontiguousarray(npWeights1.T, dtype=np.float32)
-		npBias1 = np.ascontiguousarray(npBias1, dtype=np.float32)
-		npWeights2 = np.ascontiguousarray(npWeights2.T, dtype=np.float32)
-		npBias2 = np.ascontiguousarray(npBias2, dtype=np.float32)
-
-
 		errors = sess.run([misclass[currentHiddenDim]], feed_dict = {X:trX, Y:trY})
 		errors = np.concatenate(errors)
 
-		neuralMap = nnMap(npWeights1,npBias1,2)
+		neuralMap = nnMap([npWeights1,npWeights2],[npBias1,npBias2],2)
 		indicies = np.arange(trX.shape[0],dtype=np.int32)
-		neuralMap.batchAdd(trX,indicies,errors)
-		newHiddenDim, npNewHPVec, npNewHPbias, npNewSelectionWeight, npNewSelectionBias = neuralMap.adaptiveStep(trX,npWeights2,npBias2)
+		neuralMap.batchAdd(trX,indicies,errorClasses=errors)
 
-		if(newHiddenDim == currentHiddenDim + 1):
+		npNewWeights, npNewBias, npNewSelectionWeight, npNewSelectionBias = neuralMap.adaptiveStep(trX,npWeights2,npBias2)
+		if(npNewWeights != None):
 			print("New Hyperplane created, inserting")
-			currentHiddenDim = newHiddenDim
-			newWeights1 = np.concatenate([npWeights1,npNewHPVec], axis=0)
-			newBias1 = np.concatenate([npBias1,npNewHPbias])
-			print newBias1.shape
-
-			updateWeights1Op = tf.assign(weights1[currentHiddenDim], newWeights1.T)
-			updateWeights2Op = tf.assign(weights2[currentHiddenDim], npNewSelectionWeight.T)
-			updateBias1Op = tf.assign(bias1[currentHiddenDim], newBias1)
+			currentHiddenDim = currentHiddenDim + 1 
+			updateWeights1Op = tf.assign(weights1[currentHiddenDim], npNewWeights)
+			updateWeights2Op = tf.assign(weights2[currentHiddenDim], npNewSelectionWeight)
+			updateBias1Op = tf.assign(bias1[currentHiddenDim], npNewBias)
 			updateBias2Op = tf.assign(bias2[currentHiddenDim], npNewSelectionBias)
 
 			sess.run([updateWeights1Op,updateWeights2Op,updateBias1Op,updateBias2Op])

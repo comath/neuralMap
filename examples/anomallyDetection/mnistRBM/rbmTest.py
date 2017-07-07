@@ -46,11 +46,9 @@ for hiddenDim in range(20,101,20):
 	
 	matrix = matDic["matrix%(round)04d"% {'round': itte}]
 	offset = matDic["offsetVis%(round)04d"% {'round': itte}]
-	matrix = np.ascontiguousarray(matrix.T, dtype=np.float32)
-	print matrix.shape
-	offset = np.ascontiguousarray(offset, dtype=np.float32)
 	offset.shape = offset.shape[1]
-	map1 = nnMap(matrix,offset,'mnistRBM.db','hidden%(hid)03d' % {'hid':hiddenDim})
+	map1 = nnMap(matrix,offset)
+	map1.load('mnistRBM.db','hidden%(hid)03d' % {'hid':hiddenDim})
 	
 	leaveCount = 0.0
 	removeCount = 0.0

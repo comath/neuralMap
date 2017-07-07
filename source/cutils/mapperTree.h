@@ -81,7 +81,7 @@ mapTreeNode ** getAllNodes(mapTree * tree);
 // used by the cython wrapper to retrieve the information in the tree nodes
 void nodeGetIPKey(mapTreeNode * node, int * ipKeyuncompressed, uint outDim);
 void nodeGetRegKey(mapTreeNode * node, int * regKeyuncompressed, uint outDim);
-void nodeGetPointIndexes(mapTreeNode * node, int *indexHolder);
+void nodeGetPointIndexes(mapTreeNode * node, int errorClass, int *indexHolder);
 int nodeGetTotal(mapTreeNode * node, int errorClass);
 
 #endif
