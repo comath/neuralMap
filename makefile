@@ -56,7 +56,7 @@ selectionTrainer.o: $(UTILS)selectionTrainer.c $(UTILS)nnLayerUtils.c $(UTILS)ad
 
 #Python Interface
 mapperWrap:
-	python $(WRAP)buildMapperWrap.py bdist_wheel -d ./
+	python $(WRAP)buildMapperWrap.py build_ext -i
 
 #Python Interface
 ipCalculatorWrap:

@@ -1,9 +1,18 @@
-# nnMapper
+# Purpose 
 
 This is based on my paper: https://arxiv.org/abs/1612.02522
 The objective of this project is to make a fast neural network mapper to use in algorithms to adaptively adjust the neural network topology to the data, harden the network against misclassifying data (adversarial examples) and several other applications. 
 
+# Installing
 
+To install this first make a python wheel with:
+```bash
+python setup.py bdist_wheel -d ./
+```
+Then install that wheel with pip, typically:
+```bash
+sudo pip install nnMap-0.1-cp27-cp27mu-linux_x86_64.whl
+```
 
 # Python Interface
 
@@ -23,12 +32,12 @@ A must be a weight matrix, b must be the associated offsets. These must be for t
 
 #### Adding points:
 ```python
-nnMap.add(point,pointIndex,pointErrorClass)
+nnMap.addPoints(point,pointIndex,pointErrorClass)
 ```
 Parameters:
-* point must be a rank 1 32 bit float numpy ndarray with C packing
-* pointIndex must be an integer
-* pointErrorClass must be either 0 for no error, or 1 for error.
+* points must be a rank 1 or 2 32 bit float numpy ndarray with C packing
+* pointIndexes must be an integer, or an 
+* pointErrorClasses must be either 0 for no error, or 1 for error, optional.
 
 This adds the point to the map. You must provide the point's vector, a unique index for that point and whether or not you consider this point to be misclassified.
 

@@ -58,14 +58,6 @@ mapperExt = Extension(name='mapperWrap',
 						#,define_macros=[('DEBUG',None)]
 						)
 
-setup(name='nnMap',
-      version='0.1',
-      description='',
-      author='Sven Cattell',
-      author_email='scattell@gmail.com',
-      url='comathematician.net',
-      package_dir = {'': 'source/python'},
-      packages=['nnMap'],
-	ext_modules = cythonize(mapperExt,gdb_debug=False))
+setup(ext_modules = cythonize(mapperExt,gdb_debug=False))
 
 

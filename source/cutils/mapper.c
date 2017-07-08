@@ -7,7 +7,6 @@ _nnMap * allocateMap(nnLayer * layer)
 	map->locationTree = createMapTree(layer->outDim);
 	map->layer = layer;
 	map->tc = allocateTraceCache(map->layer);
-	printf("A[0]: %f\n", map->layer->A[0]);
 	return map;
 }
 void freeMap(_nnMap *map)

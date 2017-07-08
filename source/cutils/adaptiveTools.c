@@ -479,7 +479,6 @@ float *getSolutionPointer(_nnMap *map)
 
 void getAverageError(maxErrorCorner * maxErrorGroup, float *data, float * avgError, int dim)
 {
-	printf("Writing %d floats to the provied buffer.\n",dim);
 	location curLoc;
 	memset(avgError,0,dim*sizeof(float));
 	int i = 0, j = 0;

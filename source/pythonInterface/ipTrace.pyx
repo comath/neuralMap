@@ -1,5 +1,4 @@
 # cython: profile=True
-from __future__ import print_function
 import cython
 import numpy as np
 cimport numpy as np

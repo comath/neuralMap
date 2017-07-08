@@ -19,7 +19,6 @@ nnLayer expandAndRescaleLayer(nnLayer *selectionLayer, int selectionIndex, float
 		newSelectionLayer.A[inDim] = 0.001;
 	}
 
-	printf("InDim for snrm2 in expandAndRescaleLayer %d\n", inDim);
 	float norm = cblas_snrm2(inDim,newSelectionLayer.A+selectionIndex*(inDim+1),1);
 	cblas_sscal(inDim, 1/(5*norm), selectionLayer->A + selectionIndex*inDim, 1);
 	newSelectionLayer.b[selectionIndex] *= (1.0/(5*norm));

@@ -60,7 +60,7 @@ mapperExt = Extension(name='mapperWrap',
 
 setup(name='nnMap',
 	version='0.1',
-	description='',
+	description='A neural network mapper',
 	author='Sven Cattell',
 	author_email='scattell@gmail.com',
 	url='comathematician.net',

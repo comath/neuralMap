@@ -100,12 +100,12 @@ traceCache * allocateTraceCache(nnLayer * layer)
 	}
 	traceCache * tc = malloc(sizeof(traceCache));
 	tc->layer = layer;
-	printf("In trace layer->A[0]: %f pointer %p\n", layer->A[0], layer->A);
+	
 
 	tc->hpNormals = calloc(m*n,sizeof(float));
 	tc->hpOffsetVals = calloc(m,sizeof(float));
 	fillHPCache(layer,tc->hpNormals, tc->hpOffsetVals);
-	printf("after hpC layer->A[0]: %f pointer %p\n", layer->A[0], layer->A);
+	
 
 	float *Acopy = malloc(n*m*sizeof(float));
 	memcpy(Acopy,layer->A,n*m*sizeof(float));
@@ -125,9 +125,6 @@ traceCache * allocateTraceCache(nnLayer * layer)
 
 	// Solves Ax=b, in many steps
 
-	printf("just before svm layer->A[0]: %f pointer %p\n", layer->A[0], layer->A);
-
-
 	// SVD first
 	int info = LAPACKE_sgesdd( LAPACK_ROW_MAJOR, 'A', m, n, Acopy, n, 
 							s, 
@@ -143,8 +140,6 @@ traceCache * allocateTraceCache(nnLayer * layer)
 		}
 		exit( 1 );
 	}
-	printf("just after svm layer->A[0]: %f pointer %p\n", layer->A[0], layer->A);
-
 	// Multiplying Sigma+t with u
 	i = 0;
 	while(i<m && s[i] !=0){
@@ -168,7 +163,7 @@ traceCache * allocateTraceCache(nnLayer * layer)
 		printf("C:\n");
 		printMatrix(c,m,n);
 	#endif
-	printf("just before gemv layer->A[0]: %f pointer %p\n", layer->A[0], layer->A);
+	
 
 	// Multiplying v sigma+ u with b for the solution				\/ param 7
 	cblas_sgemv (CblasRowMajor, CblasTrans, m, n,1, c, n, layer->b, 1, 0, tc->solution, 1);
@@ -186,7 +181,7 @@ traceCache * allocateTraceCache(nnLayer * layer)
 	#ifdef DEBUG
 		printf("Trace Cache Allocated\n");
 	#endif
-	printf("End of trace layer->A[0]: %f pointer %p\n", layer->A[0], layer->A);
+	
 
 	return tc;
 }

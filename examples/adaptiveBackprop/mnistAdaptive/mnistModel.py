@@ -30,11 +30,11 @@ for hd in range(currentHiddenDim,maxHiddenDim+1):
 		with tf.name_scope('Layer1'):
 			weights1[hd] = tf.Variable(tf.random_uniform([inDim,hd], -0.005, 0.005),name='Weights')
 			bias1[hd] = tf.Variable(tf.random_uniform([hd], -0.005, 0.005),name='Bias')
-			eval1[hd] = tf.nn.relu(tf.matmul(X,weights1[hd]) + bias1[hd],name='Evaluation')
+			eval1[hd] = tf.nn.sigmoid(tf.matmul(X,weights1[hd]) + bias1[hd],name='Evaluation')
 		with tf.name_scope('Layer2'):
 			weights2[hd] = tf.Variable(tf.random_uniform([hd,outDim], -0.005, 0.005),name='Weights',dtype=tf.float32)
 			bias2[hd] = tf.Variable(tf.random_uniform([outDim], -0.005, 0.005),name='Bias',dtype=tf.float32)
-			curEval2 = tf.nn.relu(tf.matmul(eval1[hd],weights2[hd]) + bias2[hd],name='Evaluation')
+			curEval2 = tf.nn.sigmoid(tf.matmul(eval1[hd],weights2[hd]) + bias2[hd],name='Evaluation')
 			eval2[hd] = curEval2
 
 		loss[hd] = tf.losses.softmax_cross_entropy(Y,curEval2)
@@ -69,13 +69,13 @@ init = tf.global_variables_initializer()
 sess.run(init)
 
 
-for i in range(50000):
+for i in range(1000):
 	tr_x, tr_y = mnist.train.next_batch(batchSize)
 	feedDict = {X:tr_x, Y:tr_y}
 	summ,lossVal,trainVal = sess.run([merged,loss[currentHiddenDim],trainOp[currentHiddenDim]], feed_dict = feedDict)
 	writer.add_summary(summ, i)
 
-	if(i % 5000 == 0 and i>0 and currentHiddenDim < maxHiddenDim):
+	if(i % 500 == 0 and i>0 and currentHiddenDim < maxHiddenDim):
 		
 
 		npWeights1, npBias1, npWeights2,npBias2 = sess.run([weights1[currentHiddenDim],bias1[currentHiddenDim],weights2[currentHiddenDim],bias2[currentHiddenDim]])
@@ -83,12 +83,15 @@ for i in range(50000):
 		errors = sess.run([misclass[currentHiddenDim]], feed_dict = {X:trX, Y:trY})
 		errors = np.concatenate(errors)
 
-		neuralMap = nnMap([npWeights1,npWeights2],[npBias1,npBias2],2)
+		neuralMap = nnMap.nnMap([npWeights1,npWeights2],[npBias1,npBias2],2)
 		indicies = np.arange(trX.shape[0],dtype=np.int32)
-		neuralMap.batchAdd(trX,indicies,errorClasses=errors)
+		neuralMap.add(trX,indicies,errorClasses=errors)
 
-		npNewWeights, npNewBias, npNewSelectionWeight, npNewSelectionBias = neuralMap.adaptiveStep(trX,npWeights2,npBias2)
-		if(npNewWeights != None):
+		try:
+			npNewWeights, npNewBias, npNewSelectionWeight, npNewSelectionBias = neuralMap.adaptiveStep(trX)
+		except NoErrorLocation as error:
+			print("No Hyperplane created, continuing with training")
+		else:
 			print("New Hyperplane created, inserting")
 			currentHiddenDim = currentHiddenDim + 1 
 			updateWeights1Op = tf.assign(weights1[currentHiddenDim], npNewWeights)
@@ -97,5 +100,3 @@ for i in range(50000):
 			updateBias2Op = tf.assign(bias2[currentHiddenDim], npNewSelectionBias)
 
 			sess.run([updateWeights1Op,updateWeights2Op,updateBias1Op,updateBias2Op])
-		else:
-			print("No hyperplane found")

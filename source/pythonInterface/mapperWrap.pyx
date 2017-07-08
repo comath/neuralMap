@@ -6,13 +6,13 @@ import multiprocessing
 from libc.stdlib cimport malloc, free
 
 #to print to stderr to warn the user of usage errors
-
+include "ipTrace.pyx"
 import sys
 
 def eprint(*args, **kwargs):
 	print(*args, file=sys.stderr, **kwargs)
 
-include "nnLayerUtilsWrap.pyx"
+
 
 cdef extern from "pthread.h" nogil:
 	ctypedef struct pthread_mutex_t:
@@ -131,13 +131,13 @@ cdef class _location:
 	def pointIndexes(self, int errorClass):
 		numPoints =	nodeGetTotal(self.thisLoc, errorClass)
 		cdef np.ndarray[np.float32_t,ndim=2] points = np.zeros([numPoints,self.inDim], dtype=np.float32)
-		nodeGetPointIndexes(self.thisLoc, <int *>points.data)
+		nodeGetPointIndexes(self.thisLoc,errorClass, <int *>points.data)
 		return points
 	
 	def all(self):
 		return self.ipSig(), self.regSig(), self.pointIndexes(0), self.pointIndexes(1)
 
-cdef class mapperWrap:
+cdef class cy_nnMap:
 	cdef _nnMap * internalMap
 	cdef nnLayer * layer0
 	cdef nnLayer * layer1
@@ -211,17 +211,14 @@ cdef class mapperWrap:
 		thisLoc = _location.create( self.locArr[i] , self.layer0.outDim, self.layer0.inDim)
 		return thisLoc
 
-
-	
-	
-
 	def adaptiveStep(self, np.ndarray[float,ndim=2,mode="c"] data not None, 
 					np.ndarray[float,ndim=2,mode="c"] A1 not None, 
 					np.ndarray[float,ndim=1,mode="c"] b1 not None):
 		cdef long int outDim1 = A1.shape[0]
 		cdef long int inDim1  = A1.shape[1]
-		print("adaptive, outdim %(n)d, inDim %(m)d"%{'n':outDim1,'m':inDim1})
-
+		if(not inDim1 == self.outDim0):
+			ValueError("the selection matrix input dim is different from the hyperplane matrix output dim")
+		
 		layer1 = createLayer(&A1[0,0],&b1[0],inDim1,outDim1)
 		if not layer1:
 			raise MemoryError()

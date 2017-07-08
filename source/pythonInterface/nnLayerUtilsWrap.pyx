@@ -41,7 +41,6 @@ cdef class neuralLayer:
 		free(self._c_layer)
 
 	def getRegion(self,np.ndarray[float,ndim=1,mode="c"] data not None):
-		
 		cdef np.ndarray[np.uint32_t,ndim=1] regSignature = np.zeros([self.keyLen], dtype=np.uint32)
 		getRegSigBatch(self._c_layer,<float *>data.data,<kint *>regSignature.data, 1, 1)
 		return regSignature
