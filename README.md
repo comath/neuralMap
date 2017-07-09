@@ -22,83 +22,63 @@ For now the python interface consists of one class, `nnMap`.
 
 #### nnMap Initializer 
 ```python
-nnMap.__init__(A,b)
+nnMap.__init__((A0,A1,...),(b0,b1,...),threshold=2)
 ```
 Parameters:
-* A must be a rank 2 32 bit float numpy ndarray with C packing
-* b must be a rank 1 32 bit float numpy ndarray with C packing
+* (A0,A1,...) must be a sequence of rank 2 32 bit float numpy ndarray with C packing
+* (b0,b1,...) must be a sequence of rank 1 32 bit float numpy ndarray with C packing
 
-A must be a weight matrix, b must be the associated offsets. These must be for the hyperplane layer that you want to map out, directly below the selection layer that you may use later.
+The A sequence must be a weight matrix, and the bs must be the associated offsets for the fully connected layer's we want to map. The threshold is for the intersection calculation. See the paper for what difference values do to the map.
+Currently it only maps the first layer as that is the most important for a sigmoidal neural network. Note, this expects matrices where you multiply on the left.
 
 #### Adding points:
 ```python
-nnMap.addPoints(point,pointIndex,pointErrorClass)
+nnMap.add(point,pointIndex,errorClasses=[0 array])
 ```
 Parameters:
-* points must be a rank 1 or 2 32 bit float numpy ndarray with C packing
-* pointIndexes must be an integer, or an 
-* pointErrorClasses must be either 0 for no error, or 1 for error, optional.
+* points must be a rank 1 (for a single point) or a rank 2 32 bit float numpy ndarray with C packing
+* pointIndexes must be an integer, or a rank 1 32 int numpy ndarray
+* errorClasses must be an integer, or a rank 1 32 int numpy ndarray
 
-This adds the point to the map. You must provide the point's vector, a unique index for that point and whether or not you consider this point to be misclassified.
-
-#### Adding points:
-```python
-nnMap.addBatch(points,pointsIndexes,pointsErrorClasses)
-```
-Parameters:
-* points must be a rank 2 32 bit float numpy ndarray with C packing
-* pointsIndexes must be a rank 1 32 bit integer numpy array. 
-* pointsErrorClasses must be rank 1 32 bit integer numpy array consisting of either 0 for no error, or 1 for error.
-This adds a batch of points in parallel to the internal map. The arrays `pointsErrorClasses` and `pointsIndexes` must be of the same length as the number of points you have. See `add` for the values these should take.
+This adds the point to the map. You must provide the point's vector, and a unique index for that point. Optionally provide whether or not you consider this point to be misclassified. must be either 0 for no error, or 1 for error, optional.
 
 #### Adaptive Step:
 ```python
-nnMap.adaptiveStep(points,A1,b1)
+nnMap.adaptiveStep(points)
 ```
 Parameters:
 * points must be a rank 2 32 bit float numpy ndarray with C packing. This currently has to contain the complete dataset. 
-* A1 must be a rank 2 32 bit float numpy ndarray with C packing
-* b1 must be a rank 1 32 bit float numpy ndarray with C packing
 
 Returns (in order):
-* New dimesion, this will not change in the event of a failure. 
-* new hyperplane vector, a rank 1 32 bit float numpy ndarray 
-* New bias, a single 32 bit float in a numpy ndarray
-* New selection matrix, a rank 2 32 bit float numpy ndarray of shape [outDim,inDim + 1], where A1 has shape [outDim,inDim]
-* New selection bias, a rank 1 32 bit float numpy ndarray of shape [outDim]
+* New hyperplane weights, a rank 2 32 bit float numpy ndarray 
+* New hyperplane biases, a rank 1 32 bit float in a numpy ndarray
+* New selection matrix, a rank 2 32 bit float numpy ndarray
+* New selection bias, a rank 1 32 bit float numpy ndarray
 
-A1 and b1 have to be the weight matrix and bias for the selection layer directly above the provided hyperplane layer. 
+Creates a new weight matrix and bias vector with an additional weight vector and bias value representing a new hyperplane designed to cut off the corner with the most error. The new selection matrix and bias are designed to ensure this new hyperplane is properly applied. This throws a `NoErrorLocation` error if there is no corner of sufficient error. 
 
-#### Location Count:
+#### Check Points
 ```python
-nnMap.numLocations()
-```
-Returns the number of locations currently in the map.
-
-
-#### Intersection signature of a location:
-```python
-nnMap.location(index).ipSig()
+nnMap.check(points)
 ```
 Parameters:
-* index must be an integer less than the one returned by numLocations
+* points must be either a rank 1 or rank 2 32 bit float numpy ndarray 
 
-This returns the intersection signature for the ith location (ordered lexicographically).
+Returns
+* a True or False for a single point or an array of boolean values
 
-#### Region signature of a location:
+Computes the region and intersection of each point provided and checks if those occur in the database. You must save your map before using this as it operates off of the database.
+
+#### Save/Load
 ```python
-nnMap.location(index).regSig()
+nnMap.save(filename, tablename=filename+"Table")
+```
+```python
+nnMap.load(filename, tablename=filename+"Table")
 ```
 Parameters:
-* index must be an integer less than the one returned by numLocations
+* filename
 
-This returns the region signature for the ith location (ordered lexicographically).
+Saves to an sqlite database. Provide a tablename if you want to save multiple maps to the same file.
 
-#### Point indexes of a location:
-```python
-nnMap.location(index).pointIndexes()
-```
-Parameters:
-* index must be an integer less than the one returned by numLocations
 
-Returns the indexes of the points stored in this location. You can then use these indexes to reference the actual points.

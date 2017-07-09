@@ -11,7 +11,7 @@ class NoErrorLocation(ValueError):
 
 class nnMap():
 	"""docstring for ClassName"""
-	def __init__(self,matrices,offsets, threshold):
+	def __init__(self,matrices,offsets, threshold=2):
 		self.threshold = threshold
 		self.layers = zip(matrices,offsets)
 		self.internalMaps = []
@@ -73,7 +73,7 @@ class nnMap():
 			tablename = filename+"Table"
 		self.internalDB = nnMap_db(filename,tablename)
 
-	def checkPoints(self,points):
+	def check(self,points):
 		if not self.internalDB:
 			raise ValueError("Must have a DB first")
 		if(len(points.shape) == 1):
