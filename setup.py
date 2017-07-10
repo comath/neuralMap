@@ -66,6 +66,7 @@ setup(name='nnMap',
 	url='comathematician.net',
 	package_dir = {'': 'source/python'},
 	packages=['nnMap'],
+	install_requires=['progressbar','numpy'],
 	ext_modules = cythonize(mapperExt,gdb_debug=False))
 
 

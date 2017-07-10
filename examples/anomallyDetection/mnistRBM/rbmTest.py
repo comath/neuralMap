@@ -4,7 +4,7 @@ from scipy import io
 from rbm import RBM
 from PIL import Image
 
-from nnMapper import nnMapper as nnMap
+from nnMap import nnMap
 from tensorflow.examples.tutorials.mnist import input_data
 mnist = input_data.read_data_sets("MNIST_data/", one_hot=True)
 trX, trY, teX, teY = mnist.train.images, mnist.train.labels,\
@@ -27,18 +27,13 @@ leaveInLabel = np.stack(leaveInLabel,axis=0)
 removeData = np.stack(removeData,axis=0)
 removeLabel = np.stack(removeLabel,axis=0)
 
-testCount = 400
-
-indicies = range(0,testCount)
-leaveInData = leaveInData[0:testCount,]
-removeData = removeData[0:testCount,]
 
 visibleDim = 28*28
 batchSize = 1000
 stepSize = 0.005
 itte = 10000
 
-for hiddenDim in range(20,101,20):
+for hiddenDim in range(20,21,20):
 	matDic = {}
 	io.loadmat("mnist%(visibleDim)dx%(hiddenDim)03dstepsize%(stepSize)f.mat" 
 						% {'visibleDim': visibleDim, 'hiddenDim': hiddenDim, 'stepSize':stepSize},
@@ -47,18 +42,18 @@ for hiddenDim in range(20,101,20):
 	matrix = matDic["matrix%(round)04d"% {'round': itte}]
 	offset = matDic["offsetVis%(round)04d"% {'round': itte}]
 	offset.shape = offset.shape[1]
-	map1 = nnMap(matrix,offset)
-	map1.load('mnistRBM.db','hidden%(hid)03d' % {'hid':hiddenDim})
+	map1 = nnMap([matrix],[offset])
+	map1.load('mnistRBM.db',table_name='hidden%(hid)03d' % {'hid':hiddenDim})
 	
 	leaveCount = 0.0
 	removeCount = 0.0
-	pointTest1 = map1.checkPoints(indicies,leaveInData)
-	pointTest2 = map1.checkPoints(indicies,removeData)
+	pointTest1 = map1.check(leaveInData,reg_only=True)
+	pointTest2 = map1.check(removeData,reg_only=True)
 	for check in pointTest1:
-		if(check[1]):
+		if(check):
 			leaveCount +=1
 	for check in pointTest2:
-		if(check[1]):
+		if(check):
 			removeCount +=1
 	print("The success rate of the leaveIn classes is: %(suc)f" % {'suc':leaveCount/leaveInData.shape[0]})
 	print("The success rate of the remove classes is: %(suc)f" % {'suc':removeCount/removeData.shape[0]})

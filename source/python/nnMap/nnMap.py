@@ -5,6 +5,7 @@ import numpy as np
 import io
 import sqlite3
 import mapperWrap
+import nnMapDB
 
 class NoErrorLocation(ValueError):
 	'''This is thrown when there is no areas with a sufficient error population'''
@@ -45,14 +46,21 @@ class nnMap():
 		tablename = kwargs.get('table_name')
 		if not tablename:
 			tablename = filename+"Table"
-		self.internalDB = nnMap_db(filename,tablename)
-		numLoc = self.internalMaps[0].numLocations(self)
+		self.internalDB = nnMapDB.nnMapDB(filename,tablename)
+		numLoc = self.internalMaps[0].numLocations()
 		for i in range(numLoc):
-			ipSig, regSig, normalPointIndex, errorPointIndexes = self.internalMaps[0].location(i).all()
-			normalErrorClasses = np.zeros_like(normalPointIndex)
+			ipSig = self.internalMaps[0].location(i).ipSig()
+			regSig = self.internalMaps[0].location(i).regSig()
+			normalPointIndexes = self.internalMaps[0].location(i).pointIndexes(0)
+			errorPointIndexes = self.internalMaps[0].location(i).pointIndexes(1)
+			normalErrorClasses = np.zeros_like(normalPointIndexes)
 			errorClasses = np.ones_like(errorPointIndexes)
-			indexes = np.concatonate(normalPointIndex,errorPointIndexes)
-			errorClasses = np.concatonate(normalErrorClasses,errorClasses)
+			if(errorPointIndexes.shape[0] > 0):
+				indexes = np.concatenate(normalPointIndexes,errorPointIndexes)
+				errorClasses = np.concatenate(normalErrorClasses,errorClasses)
+			else:
+				indexes = normalPointIndexes
+				errorClasses = normalErrorClasses
 			self.internalDB.addPointsToLocation(indexes,ipSig,regSig,errorClasses)
 
 	def adaptiveStep(self, data):
@@ -67,30 +75,46 @@ class nnMap():
 			else:
 				NoErrorLocation("Cannot create a hyperplane")
 
-	def load(self, filename, **kwarg):
-		tablename = kwargs.get('tableName')
-		if not 'tableName' in kwargs:
+	def load(self, filename, **kwargs):
+		tablename = kwargs.get('table_name')
+		if not tablename:
 			tablename = filename+"Table"
-		self.internalDB = nnMap_db(filename,tablename)
+		self.internalDB = nnMapDB.nnMapDB(filename,tablename)
 
-	def check(self,points):
+
+	def check(self,points, **kwargs):
+		regOnly = kwargs.get('reg_only')
+		if not regOnly:
+			regOnly = False
+
 		if not self.internalDB:
 			raise ValueError("Must have a DB first")
 		if(len(points.shape) == 1):
 			points = np.reshape(points,(1,-1))
 		numPoints = points.shape[0]
-		ipSigs = self.ipCalc[0].getIntersections(points,self.threshold)
-		regSigs = self.regCalc[0].getRegions(points)
+		if regOnly:
+			regSigs = self.regCalcs[0].getRegions(points)
+		else:
+			ipSigs = self.ipCalcs[0].getIntersections(points,self.threshold)
+			regSigs = self.regCalcs[0].getRegions(points)
+
 		if(len(points.shape) > 1):
-			retVals = []
+			retBools = []
 			for i in range(numPoints):
-				jointIndex = self.internalMaps[0].getPointLocationIndex(ipSig[i],regSigs[i])
+				if regOnly:
+					jointIndex = self.internalDB.checkReg(regSigs[i])
+				else:
+					jointIndex = self.internalDB.getPointLocationIndex(ipSigs[i],regSigs[i])
 				if(jointIndex != None):
 					retBools.append(True)
 				else:
 					retBools.append(False)
+			return retBools
 		if(len(points.shape) == 1):
-			jointIndex = self.internalMaps[0].getPointLocationIndex(ipSig[i],regSigs[i])
+			if regOnly:
+				jointIndex = self.internalDB.checkReg(regSigs[i])
+			else:
+				jointIndex = self.internalDB.getPointLocationIndex(ipSigs[i],regSigs[i])
 			if(jointIndex != None):
 				return True
 			else:

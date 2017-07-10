@@ -32,7 +32,7 @@ visibleDim = 28*28
 batchSize = 100
 stepSize = 0.005
 
-for hiddenDim in range(20,401,20):
+for hiddenDim in range(20,101,20):
 	tf.reset_default_graph()
 	testRBM = RBM(visibleDim,hiddenDim)
 	train = testRBM.contrastiveDivergenceN(1,stepSize)

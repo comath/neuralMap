@@ -130,9 +130,9 @@ cdef class _location:
 		
 	def pointIndexes(self, int errorClass):
 		numPoints =	nodeGetTotal(self.thisLoc, errorClass)
-		cdef np.ndarray[np.float32_t,ndim=2] points = np.zeros([numPoints,self.inDim], dtype=np.float32)
-		nodeGetPointIndexes(self.thisLoc,errorClass, <int *>points.data)
-		return points
+		cdef np.ndarray[np.int32_t,ndim=1] pointI = np.zeros([numPoints], dtype=np.int32)
+		nodeGetPointIndexes(self.thisLoc,errorClass, <int *>pointI.data)
+		return pointI
 	
 	def all(self):
 		return self.ipSig(), self.regSig(), self.pointIndexes(0), self.pointIndexes(1)
@@ -162,7 +162,6 @@ cdef class cy_nnMap:
 			raise MemoryError()
 
 	def __dealloc__(self):
-		print("Deallocating map")
 		freeMap(self.internalMap)
 		if self.locArr:
 			free(self.locArr)
