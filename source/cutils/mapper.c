@@ -67,7 +67,6 @@ void addPointToMapInternal(_nnMap * map, mapMemory *mm, traceMemory *tm, pointIn
 	// Get the Region Signature, save it offset by keyLength
 	evalLayer(map->layer, point, mm->outOfLayer);
 	convertFromFloatToKey(mm->outOfLayer, mm->keyPair + mm->keyLength,map->layer->outDim);
-
 	addMapData(map->locationTree, mm->keyPair, pi);
 }
 

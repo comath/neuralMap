@@ -46,8 +46,7 @@ cdef class traceCalc:
 	def __cinit__(self,np.ndarray[float,ndim=2,mode="c"] A not None, np.ndarray[float,ndim=1,mode="c"] b not None):
 		self.m = A.shape[1]
 		self.n  = A.shape[0]
-		self.keyLen = calcKeyLen(self.m)
-		print(self.keyLen)
+		self.keyLen = calcKeyLen(self.n)
 		self.layer = createLayer(&A[0,0],&b[0],self.m,self.n)
 		freeMemory = psutil.virtual_memory().free
 		self.tc = allocateTraceCache(self.layer)
@@ -135,9 +134,6 @@ cdef class traceCalc:
 		cdef int numProc = 1
 		if(not (data.shape[1] == self.m)):
 			raise ValueError('The data is an incorrect dimension')
-		
-		
-
 		if(kwarg and kwarg['numProc'] != None):
 			numProc = kwarg['numProc']
 		else:
@@ -146,7 +142,6 @@ cdef class traceCalc:
 		cdef int numData = data.shape[0]
 		cdef np.ndarray[np.uint32_t, ndim=2] ipSig = np.zeros([numData,self.keyLen], dtype=np.uint32)        
 		batchIpCalc(self.tc, <float *> data.data, threshold, <kint * >ipSig.data, numData, numProc)
-		print('Done with map')
 		if(kwarg and kwarg['returnType'] != None):
 			if(kwarg['returnType'] =='color'):
 				print('Color Coding')
@@ -158,7 +153,6 @@ cdef class traceCalc:
 				ipSignaturesUncompressed = np.zeros([numData,self.m], dtype=np.int8)
 				batchConvertFromKeyToChar(<kint * >ipSig.data, <char *> ipSignaturesUncompressed.data, self.m,numData)
 				return ipSignaturesUncompressed
-		
 		return ipSig
 		
 

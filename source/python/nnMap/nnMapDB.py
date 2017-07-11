@@ -85,16 +85,16 @@ class nnMapDB:
 		else:
 			return row[0]
 
-	def checkReg(self,sig):
-		self.curs.execute('SELECT sigIndex FROM sig_%(tablename)s WHERE sig=(?)' 
-			% {'tablename':self.tablename},	(sig,))
-		row = self.curs.fetchone()
-		if row == None:
+	def checkReg(self,regSig):
+		regSigIndex = self.getSigIndex(regSig)
+		if regSigIndex == None:
 			return None
 		else:
 			self.curs.execute('SELECT locIndex FROM locJoin_%(tablename)s WHERE regSigIndex=(?)' 
-				% {'tablename':self.tablename},
-				(regSigIndex))
+				% {'tablename':self.tablename},	(regSigIndex,))
+			row = self.curs.fetchone()
+			if row == None:
+				return None
 			return row[0]
 
 	def getPointLocationIndex(self,ipSig,regSig):

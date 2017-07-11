@@ -54,8 +54,8 @@ cdef extern from "../cutils/location.h":
 cdef extern from "../cutils/mapperTree.h":
 	ctypedef struct mapTreeNode:
 		pass
-	cdef void nodeGetIPKey(mapTreeNode * node, int * ipKey, unsigned int outDim)
-	cdef void nodeGetRegKey(mapTreeNode * node, int * regKey, unsigned int outDim)
+	cdef void nodeGetIPKey(mapTreeNode * node, int * ipKey, unsigned int outDim, char compressed)
+	cdef void nodeGetRegKey(mapTreeNode * node, int * regKey, unsigned int outDim, char compressed)
 	cdef void nodeGetPointIndexes(mapTreeNode * node, int errorClass, int *indexHolder)
 	cdef int nodeGetTotal(mapTreeNode * node, int errorClass)
 
@@ -118,14 +118,14 @@ cdef class _location:
 		obj.inDim = inDim
 		return obj
 
-	def ipSig(self):
-		cdef np.ndarray[np.int32_t,ndim=1] ipSignature = np.zeros([self.outDim], dtype=np.int32)
-		nodeGetIPKey(self.thisLoc, <int *> ipSignature.data, self.outDim)
+	def ipSig(self,compressed=True):
+		cdef np.ndarray[np.uint32_t,ndim=1] ipSignature = np.zeros([pyCalcKeyLen(self.outDim)], dtype=np.uint32)
+		nodeGetIPKey(self.thisLoc, <int *> ipSignature.data, self.outDim, 1)
 		return ipSignature
 
-	def regSig(self):
-		cdef np.ndarray[np.int32_t,ndim=1] regSignature = np.zeros([self.outDim], dtype=np.int32)
-		nodeGetRegKey(self.thisLoc, <int *> regSignature.data, self.outDim)
+	def regSig(self,compressed=True):
+		cdef np.ndarray[np.uint32_t,ndim=1] regSignature = np.zeros([pyCalcKeyLen(self.outDim)], dtype=np.uint32)
+		nodeGetRegKey(self.thisLoc, <int *> regSignature.data, self.outDim, 1)		
 		return regSignature
 		
 	def pointIndexes(self, int errorClass):

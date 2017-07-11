@@ -38,7 +38,7 @@ class nnMap():
 		elif(len(points.shape) == 2):
 			if not 'errorClasses' in kwargs:
 				errorClasses = np.zeros_like(pointIndexes)
-			self.internalMaps[0].batchAdd(points, pointIndexes, errorClasses)
+			self.internalMaps[0].batchAdd(points, pointIndexes, errorClasses, numProc=1)
 		else:
 			raise ValueError('Must provide either a rank 1 or rank 2 numpy ndarray')
 
@@ -93,7 +93,7 @@ class nnMap():
 			points = np.reshape(points,(1,-1))
 		numPoints = points.shape[0]
 		if regOnly:
-			regSigs = self.regCalcs[0].getRegions(points)
+			regSigs = self.regCalcs[0].getRegions(points, numProc=1)
 		else:
 			ipSigs = self.ipCalcs[0].getIntersections(points,self.threshold)
 			regSigs = self.regCalcs[0].getRegions(points)
@@ -105,6 +105,7 @@ class nnMap():
 					jointIndex = self.internalDB.checkReg(regSigs[i])
 				else:
 					jointIndex = self.internalDB.getPointLocationIndex(ipSigs[i],regSigs[i])
+				
 				if(jointIndex != None):
 					retBools.append(True)
 				else:

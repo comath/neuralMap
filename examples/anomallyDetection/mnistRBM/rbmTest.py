@@ -27,13 +27,12 @@ leaveInLabel = np.stack(leaveInLabel,axis=0)
 removeData = np.stack(removeData,axis=0)
 removeLabel = np.stack(removeLabel,axis=0)
 
-
 visibleDim = 28*28
 batchSize = 1000
 stepSize = 0.005
 itte = 10000
 
-for hiddenDim in range(20,21,20):
+for hiddenDim in range(40,101,20):
 	matDic = {}
 	io.loadmat("mnist%(visibleDim)dx%(hiddenDim)03dstepsize%(stepSize)f.mat" 
 						% {'visibleDim': visibleDim, 'hiddenDim': hiddenDim, 'stepSize':stepSize},
@@ -49,11 +48,25 @@ for hiddenDim in range(20,21,20):
 	removeCount = 0.0
 	pointTest1 = map1.check(leaveInData,reg_only=True)
 	pointTest2 = map1.check(removeData,reg_only=True)
+	pointTest1both = map1.check(leaveInData)
+	pointTest2both = map1.check(removeData)
 	for check in pointTest1:
 		if(check):
 			leaveCount +=1
 	for check in pointTest2:
-		if(check):
+		if(not check):
 			removeCount +=1
-	print("The success rate of the leaveIn classes is: %(suc)f" % {'suc':leaveCount/leaveInData.shape[0]})
-	print("The success rate of the remove classes is: %(suc)f" % {'suc':removeCount/removeData.shape[0]})
+	print("For %(hid)d nodes:"%{'hid':hiddenDim})
+	print("The success rate of the leaveIn classes is (percent of non-anomalies recognised as such): %(suc)f" % {'suc':leaveCount/leaveInData.shape[0]})
+	print("The success rate of the remove classes is (percent of anomalies recognised as such): %(suc)f" % {'suc':removeCount/removeData.shape[0]})
+
+	leaveCountboth = 0.0
+	removeCountboth = 0.0
+	for check in pointTest1both:
+		if(check):
+			leaveCountboth +=1
+	for check in pointTest2both:
+		if(not check):
+			removeCountboth +=1
+	print("Using both IP and Reg, the success rate of the leaveIn classes is (percent of non-anomalies recognised as such): %(suc)f" % {'suc':leaveCountboth/leaveInData.shape[0]})
+	print("Using both IP and Reg, the success rate of the remove classes is (percent of anomalies recognised as such): %(suc)f" % {'suc':removeCountboth/removeData.shape[0]})

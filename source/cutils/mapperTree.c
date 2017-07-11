@@ -244,14 +244,22 @@ mapTreeNode ** getAllNodes(mapTree * tree)
 }
 
 
-void nodeGetIPKey(mapTreeNode * node, int * ipKeyUncompressed, uint outDim)
+void nodeGetIPKey(mapTreeNode * node, uint * retBuffer, uint outDim, char compressed)
 {
-	convertFromKeyToInt(node->ipKey, ipKeyUncompressed, outDim);
+	if(compressed){
+		memcpy(retBuffer,node->ipKey,calcKeyLen(outDim)*sizeof(kint));
+	} else {
+		convertFromKeyToInt(node->ipKey, retBuffer, outDim);
+	}
 }
 
-void nodeGetRegKey(mapTreeNode * node, int * regKeyUncompressed, uint outDim)
+void nodeGetRegKey(mapTreeNode * node, uint * retBuffer, uint outDim, char compressed)
 {
-	convertFromKeyToInt(node->regKey, regKeyUncompressed, outDim);
+	if(compressed)
+		memcpy(retBuffer,node->regKey,calcKeyLen(outDim)*sizeof(kint));
+	else {
+		convertFromKeyToInt(node->regKey, retBuffer, outDim);
+	}
 }
 
 void nodeGetPointIndexes(mapTreeNode * node, int errorClass, int *indexHolder)

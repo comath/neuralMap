@@ -535,7 +535,6 @@ void batchIpCalc(traceCache * tc, float * data, float threshold, kint * ipSigs, 
 	int maxThreads = numProc;
 	int rc =0;
 	int i =0;
-	printf("ipCalc working on %u data points, with %u threads\n",numData,maxThreads);
 	//Add one data to the first node so that we can avoid the race condition.
 	
 

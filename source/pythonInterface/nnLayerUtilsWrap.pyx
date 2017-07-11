@@ -28,7 +28,7 @@ cdef class neuralLayer:
 		cdef unsigned int inDim, outDim
 		self.m = A.shape[1]
 		self.n  = A.shape[0]
-		self.keyLen = calcKeyLen(self.m)
+		self.keyLen = calcKeyLen(self.n)
 		self._c_layer = <nnLayer *>createLayer( <float *> A.data,<float *>  b.data,self.m,self.n)
 
 	def eval(self, np.ndarray[float,ndim=2,mode="c"] x not None):
