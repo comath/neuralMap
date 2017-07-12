@@ -250,6 +250,8 @@ cdef class cy_nnMap:
 			
 			print("Returning everything")
 		
-		return newDim, newHPVec, newHPoff, newSelectionWeight, newSelectionBias
+			return newDim, newHPVec, newHPoff, newSelectionWeight, newSelectionBias
+		else:
+			return inDim1, newHPVec, newHPoff, newSelectionWeight, newSelectionBias
 		
 
