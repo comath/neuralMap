@@ -42,19 +42,16 @@ def convertToString(ndarr):
 currentNumLocations = 0
 currentNumPoints = 0
 
-
-for hiddenDim in range(40,101,20):
+for i in range(5):
 	matDic = {}
-	io.loadmat("mnist%(visibleDim)dx%(hiddenDim)03dstepsize%(stepSize)f.mat" 
-													% {'visibleDim': visibleDim, 'hiddenDim': hiddenDim, 'stepSize':stepSize},
-													matDic)
-	
-	matrix = matDic["matrix%(round)04d"% {'round': itte}]
-	offset = matDic["offsetVis%(round)04d"% {'round': itte}]
-	offset.shape = offset.shape[1]
-	map1 = nnMap([matrix],[offset])
-	indicies = np.arange(leaveInData.shape[0],dtype=np.int32)
-	map1.add(leaveInData,indicies)
-	map1.save('mnistRBM.db',table_name='hidden%(hid)03d' % {'hid':hiddenDim})
+	io.loadmat("mnistRBM%(itter)d.mat"%{'itter':i},	matDic)
+	for hiddenDim in range(10,101,5):		
+		matrix = matDic["matrix%(hidden)04d"% {'hidden': hiddenDim}]
+		offset = matDic["offsetVis%(hidden)04d"% {'hidden': hiddenDim}]
+		offset.shape = offset.shape[1]
+		map1 = nnMap([matrix],[offset])
+		indicies = np.arange(leaveInData.shape[0],dtype=np.int32)
+		map1.add(leaveInData,indicies)
+		map1.save('mnistRBM.db',table_name='hidden%(hid)03ditte%(itter)d' % {'hid':hiddenDim,'itter':i})
 
 
