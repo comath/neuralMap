@@ -136,7 +136,7 @@ traceCache * allocateTraceCache(nnLayer * layer)
 		if(info > 0){
 			printf( "The algorithm computing SVD failed to converge.\n" );
 		} else {
-			printf("There was an illegal value.\n");
+			printf("There was an illegal value in the weight matrix. SVD failed run.\n");
 		}
 		exit( 1 );
 	}

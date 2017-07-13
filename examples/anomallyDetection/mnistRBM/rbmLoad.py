@@ -43,7 +43,7 @@ currentNumLocations = 0
 currentNumPoints = 0
 
 
-for hiddenDim in range(40,101,20):
+for hiddenDim in range(20,21,20):
 	matDic = {}
 	io.loadmat("mnist%(visibleDim)dx%(hiddenDim)03dstepsize%(stepSize)f.mat" 
 													% {'visibleDim': visibleDim, 'hiddenDim': hiddenDim, 'stepSize':stepSize},
