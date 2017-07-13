@@ -32,6 +32,7 @@ batchSize = 1000
 stepSize = 0.005
 itte = 10000
 
+
 for hiddenDim in range(10,101,5):
 	matDic = {}
 	io.loadmat("mnist%(visibleDim)dx%(hiddenDim)03dstepsize%(stepSize)f.mat" 

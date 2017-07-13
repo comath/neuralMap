@@ -48,9 +48,31 @@ class nnMap():
 			tablename = filename+"Table"
 		self.internalDB = nnMapDB.nnMapDB(filename,tablename)
 		numLoc = self.internalMaps[0].numLocations()
+		sigs = []
+		for i in range(numLoc):
+			sigs.append(np.reshape(self.internalMaps[0].location(i).ipSig(),[1,-1]))
+			sigs.append(np.reshape(self.internalMaps[0].location(i).regSig(),[1,-1]))
+
+		sigs = np.unique(np.concatenate(sigs),axis=0)
+		print sigs.shape
+		listSigs = []
+		for i in range(sigs.shape[0]):
+			listSigs.append(sigs[i])
+		self.internalDB.bulkLoadSigs(listSigs)
+
+		joint = []
 		for i in range(numLoc):
 			ipSig = self.internalMaps[0].location(i).ipSig()
 			regSig = self.internalMaps[0].location(i).regSig()
+			ipIndex = self.internalDB.getSigIndex(ipSig)
+			regIndex = self.internalDB.getSigIndex(regSig)
+			joint.append((ipIndex,regIndex,))
+		jointUniques = list(set(joint))
+		self.internalDB.bulkLoadJoint(jointUniques)
+
+		bulkPoints = []
+		for i in range(numLoc):
+			jointIndex = jointUniques.index(joint[i])
 			normalPointIndexes = self.internalMaps[0].location(i).pointIndexes(0)
 			errorPointIndexes = self.internalMaps[0].location(i).pointIndexes(1)
 			normalErrorClasses = np.zeros_like(normalPointIndexes)
@@ -61,7 +83,9 @@ class nnMap():
 			else:
 				indexes = normalPointIndexes
 				errorClasses = normalErrorClasses
-			self.internalDB.addPointsToLocation(indexes,ipSig,regSig,errorClasses)
+			for i in range(indexes.shape[0]):
+				bulkPoints.append((indexes[i].item(),jointIndex,errorClasses[i].item(),))
+		self.internalDB.bulkLoadPoints(bulkPoints)
 
 	def adaptiveStep(self, data):
 		for i, internalMap in enumerate(self.internalMaps):

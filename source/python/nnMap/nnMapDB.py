@@ -76,6 +76,22 @@ class nnMapDB:
 			row = self.curs.fetchone()
 		return row[0]
 
+	def bulkLoadSigs(self,sigs):
+		sigs = zip(sigs)
+		self.curs.executemany("INSERT INTO sig_%(tablename)s(sig) VALUES ((?)) "% {'tablename':self.tablename},
+				sigs)
+		self.conn.commit()
+	def bulkLoadJoint(self,joint):
+		self.curs.executemany("INSERT INTO locJoin_%(tablename)s (ipSigIndex,regSigIndex) VALUES ((?),(?)) "
+			% {'tablename':self.tablename},
+				joint)
+		self.conn.commit()
+	def bulkLoadPoints(self,bulkPoints):
+
+		self.curs.executemany("INSERT INTO dataMap_%(tablename)s (dataIndex,locIndex,errorVal) VALUES ((?),(?),(?)) "
+				% {'tablename':self.tablename}, bulkPoints)
+		self.conn.commit()
+
 	def getSigIndex(self,sig):
 		self.curs.execute('SELECT sigIndex FROM sig_%(tablename)s WHERE sig=(?)' 
 			% {'tablename':self.tablename},	(sig,))
@@ -97,9 +113,13 @@ class nnMapDB:
 				return None
 			return row[0]
 
-	def getPointLocationIndex(self,ipSig,regSig):
-		ipSigIndex = self.getSigIndex(ipSig)
-		regSigIndex = self.getSigIndex(regSig)
+	def getPointLocationIndex(self,ipSig,regSig,precomputedIndex=False):
+		if precomputedIndex:
+			ipSigIndex = ipSig
+			regSigIndex = regSig
+		else:
+			ipSigIndex = self.getSigIndex(ipSig)
+			regSigIndex = self.getSigIndex(regSig)
 		
 		if(ipSigIndex != None and regSigIndex != None):
 			self.curs.execute('SELECT locIndex FROM locJoin_%(tablename)s WHERE ipSigIndex=(?) AND regSigIndex=(?)' 
