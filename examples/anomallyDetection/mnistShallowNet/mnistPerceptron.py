@@ -25,7 +25,7 @@ images, labels = data.setupTFDataConstants(batchSize)
 optimizer = tf.train.GradientDescentOptimizer(0.05)
 global_step = tf.Variable(0, name='global_step', trainable=False)
 
-for hiddenDim1 in range(20,401,20):
+for hiddenDim1 in range(10,101,5):
 	with tf.name_scope("hidden_%(hid)d"%{'hid':hiddenDim1}):
 		with tf.name_scope("Layer0"):
 			weights0 = tf.Variable(tf.random_normal([inputDim,hiddenDim1]),name="weights_0")
@@ -33,8 +33,9 @@ for hiddenDim1 in range(20,401,20):
 
 			bias0 = tf.Variable(tf.random_normal([hiddenDim1]),name='bias_0')
 			nnVars["offset%(hid)04dlayer0"% {'hid': hiddenDim1}] = bias0
+			evalLayer0 = tf.matmul(images,weights0) + bias0
+			outLayer0 = 0.09*tf.nn.relu(evalLayer0) + 0.01*evalLayer0
 
-			outLayer0 = tf.nn.relu(tf.matmul(images,weights0) + bias0, name="relu")
 		with tf.name_scope("Layer1"):
 			weights1 = tf.Variable(tf.random_normal([hiddenDim1,outDim]),name="weights_1")
 			nnVars["matrix%(hid)04dlayer1"% {'hid': hiddenDim1}] = weights1
@@ -42,7 +43,8 @@ for hiddenDim1 in range(20,401,20):
 			bias1 = tf.Variable(tf.random_normal([outDim]),name='bias_1')
 			nnVars["offset%(hid)04dlayer1"% {'hid': hiddenDim1}] = bias1
 
-			outLayer1 = tf.matmul(outLayer0,weights1) + bias1
+			evalLayer1 = tf.matmul(outLayer0,weights1) + bias1
+			outLayer1 = 0.09*tf.nn.relu(evalLayer1) + 0.01*evalLayer1
 			output.append(outLayer1)
 		localCrossEntropy = tf.nn.softmax_cross_entropy_with_logits(labels=labels, logits=outLayer1)
 		localLoss = tf.reduce_mean(localCrossEntropy, name='xentropy_mean')
@@ -84,4 +86,4 @@ finally:
     coord.request_stop()
 
 
-io.savemat("mnist2Layer.mat", sess.run(nnVars))
+io.savemat("mnist2Layer4leakyRELU.mat", sess.run(nnVars))

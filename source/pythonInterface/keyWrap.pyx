@@ -13,6 +13,9 @@ import sys
 
 
 cdef extern from "../cutils/key.h":
+	cdef int checkOffByNArray(kint * keyArray, kint* testKey, unsigned int numKeys, unsigned int keyLength, unsigned int n,kint* buffKey)
+	cdef void batchCheckOffByN(kint * keyArray, kint* testKeys, unsigned int numKeys, unsigned int keyLength, unsigned int n, int numTestKeys, int * results, int numProc)
+
 	cdef char compareKey(kint *x, kint *y, unsigned int keyLength)
 	
 	cdef void convertFromIntToKey(int * raw, kint *key,unsigned int dataLen)
@@ -30,6 +33,30 @@ cdef extern from "../cutils/key.h":
 	cdef void clearKey(kint *key, unsigned int keyLength)
 	cdef void printKeyArr(kint *key, unsigned int length)
 
+def offByNArray(np.ndarray[np.uint32_t,ndim=2,mode="c"] keyArray not None,np.ndarray[np.uint32_t,ndim=1,mode="c"] testKey not None, int n):
+	cdef unsigned int keyLength = keyArray.shape[1]
+	cdef unsigned int numKeys = keyArray.shape[0]
+	assert(keyLength == testKey.shape[0])
+	assert(n > -1)
+	cdef np.ndarray[np.uint32_t,ndim=1] keyBuff = np.zeros(testKey.shape[0], dtype=np.uint32)
+	return checkOffByNArray(<kint *> keyArray.data, <kint *> testKey.data, numKeys, keyLength, n, <kint *> keyBuff.data)
+
+def offByNArrayBatch(np.ndarray[np.uint32_t,ndim=2,mode="c"] keyArray not None,np.ndarray[np.uint32_t,ndim=2,mode="c"] testKeys not None, int n,**kwarg):
+	cdef unsigned int keyLength = keyArray.shape[1]
+	cdef unsigned int numKeys = keyArray.shape[0]
+	cdef unsigned int numTestKeys = testKeys.shape[0]
+
+	if(kwarg and kwarg['numProc'] != None):
+			numProc = kwarg['numProc']
+	else:
+		numProc = multiprocessing.cpu_count()
+
+	assert(keyLength == testKeys.shape[1])
+	assert(n > -1)
+	cdef np.ndarray[np.int32_t,ndim=1] results = np.zeros(numTestKeys, dtype=np.int32)
+	return batchCheckOffByN(<kint *> keyArray.data, <kint *> testKeys.data, numKeys, keyLength, n, numTestKeys, <int *> results.data, numProc)
+
+
 def convertToRGB(np.ndarray[int,ndim=1,mode="c"] b not None):
 	cdef unsigned int dim
 	dim = b.shape[0]
@@ -44,7 +71,7 @@ def convertToRGB(np.ndarray[int,ndim=1,mode="c"] b not None):
 	free(_key)
 	return chromaKey
 
-def readKey(np.ndarray[np.uint64_t,ndim=1,mode="c"] compressedKey not None,unsigned int dataLen):
+def readKey(np.ndarray[np.uint32_t,ndim=1,mode="c"] compressedKey not None,unsigned int dataLen):
 	cdef np.ndarray[np.int32_t,ndim=1] rawKey = np.zeros([dataLen], dtype=np.int32)
 	convertFromKeyToInt(<kint *> compressedKey.data, <int *> rawKey.data, dataLen)
 	return rawKey

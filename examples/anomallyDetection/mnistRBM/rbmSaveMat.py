@@ -31,32 +31,29 @@ removeLabel = np.stack(removeLabel,axis=0)
 visibleDim = 28*28
 batchSize = 100
 stepSize = 0.005
-
-for hiddenDim in range(20,101,20):
-	tf.reset_default_graph()
-	testRBM = RBM(visibleDim,hiddenDim)
-	train = testRBM.contrastiveDivergenceN(1,stepSize)
-	X,Y = testRBM.placeholders()
-	A = testRBM.getWeightsPointer()
-	bvis = testRBM.getVisibleBiasPointer()
-	bhid = testRBM.getHiddenBiasPointer()
-	sess = tf.Session()
-	init = tf.global_variables_initializer()
-	sess.run(init)
-	tr_x, tr_y  = mnist.train.next_batch(batchSize)
-	mse = testRBM.mse(tf.cast(tr_x, tf.float32))
+for i in range(5):
 	matricies =  {}
-	for k in range(1, 10001):
+	for hiddenDim in range(10,101,5):
+		tf.reset_default_graph()
+		testRBM = RBM(visibleDim,hiddenDim)
+		train = testRBM.contrastiveDivergenceN(1,stepSize)
+		X,Y = testRBM.placeholders()
+		A = testRBM.getWeightsPointer()
+		bvis = testRBM.getVisibleBiasPointer()
+		bhid = testRBM.getHiddenBiasPointer()
+		sess = tf.Session()
+		init = tf.global_variables_initializer()
+		sess.run(init)
 		tr_x, tr_y  = mnist.train.next_batch(batchSize)
-		sess.run(train, feed_dict={X: tr_x})
+		mse = testRBM.mse(tf.cast(tr_x, tf.float32))
 		
-		if(k%100 == 0 ):
-			matricies["matrix%(batch)04d"% {'batch': k}] = sess.run(A)
-			matricies["offsetVis%(batch)04d"% {'batch': k}] = sess.run(bvis)
-			matricies["offsetHid%(batch)04d"% {'batch': k}] = sess.run(bhid)
+		for k in range(1, 10001):
+			tr_x, tr_y  = mnist.train.next_batch(batchSize)
+			sess.run(train, feed_dict={X: tr_x})
 			
-	
-	io.savemat("mnist%(visibleDim)dx%(hiddenDim)03dstepsize%(stepSize)f.mat" 
-													% {'visibleDim': visibleDim, 'hiddenDim': hiddenDim, 'stepSize':stepSize},
-													matricies)
 
+		matricies["matrix%(hidden)04d"% {'hidden': hiddenDim}] = sess.run(A)
+		matricies["offsetVis%(hidden)04d"% {'hidden': hiddenDim}] = sess.run(bvis)
+		matricies["offsetHid%(hidden)04d"% {'hidden': hiddenDim}] = sess.run(bhid)
+
+	io.savemat("mnistRBM%(itter)d.mat"%{'itter':i},matricies)

@@ -12,6 +12,22 @@ We store the sets bit packed into unsigned 32 bit integers. This makes all futur
 */
 #define kint uint32_t  //Definition of kint, makes it easier to resize later if needed
 
+/* 
+Checks if there's any key in the keyArray that matches the testKey on all but n bits. 
+Input:
+keyArray: a kint array of length numKeys*keyLength
+testKey: a kint array of length keyLength
+numKeys: the number of keys in keyArray
+keyLength: the length ogf the keys
+n: the aformentioned n
+keyBuff: a memory buffer of length keyLength
+
+Returns: the index of the first match or -1 if there is no match.
+*/
+int checkOffByNArray(kint * keyArray, kint* testKey, uint numKeys, uint keyLength, uint n, kint *keyBuff);
+void batchCheckOffByN(kint * keyArray, kint* testKeys, uint numKeys, uint keyLength, uint n, int numTestKeys, int * results, int numProc);
+
+
 // Functions to handle key interactions
 int compareKey(kint *x, kint *y, uint keyLength); // Lexographically compares two keys. See keyTest for the required behavior.
 
@@ -22,7 +38,7 @@ uint checkIndex(kint * key, uint index); // Returns a positive integer if the bi
 void clearKey(kint *key, uint keyLength);  // Sets a key to 0
 int checkEmptyKey(kint *key, uint keyLength); // Returns 1 if the key is empty
 void copyKey(kint *key1, kint * key2, uint keyLen); // Copies from Key1 into key2, though I don't call this anywhere I think.
-int offByOne(kint *x, kint *y, uint dataLen); // Returns 1 if x and y differ by a single bit
+int offByOne(kint *x, kint *y, uint keyLen); // Returns 1 if x and y differ by a single bit
 unsigned int numberOfOneBits(kint *x, int keyLength); // Returns the order of a set
 
 void printKeyArr(kint *key, uint length); // Prints the raw key. For debugging purposes.

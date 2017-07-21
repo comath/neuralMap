@@ -156,3 +156,23 @@ class nnMapDB:
 				% {'tablename':self.tablename}, things)
 		self.conn.commit()
 
+	def getLocationList(self):
+		locList = []
+		for row in curs.execute("""SELECT ipSig, sig AS regSig 
+												FROM (SELECT regSigIndex, sig 
+													AS ipSig 
+													FROM locJoin_hidden%(hd)03ditte%(i)d 
+														INNER JOIN sig_hidden%(hd)03ditte%(i)d 
+															ON sigIndex = ipSigIndex) 
+												INNER JOIN sig_hidden%(hd)03ditte%(i)d ON sigIndex = regSigIndex;"""
+												%{'hd':hd,'i':i}):
+			locList.append((row[0],row[1]))
+		return locList
+
+	def getRegionList(self):
+		regList = []
+		for row in curs.execute("""SELECT sig FROM sig_hidden%(hd)03ditte%(i)d
+										WHERE sig_hidden%(hd)03ditte%(i)d IN 
+											(SELECT regSigIndex FROM locJoin_hidden%(hd)03ditte%(i)d);"""%{'hd':hd,'i':i}):
+			regList.append(row[0])
+		return regList
