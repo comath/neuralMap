@@ -24,9 +24,13 @@ keyBuff: a memory buffer of length keyLength
 
 Returns: the index of the first match or -1 if there is no match.
 */
-int checkOffByNArray(kint * keyArray, kint* testKey, uint numKeys, uint keyLength, uint n, kint *keyBuff);
-void batchCheckOffByN(kint * keyArray, kint* testKeys, uint numKeys, uint keyLength, uint n, int numTestKeys, int * results, int numProc);
+int checkOffByNArray(kint * keyArray, kint* testKey, uint numKeys, uint keyLength, uint n);
+void batchCheckOffByN(kint * keyArray, kint* testKeys, uint numKeys, uint keyLength, uint n, uint numTestKeys, int * results, int numProc);
 
+int getMinGraphDist(kint * keyArray, kint* testKey, uint numKeys, uint keyLength, uint n);
+void batchGetMinGraphDist(kint * keyArray, kint* testKeys, uint numKeys, uint keyLength, uint n, uint numTestKeys, int * results, int numProc);
+
+void getGraphDist(kint * keyArray, kint* testKey, uint numKeys, uint keyLength, int * results);
 
 // Functions to handle key interactions
 int compareKey(kint *x, kint *y, uint keyLength); // Lexographically compares two keys. See keyTest for the required behavior.
@@ -39,7 +43,9 @@ void clearKey(kint *key, uint keyLength);  // Sets a key to 0
 int checkEmptyKey(kint *key, uint keyLength); // Returns 1 if the key is empty
 void copyKey(kint *key1, kint * key2, uint keyLen); // Copies from Key1 into key2, though I don't call this anywhere I think.
 int offByOne(kint *x, kint *y, uint keyLen); // Returns 1 if x and y differ by a single bit
-unsigned int numberOfOneBits(kint *x, int keyLength); // Returns the order of a set
+unsigned int numberOfOneBits(kint *x, uint keyLength); // Returns the order of a set
+unsigned int numberOfDiff(kint *x, kint *y, uint keyLength); // Returns the number of bits that x and y differ by
+
 
 void printKeyArr(kint *key, uint length); // Prints the raw key. For debugging purposes.
 void printKey(kint *key, uint dataLen); // Prints the set associated to the key. If dataLen is unknown at time of call, just call with 32*keyLen
