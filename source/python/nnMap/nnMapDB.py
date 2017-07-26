@@ -158,21 +158,36 @@ class nnMapDB:
 
 	def getLocationList(self):
 		locList = []
-		for row in curs.execute("""SELECT ipSig, sig AS regSig 
+		for row in self.curs.execute("""SELECT ipSig, sig AS regSig 
 												FROM (SELECT regSigIndex, sig 
 													AS ipSig 
-													FROM locJoin_hidden%(hd)03ditte%(i)d 
-														INNER JOIN sig_hidden%(hd)03ditte%(i)d 
+													FROM locJoin_%(tablename)s 
+														INNER JOIN sig_%(tablename)s 
 															ON sigIndex = ipSigIndex) 
-												INNER JOIN sig_hidden%(hd)03ditte%(i)d ON sigIndex = regSigIndex;"""
-												%{'hd':hd,'i':i}):
+												INNER JOIN sig_%(tablename)s ON sigIndex = regSigIndex;"""
+												%{'tablename':self.tablename}):
 			locList.append((row[0],row[1]))
 		return locList
 
 	def getRegionList(self):
 		regList = []
-		for row in curs.execute("""SELECT sig FROM sig_hidden%(hd)03ditte%(i)d
-										WHERE sig_hidden%(hd)03ditte%(i)d IN 
-											(SELECT regSigIndex FROM locJoin_hidden%(hd)03ditte%(i)d);"""%{'hd':hd,'i':i}):
+		for row in self.curs.execute("""SELECT sig FROM sig_%(tablename)s
+										WHERE sig_%(tablename)s IN 
+											(SELECT regSigIndex FROM locJoin_%(tablename)s);"""%{'tablename':self.tablename}):
 			regList.append(row[0])
 		return regList
+
+	def getRegionData(self,hiddenDim,**kwarg):
+		locs = []
+		for row in self.curs.execute("""SELECT sig,locIndex FROM locJoin_%(tablename)s
+														INNER JOIN sig_%(tablename)s 
+															ON sigIndex = regSigIndex;"""
+															% {'tablename':self.tablename}):
+			
+			locs.append((readKey(np.ascontiguousarray(row[0],dtype=np.uint32),hiddenDim),))
+		for loc in locs:
+			pointList = [row2[0] for row2 in self.curs.execute("SELECT dataIndex FROM dataMap_%(tablename)s WHERE locIndex=(?)"
+									% {'tablename':self.tablename},
+									(loc[0],))]
+			loc = (loc[0],pointList,)
+		return locs

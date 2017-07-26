@@ -192,4 +192,9 @@ class nnMap():
 					else:
 						return False
 					
-	
+	def getData(self):
+		numLocations = self.internalMaps[0].numLocations()
+		locations = [self.internalMaps[0].location(i) for i in range(numLocations)]
+		return locations
+
+			
