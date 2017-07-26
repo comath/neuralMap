@@ -191,10 +191,55 @@ class nnMap():
 						return True
 					else:
 						return False
-					
+			
 	def getData(self):
 		numLocations = self.internalMaps[0].numLocations()
 		locations = [self.internalMaps[0].location(i) for i in range(numLocations)]
 		return locations
 
-			
+		
+	def getGraphDists(self,point):
+		if regOnly:
+			regSigs = self.regCalcs[0].getRegions(points, numProc=1)
+			if not self.regList:
+				regList = self.internalDB.getRegionList()
+				self.regList = np.ascontiguousarray(np.stack(regList))
+
+			if(len(points.shape[0]) > 1):
+				retVals = mapperWrap.offByNArrayBatch(self.regList,regSigs,n)
+				retBools = []
+				for x in retVals:
+					if(x > -1):
+						retBools.append(True)
+					else:
+						retBools.append(False)
+
+			if(len(points.shape[0]) == 1):
+				if(-1 < mapperWrap.offByNArray(self.locList,regSigs[0],n)):
+					return True
+				else:
+					return False
+		else:
+			regSigs = self.regCalcs[0].getRegions(points, numProc=1)
+			ipSigs = self.ipCalcs[0].getIntersections(points,self.threshold)
+			if not self.locList:	
+				locList = self.internalDB.getLocationList()
+				locList = [np.concatenate(loc) for loc in locList]
+				self.locList = np.ascontiguousarray(np.stack(locList))
+			if(points.shape[0] > 1):
+				testLocSigs = np.ascontiguousarray(np.concatenate(ipSigs,regSigs,axis=1))
+				retVals = mapperWrap.offByNArrayBatch(self.locList,testLocSigs,n)
+				retBools = []
+				for x in retVals:
+					if(x > -1):
+						retBools.append(True)
+					else:
+						retBools.append(False)
+
+			if(points.shape[0] == 1):
+				testLocSigs = np.ascontiguousarray(np.concatenate(ipSigs,regSigs,axis=1))
+				if(-1 < mapperWrap.offByNArray(self.locList,testLocSigs,n)):
+					return True
+				else:
+					return False
+		

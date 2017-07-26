@@ -28,8 +28,35 @@ int * createRandomBinaryArray(int numElements)
 	return randArr;
 }
 
+void fillRandomBinaryArray(int * arr, int numElements)
+{
+	int i = 0;
+	for(i=0;i<numElements;i++){
+		arr[i] = (rand() % 2);
+	}
+}
 
+int countNumOnes(int* arr, int numElements)
+{
+	int numOnes = 0;
+	for (int i = 0; i < numElements; ++i){
+		if(arr[i] == 1){
+			numOnes++;
+		}
+	}
+	return numOnes;
+}
 
+int countDiff(int* arr1, int* arr2, int numElements)
+{
+	int diff = 0;
+	for (int i = 0; i < numElements; ++i){
+		if(arr1[i] != arr2[i]){
+			diff++;
+		}
+	}
+	return diff;
+}
 
 void printCharArr(char * arr, int numElements){
 	int i = 0;
@@ -54,8 +81,8 @@ void testCompareKey()
 
 	kint *testKey = malloc(keyLen*sizeof(kint));
 	kint *testKey2 = malloc(keyLen*sizeof(kint));
-	convertToKey(arr,testKey,arrLength);
-	convertToKey(arr2,testKey2,arrLength);
+	convertFromIntToKey(arr,testKey,arrLength);
+	convertFromIntToKey(arr2,testKey2,arrLength);
 	if( (compareKey( testKey, testKey2,keyLen)  != compareArr(arr,arr2,arrLength)) ) {
 		printf("Failure, Test Func: %d Actual Val: %d\n",compareArr(arr,arr2,arrLength),compareKey( testKey, testKey2,keyLen));
 	} 
@@ -75,8 +102,8 @@ void testRebuildKey()
 	uint keyLen = calcKeyLen(arrLength);
 	kint *testKey = malloc(keyLen*sizeof(kint));
 
-	convertToKey(arr,testKey,arrLength);
-	convertFromKey(testKey,RecreateArr,arrLength);
+	convertFromIntToKey(arr,testKey,arrLength);
+	convertFromKeyToInt(testKey,RecreateArr,arrLength);
 	if(compareArr(arr,RecreateArr,arrLength) != 0){
 		printf("Faliure, Recreated Arr:\n");
 		printIntArr(RecreateArr,arrLength);
@@ -90,6 +117,33 @@ void testRebuildKey()
 	free(testKey);
 }
 
+void testOffByN()
+{
+	uint arrLength = 8;
+	int *arr = createRandomBinaryArray(arrLength);
+	int *arr2 = createRandomBinaryArray(arrLength);
+	uint keyLen = calcKeyLen(arrLength);
+	//printf("Key length: %u\n", keyLen);
+
+	kint *testKey = malloc(keyLen*sizeof(kint));
+	kint *testKey2 = malloc(keyLen*sizeof(kint));
+	convertFromIntToKey(arr,testKey,arrLength);
+	convertFromIntToKey(arr2,testKey2,arrLength);
+
+	if(numberOfOneBits(testKey, keyLen) != countNumOnes(arr, arrLength)){
+		printf("numberOfOneBits Failed");
+		printIntArr(arr,arrLength);
+	}
+
+	if(numberOfDiff(testKey, testKey2, keyLen) != countDiff(arr, arr2, arrLength)){
+		printf("numberDiff Failed");
+		printIntArr(arr,arrLength);
+	}
+	free(arr);
+	free(arr2);
+	free(testKey);
+	free(testKey2);
+}
 
 int main(int argc, char* argv[])
 {
@@ -102,5 +156,7 @@ int main(int argc, char* argv[])
 	printf("testRebuildKey:\n");
 	for(i=0;i<10;i++){	testRebuildKey(); }
 	printf("testChromaticKey:\n");
+	printf("testoffByN:\n");
+	for(i=0;i<10;i++){	testOffByN(); }
 	return 0;
 }
