@@ -194,3 +194,24 @@ mapTreeNode ** getLocations(_nnMap *map, char orderBy)
 	}
 	return locArr;
 }
+
+// Given a bit packed representation of (intersection set, region set) returns the saved details of that location
+// Currently very dumb, but it will combine all intersections within a region into a single region data in the future.
+location * getPointsAt(_nnMap *map, kint *keyPair, char bothBool)
+{
+	return getMapData(map->locationTree, keyPair);
+}
+
+// Given a point returns the points near a given point and the keyPair. 
+location * getPointsNear(_nnMap *map, float *point, kint *keyPair, int threshold)
+{
+	uint outDim = map->layer->outDim;
+	traceMemory * tm = allocateTraceMB(outDim, map->layer->inDim);
+	float * outBuff = malloc(outDim*sizeof(float));
+	ipCalc(tc,tm, point, threshold, keyPair);
+	evalLayer(map->layer, point, outBuff);
+	convertFromFloatToKey(outBuff, keyPair + calcKeyLen(outDim),outDim);
+	free(outBuff);
+	freeTraceMB(tm);
+	return getMapData(map->locationTree, keyPair);
+}

@@ -28,16 +28,18 @@ The error class is either 1 for an error, 0 for not an error.
 */
 
 typedef struct location {
+    
+    int m;
+
     float *traceDists;
     int *traceRaws; 
     int *pointIndexes;
-    int m;
     int capacity;
     int total;
+
     float *traceDists_error;
     int *traceRaws_error;
     int *pointIndexes_error;
-
     int capacity_error;
     int total_error;
 } location;

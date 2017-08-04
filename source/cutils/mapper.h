@@ -43,9 +43,11 @@ todo: Make saving the trace optional, it's not needed adaptive backprop
 void addPointToMap(_nnMap * map, float *point, int pointIndex, int errorClass, float threshold);
 void addPointsToMapBatch(_nnMap * map, float *data, int *indexes, int *errorClasses, float threshold, uint numData, uint numProc);
 
-
 // Given a bit packed representation of (intersection set, region set) returns the saved details of that location
-location getPointsAt(_nnMap *map, kint *keyPair);
+location getPointsAt(_nnMap *map, kint *keyPair, char bothBool);
+
+// Given a point returns the points near a given point. 
+location getPointsNear(_nnMap *map, float *point);
 
 // Returns the number of locations
 unsigned int numLoc(_nnMap * map);
