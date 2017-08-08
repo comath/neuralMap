@@ -77,7 +77,8 @@ cdef extern from "../cutils/mapper.h":
 	cdef location getPointsAt(_nnMap *map, kint *keyPair)
 	cdef unsigned int numLoc(_nnMap * map)
 	cdef mapTreeNode ** getLocations(_nnMap *map, char orderBy) with gil
-	void location_get_indexes(location *v, int *indexHolder)
+	cdef void batchCheckPointsNear(_nnMap *map, float *points, int numPoints, float threshold, int * results)
+	cdef void batchCheckRegionsNear(_nnMap *map, float *points, int numPoints, int * results)
 
 
 cdef extern from "../cutils/adaptiveTools.h":
@@ -193,6 +194,28 @@ cdef class cy_nnMap:
 		if(data.shape[1] != self.layer0.inDim):
 			eprint("Data is of the wrong dimension.")   
 		addPointsToMapBatch(self.internalMap,<float *> data.data, <int *> indexes.data,<int *> errorClass.data, self.threshold,numData, numProc)
+
+	def batchCheckPoints(self,np.ndarray[float,ndim=2,mode="c"] data not None, regOnly, numProc=None):
+		if numProc == None:
+			numProc = multiprocessing.cpu_count()
+		if numProc > multiprocessing.cpu_count():
+			eprint("WARNING: Specified too many cores. Reducing to the number you actually have.")
+			numProc = multiprocessing.cpu_count()
+		if self.locArr:
+			self.numLoc = 0
+			free(self.locArr)
+
+		numData = data.shape[0]
+		if(data.shape[1] != self.layer0.inDim):
+			eprint("Data is of the wrong dimension.")   
+
+		cdef np.ndarray[np.int32_t,ndim=1] results = np.zeros([numData], dtype=np.int32)
+
+		if(regOnly):
+			batchCheckRegionsNear(self.internalMap, <float *> data.data, numData, <int *> results.data)
+		else:
+			batchCheckPointsNear(self.internalMap, <float *> data.data, numData, self.threshold, <int *> results.data)
+		return results
 
 	def numLocations(self):
 		if not self.locArr:

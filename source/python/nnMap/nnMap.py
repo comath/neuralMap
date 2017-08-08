@@ -110,87 +110,92 @@ class nnMap():
 		regOnly = kwargs.get('reg_only')
 		if not regOnly:
 			regOnly = False
-
-		if not self.internalDB:
-			raise ValueError("Must have a DB first")
-		n = kwargs.get('off_by_n')
+		else: 
+			regOnly = True
 
 		if(len(points.shape) == 1):
 				points = np.reshape(points,(1,-1))
-		if not n:
-			numPoints = points.shape[0]
-			if regOnly:
-				regSigs = self.regCalcs[0].getRegions(points, numProc=1)
-			else:
-				ipSigs = self.ipCalcs[0].getIntersections(points,self.threshold)
-				regSigs = self.regCalcs[0].getRegions(points)
-
-			if(points.shape[0] > 1):
-				retBools = []
-				for i in range(numPoints):
-					if regOnly:
-						jointIndex = self.internalDB.checkReg(regSigs[i])
-					else:
-						jointIndex = self.internalDB.getPointLocationIndex(ipSigs[i],regSigs[i])
-					
-					if(jointIndex != None):
-						retBools.append(True)
-					else:
-						retBools.append(False)
-				return retBools
-			if(points.shape[0] == 1):
-				if regOnly:
-					jointIndex = self.internalDB.checkReg(regSigs[0])
-				else:
-					jointIndex = self.internalDB.getPointLocationIndex(ipSigs[0],regSigs[0])
-				if(jointIndex != None):
-					return True
-				else:
-					return False
+		
+		try:
+			self.internalDB
+		except AttributeError:
+			return self.internalMaps[0].batchCheckPoints(points, regOnly)
 		else:
-			if regOnly:
-				regSigs = self.regCalcs[0].getRegions(points, numProc=1)
-				if not self.regList:
-					regList = self.internalDB.getRegionList()
-					self.regList = np.ascontiguousarray(np.stack(regList))
+			n = kwargs.get('off_by_n')
+			if not n:
+				numPoints = points.shape[0]
+				if regOnly:
+					regSigs = self.regCalcs[0].getRegions(points, numProc=1)
+				else:
+					ipSigs = self.ipCalcs[0].getIntersections(points,self.threshold)
+					regSigs = self.regCalcs[0].getRegions(points)
 
-				if(len(points.shape[0]) > 1):
-					retVals = mapperWrap.offByNArrayBatch(self.regList,regSigs,n)
+				if(points.shape[0] > 1):
 					retBools = []
-					for x in retVals:
-						if(x > -1):
+					for i in range(numPoints):
+						if regOnly:
+							jointIndex = self.internalDB.checkReg(regSigs[i])
+						else:
+							jointIndex = self.internalDB.getPointLocationIndex(ipSigs[i],regSigs[i])
+						
+						if(jointIndex != None):
 							retBools.append(True)
 						else:
 							retBools.append(False)
-
-				if(len(points.shape[0]) == 1):
-					if(-1 < mapperWrap.offByNArray(self.locList,regSigs[0],n)):
+					return retBools
+				if(points.shape[0] == 1):
+					if regOnly:
+						jointIndex = self.internalDB.checkReg(regSigs[0])
+					else:
+						jointIndex = self.internalDB.getPointLocationIndex(ipSigs[0],regSigs[0])
+					if(jointIndex != None):
 						return True
 					else:
 						return False
 			else:
-				regSigs = self.regCalcs[0].getRegions(points, numProc=1)
-				ipSigs = self.ipCalcs[0].getIntersections(points,self.threshold)
-				if not self.locList:	
-					locList = self.internalDB.getLocationList()
-					locList = [np.concatenate(loc) for loc in locList]
-					self.locList = np.ascontiguousarray(np.stack(locList))
-				if(points.shape[0] > 1):
-					testLocSigs = np.ascontiguousarray(np.concatenate(ipSigs,regSigs,axis=1))
-					retVals = mapperWrap.offByNArrayBatch(self.locList,testLocSigs,n)
-					retBools = []
-					for x in retVals:
-						if(x > -1):
-							retBools.append(True)
-						else:
-							retBools.append(False)
+				if regOnly:
+					regSigs = self.regCalcs[0].getRegions(points, numProc=1)
+					if not self.regList:
+						regList = self.internalDB.getRegionList()
+						self.regList = np.ascontiguousarray(np.stack(regList))
 
-				if(points.shape[0] == 1):
-					testLocSigs = np.ascontiguousarray(np.concatenate(ipSigs,regSigs,axis=1))
-					if(-1 < mapperWrap.offByNArray(self.locList,testLocSigs,n)):
-						return True
-					else:
-						return False
+					if(len(points.shape[0]) > 1):
+						retVals = mapperWrap.offByNArrayBatch(self.regList,regSigs,n)
+						retBools = []
+						for x in retVals:
+							if(x > -1):
+								retBools.append(True)
+							else:
+								retBools.append(False)
+
+					if(len(points.shape[0]) == 1):
+						if(-1 < mapperWrap.offByNArray(self.locList,regSigs[0],n)):
+							return True
+						else:
+							return False
+				else:
+					regSigs = self.regCalcs[0].getRegions(points, numProc=1)
+					ipSigs = self.ipCalcs[0].getIntersections(points,self.threshold)
+					if not self.locList:	
+						locList = self.internalDB.getLocationList()
+						locList = [np.concatenate(loc) for loc in locList]
+						self.locList = np.ascontiguousarray(np.stack(locList))
+					if(points.shape[0] > 1):
+						testLocSigs = np.ascontiguousarray(np.concatenate(ipSigs,regSigs,axis=1))
+						retVals = mapperWrap.offByNArrayBatch(self.locList,testLocSigs,n)
+						retBools = []
+						for x in retVals:
+							if(x > -1):
+								retBools.append(True)
+							else:
+								retBools.append(False)
+
+					if(points.shape[0] == 1):
+						testLocSigs = np.ascontiguousarray(np.concatenate(ipSigs,regSigs,axis=1))
+						if(-1 < mapperWrap.offByNArray(self.locList,testLocSigs,n)):
+							return True
+						else:
+							return False
 			
 	def getData(self):
 		numLocations = self.internalMaps[0].numLocations()

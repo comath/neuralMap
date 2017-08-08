@@ -4,11 +4,11 @@
 
 #define DATASIZE 32
 
-int checkOffByNArray(kint * keyArray, kint* testKey, uint numKeys, uint keyLength, uint n)
+int checkOffByNArray(kint * keyArray, kint* testKey, uint numKeys, uint keyLen, uint n)
 {
 	if(n == 1){
 		for(uint i = 0;i<numKeys;i++){
-			if(offByOne(keyArray + i*keyLength, testKey, keyLength)){
+			if(offByOne(keyArray + i*keyLen, testKey, keyLen)){
 				return i;
 			}
 		}
@@ -16,7 +16,7 @@ int checkOffByNArray(kint * keyArray, kint* testKey, uint numKeys, uint keyLengt
 	} else {
 		uint diffSize = 0;
 		for(uint i = 0;i<numKeys;i++){
-			diffSize = numberOfDiff(keyArray + i*keyLength, testKey, keyLength);
+			diffSize = numberOfDiff(keyArray + i*keyLen, testKey, keyLen);
 			if(diffSize <= n){
 				return i;
 			}
@@ -32,7 +32,7 @@ struct offByNThreadArgs {
 	kint * keyArray;
 	kint* testKeys;
 	uint numKeys;
-	uint keyLength;
+	uint keyLen;
 	uint n;
 	uint numTestKeys;
 	int * results;
@@ -49,20 +49,20 @@ void * offByN_thread(void *thread_args)
 	kint * keyArray = myargs->keyArray;
 	kint* testKeys = myargs->testKeys;
 	uint numKeys = myargs->numKeys;
-	uint keyLength = myargs->keyLength;
+	uint keyLen = myargs->keyLen;
 	uint n = myargs->n;
 	uint numTestKeys = myargs->numTestKeys;
 	int * results = myargs->results;
 
 	uint i = 0;
 	for(i=tid;i<numTestKeys;i=i+numThreads){
-		results[i] = checkOffByNArray(keyArray,testKeys + i*keyLength,numKeys,keyLength,n);
+		results[i] = checkOffByNArray(keyArray,testKeys + i*keyLen,numKeys,keyLen,n);
 		//printf("Thread %d at mutex with %u nodes \n",tid,tc->bases->numNodes);	
 	}
 	pthread_exit(NULL);
 }
 
-void batchCheckOffByN(kint * keyArray, kint* testKeys, uint numKeys, uint keyLength, uint n, uint numTestKeys, int * results, int numProc)
+void batchCheckOffByN(kint * keyArray, kint* testKeys, uint numKeys, uint keyLen, uint n, uint numTestKeys, int * results, int numProc)
 {
 	int maxThreads = numProc;
 	int rc =0;
@@ -79,7 +79,7 @@ void batchCheckOffByN(kint * keyArray, kint* testKeys, uint numKeys, uint keyLen
 		thread_args[i].keyArray = keyArray;
 		thread_args[i].testKeys = testKeys;
 		thread_args[i].numKeys = numKeys;
-		thread_args[i].keyLength = keyLength;
+		thread_args[i].keyLen = keyLen;
 		thread_args[i].n = n;
 		thread_args[i].numTestKeys = numTestKeys;
 		thread_args[i].results = results;
@@ -107,7 +107,7 @@ int getMinGraphDistance(kint * keyArray, kint* testKey, uint numKeys, uint keyLe
 	uint diffSize = 0;
 	uint currentMinDiffSize = keyLen * DATASIZE;
 	for(uint i = 0;i<numKeys;i++){
-		diffSize = numberOfDiff(keyArray + i*keyLength, testKey, keyLength);
+		diffSize = numberOfDiff(keyArray + i*keyLen, testKey, keyLen);
 		if(diffSize <= currentMinDiffSize){
 			currentMinDiffSize = diffSize;
 		}
@@ -122,7 +122,7 @@ struct getMinGraphDistThreadArgs {
 	kint * keyArray;
 	kint* testKeys;
 	uint numKeys;
-	uint keyLength;
+	uint keyLen;
 	uint n;
 	uint numTestKeys;
 	int * results;
@@ -139,25 +139,25 @@ void * getMinGraphDistanceThread_thread(void *thread_args)
 	kint * keyArray = myargs->keyArray;
 	kint* testKeys = myargs->testKeys;
 	uint numKeys = myargs->numKeys;
-	uint keyLength = myargs->keyLength;
+	uint keyLen = myargs->keyLen;
 	uint n = myargs->n;
 	uint numTestKeys = myargs->numTestKeys;
 	int * results = myargs->results;
 
 	uint i = 0;
 	for(i=tid;i<numTestKeys;i=i+numThreads){
-		results[i] = getMinGraphDistance(keyArray,testKeys + i*keyLength,numKeys,keyLength,n);
+		results[i] = getMinGraphDistance(keyArray,testKeys + i*keyLen,numKeys,keyLen,n);
 		//printf("Thread %d at mutex with %u nodes \n",tid,tc->bases->numNodes);	
 	}
 	pthread_exit(NULL);
 }
 
-void batchGetMinGraphDistance(kint * keyArray, kint* testKeys, uint numKeys, uint keyLength, uint n, uint numTestKeys, int * results, int numProc)
+void batchGetMinGraphDistance(kint * keyArray, kint* testKeys, uint numKeys, uint keyLen, uint n, uint numTestKeys, int * results, int numProc)
 {
 	int maxThreads = numProc;
 	int rc =0;
 	int i =0;
-	struct getMinGraphDistance *thread_args = malloc(maxThreads*sizeof(struct getMinGraphDistance));
+	struct getMinGraphDistThreadArgs *thread_args = malloc(maxThreads*sizeof(struct getMinGraphDistThreadArgs));
 	
 	pthread_t threads[maxThreads];
 	pthread_attr_t attr;
@@ -169,7 +169,7 @@ void batchGetMinGraphDistance(kint * keyArray, kint* testKeys, uint numKeys, uin
 		thread_args[i].keyArray = keyArray;
 		thread_args[i].testKeys = testKeys;
 		thread_args[i].numKeys = numKeys;
-		thread_args[i].keyLength = keyLength;
+		thread_args[i].keyLen = keyLen;
 		thread_args[i].n = n;
 		thread_args[i].numTestKeys = numTestKeys;
 		thread_args[i].results = results;
@@ -192,10 +192,10 @@ void batchGetMinGraphDistance(kint * keyArray, kint* testKeys, uint numKeys, uin
 	free(thread_args);
 }
 
-void getGraphDist(kint * keyArray, kint* testKey, uint numKeys, uint keyLength, int * results)
+void getGraphDist(kint * keyArray, kint* testKey, uint numKeys, uint keyLen, int * results)
 {
 	for(uint i = 0;i<numKeys;i++){
-		results[i] = numberOfDiff(keyArray + i*keyLength, testKey, keyLength);
+		results[i] = numberOfDiff(keyArray + i*keyLen, testKey, keyLen);
 	}
 }
 
@@ -279,18 +279,18 @@ int isPowerOfTwo (kint x)
   return ((x != 0) && !(x & (x - 1)));
 }
 
-int offByOne(kint *x, kint *y, uint keyLength)
+int offByOne(kint *x, kint *y, uint keyLen)
 {
 	kint cmp = 0;
 	uint i = 0;
 	uint j = 0;
 	// Find the first non-zero difference
-	while(i<keyLength && cmp == 0){
+	while(i<keyLen && cmp == 0){
 		cmp = x[i] - y[i];
 		i++; 
 	}
 	// check that it's the only non-zero difference 
-	for(j = i; j<keyLength;j++){
+	for(j = i; j<keyLen;j++){
 		if(x[j] - y[j]){
 			return 0;
 		}
@@ -300,12 +300,12 @@ int offByOne(kint *x, kint *y, uint keyLength)
 	return isPowerOfTwo(cmp);
 }
 
-unsigned int numberOfOneBits(kint *x, uint keyLength)
+unsigned int numberOfOneBits(kint *x, uint keyLen)
 {
 	unsigned int numberOfOneBits = 0;
 	kint xi;
 	uint i = 0;
-	for(i = 0; i<keyLength;i++){
+	for(i = 0; i<keyLen;i++){
 		xi = x[i]; // Copy x[i]
 		while(xi){
 			if ((xi & 1) == 1) 
@@ -317,11 +317,11 @@ unsigned int numberOfOneBits(kint *x, uint keyLength)
 	return numberOfOneBits; 
 }
 
-unsigned int numberOfDiff(kint *x, kint *y, uint keyLength)
+unsigned int numberOfDiff(kint *x, kint *y, uint keyLen)
 {
 	unsigned int numberOfOneBits = 0;
 	kint zj;
-	for(uint j = 0;j<keyLength;j++){
+	for(uint j = 0;j<keyLen;j++){
 		zj = x[j] ^ y[j];
 		while(zj){
 			if ((zj & 1) == 1) 
@@ -351,10 +351,10 @@ int evalSig(kint *key, float *selectionVec, float selectionBias, uint dataLen)
 	}
 }
 
-int checkEmptyKey(kint *key,uint keyLength)
+int checkEmptyKey(kint *key,uint keyLen)
 {
 	uint i = 0;
-	for(i = 0; i < keyLength; i++){
+	for(i = 0; i < keyLen; i++){
 		if(checkIndex(key,i) == 0){
 			return 1;
 		}

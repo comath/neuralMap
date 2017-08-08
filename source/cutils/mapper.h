@@ -44,10 +44,10 @@ void addPointToMap(_nnMap * map, float *point, int pointIndex, int errorClass, f
 void addPointsToMapBatch(_nnMap * map, float *data, int *indexes, int *errorClasses, float threshold, uint numData, uint numProc);
 
 // Given a bit packed representation of (intersection set, region set) returns the saved details of that location
-location getPointsAt(_nnMap *map, kint *keyPair, char bothBool);
+location * getPointsAt(_nnMap *map, kint *keyPair, char bothBool);
 
 // Given a point returns the points near a given point. 
-location getPointsNear(_nnMap *map, float *point);
+location * getPointsNear(_nnMap *map, float *point,kint *keyPair, int threshold);
 
 // Returns the number of locations
 unsigned int numLoc(_nnMap * map);
@@ -62,8 +62,7 @@ mapTreeNode ** getLocations(_nnMap *map, char orderBy);
 // Tool exposed for the adaptive tools. Can be used with qsort to reorder to a regKey primary order.
 int regOrder(const void * a, const void * b);
 
-
-
-
+void batchCheckPointsNear(_nnMap *map, float *points, int numPoints, float threshold, int * results);
+void batchCheckRegionsNear(_nnMap *map, float *points, int numPoints, int * results);
 
 #endif

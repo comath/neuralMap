@@ -208,10 +208,67 @@ location * getPointsNear(_nnMap *map, float *point, kint *keyPair, int threshold
 	uint outDim = map->layer->outDim;
 	traceMemory * tm = allocateTraceMB(outDim, map->layer->inDim);
 	float * outBuff = malloc(outDim*sizeof(float));
-	ipCalc(tc,tm, point, threshold, keyPair);
+	ipCalc(map->tc,tm, point, threshold, keyPair);
 	evalLayer(map->layer, point, outBuff);
 	convertFromFloatToKey(outBuff, keyPair + calcKeyLen(outDim),outDim);
 	free(outBuff);
 	freeTraceMB(tm);
 	return getMapData(map->locationTree, keyPair);
+}
+
+
+// A HACK
+void batchCheckRegionsNear(_nnMap *map, float *points, int numPoints, int * results)
+{
+	uint outDim = map->layer->outDim;
+	uint inDim = map->layer->inDim;
+	uint keyLen = calcKeyLen(outDim);
+	kint * key = malloc(keyLen*sizeof(kint));
+
+	float * outBuff = malloc(outDim*sizeof(float));
+	
+	int numLoc = map->locationTree->numNodes;
+	memset(results,0,numPoints*sizeof(int));
+
+	mapTreeNode ** loc = getLocations(map, 'r');
+	for(int i = 0; i < numPoints;i++){
+		evalLayer(map->layer, points + i*inDim, outBuff);
+		convertFromFloatToKey(outBuff, key,outDim);
+		for(int j = 0; j < numLoc; j++){
+			if(compareKey(key,loc[j]->regKey,keyLen) == 0){
+				results[i] = 1;
+			}
+		}
+	}
+
+	free(outBuff);
+	free(key);
+}
+
+void batchCheckPointsNear(_nnMap *map, float *points, int numPoints, float threshold, int * results)
+{
+	uint outDim = map->layer->outDim;
+	uint inDim = map->layer->inDim;
+
+	uint keyLen = calcKeyLen(outDim);
+	kint * keyPair = malloc(keyLen*sizeof(kint));
+
+	traceMemory * tm = allocateTraceMB(outDim, map->layer->inDim);
+	float * outBuff = malloc(outDim*sizeof(float));
+
+	int numLoc = map->locationTree->numNodes;
+	memset(results,0,numPoints*sizeof(int));
+
+	for(int i = 0; i < numPoints;i++){
+		ipCalc(map->tc,tm, points + i*inDim, threshold, keyPair);
+		evalLayer(map->layer, points + i*inDim, outBuff);
+		convertFromFloatToKey(outBuff, keyPair + calcKeyLen(outDim),outDim);
+		if(getMapData(map->locationTree, keyPair) != NULL){
+			results[i] = 1;
+		}
+	}
+
+	free(outBuff);
+	free(keyPair);
+	freeTraceMB(tm);
 }

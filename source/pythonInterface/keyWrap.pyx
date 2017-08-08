@@ -86,9 +86,9 @@ def getGraphDistances(np.ndarray[np.uint32_t,ndim=2,mode="c"] keyArray not None,
 	cdef unsigned int keyLength = keyArray.shape[1]
 	cdef unsigned int numKeys = keyArray.shape[0]
 
-	assert(keyLength == testKeys.shape[1])
-	cdef np.ndarray[np.int32_t,ndim=1] results = np.zeros(numKeys, dtype=np.int32)
-	getGraphDist(<kint *> keyArray.data, <kint *> testKeys.data, numKeys, keyLength, <int *> results.data)
+	#ssert(keyLength == testKeys.shape[1])
+	#cdef np.ndarray[np.int32_t,ndim=1] results = np.zeros(numKeys, dtype=np.int32)
+	#getGraphDist(<kint *> keyArray.data, <kint *> testKeys.data, numKeys, keyLength, <int *> results.data)
 
 
 
